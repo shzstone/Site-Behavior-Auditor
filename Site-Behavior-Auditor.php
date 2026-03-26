@@ -333,6 +333,39 @@ function sba_audit_ajax_tracks() {
     wp_send_json_success( [ 'html' => $html, 'pages' => $pages, 'total' => $total, 'date' => $latest_date ] );
 }
 
+add_action( 'wp_ajax_sba_load_blocked_logs', 'sba_audit_ajax_blocked_logs' );
+function sba_audit_ajax_blocked_logs() {
+    global $wpdb;
+    $p = intval( $_POST['page'] ?? 1 );
+    $per = 15;
+    $off = ( $p - 1 ) * $per;
+    
+    $total = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}sba_blocked_log WHERE DATE(block_time) = CURDATE()" );
+    $pages = ceil( $total / $per );
+    
+    $rows = $wpdb->get_results( $wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}sba_blocked_log 
+         WHERE DATE(block_time) = CURDATE() 
+         ORDER BY block_time DESC LIMIT %d, %d",
+        $off, $per
+    ) );
+    
+    $html = '';
+    if ( $rows ) {
+        foreach ( $rows as $b ) {
+            $html .= '<tr>
+                <td>' . date( 'm-d H:i', strtotime( $b->block_time ) ) . '</td>
+                <td><code>' . esc_html( $b->ip ) . '</code></td>
+                <td class="sba-cell-wrap" style="color:#d63638;">' . esc_html( $b->reason ) . ' ⚡ ' . esc_html( $b->target_url ) . '</td>
+            </tr>';
+        }
+    } else {
+        $html = '<tr><td colspan="3">暂无拦截记录</td></tr>';
+    }
+    
+    wp_send_json_success( [ 'html' => $html, 'pages' => $pages, 'total' => $total ] );
+}
+
 /* ================= iOS 风格登录简码模块 ================= */
 function sba_ios_check_rate_limit( $ip, $limit = 10 ) {
     global $wpdb;
@@ -1030,7 +1063,6 @@ function sba_audit_render_dashboard() {
         $chart_uv[] = isset( $history_50[ $target_date ] ) ? (int) $history_50[ $target_date ]->uv : 0;
         $chart_pv[] = isset( $history_50[ $target_date ] ) ? (int) $history_50[ $target_date ]->pv : 0;
     }
-    $blocks = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}sba_blocked_log ORDER BY block_time DESC LIMIT 15" );
     ?>
 	<style>
 		.sba-wrap { max-width: 1400px; margin-top: 15px; }
@@ -1163,13 +1195,29 @@ function sba_audit_render_dashboard() {
                 <div><button id="prev-page" class="button">上页</button> 第 <b id="current-page">1</b> / <b id="total-pages">1</b> 页 <button id="next-page" class="button">下页</button></div>
             </div>
         </div>
-        <div class="sba-card" style="border-top:3px solid #d63638;">
-            <h3>🚫 拦截日志</h3>
-            <div class="sba-scroll-x"><table class="sba-table">
-                <thead><tr><th width="100">时间</th><th width="150">拦截 IP</th><th>原因与目标</th></tr></thead>
-                <tbody><?php foreach ( $blocks as $b ): ?><tr><td><?php echo date( 'm-d H:i', strtotime( $b->block_time ) ); ?></td><td><code><?php echo $b->ip; ?></code></td><td class="sba-cell-wrap" style="color:#d63638;"><?php echo $b->reason; ?> ⚡ <?php echo esc_html( $b->target_url ); ?></td></tr><?php endforeach; ?></tbody>
-            </table></div>
-        </div>
+			<div class="sba-card" style="border-top:3px solid #d63638;">
+				<h3>🚫 拦截日志 (<?php echo $latest_date; ?>)</h3>
+				<div class="sba-scroll-x">
+					<table class="sba-table">
+						<thead>
+							<tr>
+								<th width="100">时间</th>
+								<th width="150">拦截 IP</th>
+								<th>原因与目标</th>
+							</tr>
+						</thead>
+						<tbody id="blocked-log-body"></tbody>
+					</table>
+				</div>
+				<div style="margin-top:15px; display:flex; justify-content: space-between;">
+					<div>总记录: <b id="blocked-total-rows">0</b></div>
+					<div>
+						<button id="blocked-prev-page" class="button">上页</button>
+						第 <b id="blocked-current-page">1</b> / <b id="blocked-total-pages">1</b> 页
+						<button id="blocked-next-page" class="button">下页</button>
+					</div>
+				</div>
+			</div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -1199,6 +1247,26 @@ function sba_audit_render_dashboard() {
     document.getElementById('prev-page').onclick = () => { if(curP > 1) loadT(curP - 1); };
     document.getElementById('next-page').onclick = () => { if(curP < maxP) loadT(curP + 1); };
     loadT(1);
+	// 拦截日志分页
+	var blockedCurPage = 1, blockedMaxPages = 1;
+	function loadBlockedLogs(page) {
+		fetch(ajaxurl, { 
+			method: 'POST', 
+			body: new URLSearchParams({action:'sba_load_blocked_logs', page:page}) 
+		}).then(r => r.json()).then(res => {
+			if(res.success) {
+				document.getElementById('blocked-log-body').innerHTML = res.data.html;
+				blockedCurPage = page;
+				blockedMaxPages = res.data.pages;
+				document.getElementById('blocked-current-page').innerText = page;
+				document.getElementById('blocked-total-pages').innerText = res.data.pages;
+				document.getElementById('blocked-total-rows').innerText = res.data.total;
+			}
+		});
+	}
+	document.getElementById('blocked-prev-page').onclick = () => { if(blockedCurPage > 1) loadBlockedLogs(blockedCurPage - 1); };
+	document.getElementById('blocked-next-page').onclick = () => { if(blockedCurPage < blockedMaxPages) loadBlockedLogs(blockedCurPage + 1); };
+	loadBlockedLogs(1);
     </script>
     <?php
 }
