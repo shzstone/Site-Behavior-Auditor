@@ -1,8 +1,8 @@
-# 🛡️ SBA 综合安全套件 (Security Behavior Audit)
+# 🛡️ SBA 综合安全套件 (Site Behavior Auditor)
 
 [![WordPress-5.0+](https://img.shields.io/badge/WordPress-5.0%2B-blue.svg?style=flat-square&logo=wordpress)](https://wordpress.org)
 [![PHP-7.4+](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg?style=flat-square&logo=php)](https://www.php.net)
-[![License-GPLv2-green](https://img.shields.io/badge/License-GPLv2-green.svg?style=flat-square)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
+[![License-GPLv2-green](https://img.shields.io/badge/License-GPLv2-green.svg?style=flat-square)](https://github.com/guoshh1978/Site-Behavior-Auditor/blob/main/LICENSE)
 
 **SBA 综合安全套件** 是一个集站点行为审计、iOS 风格登录面板、SMTP 邮件配置于一体的安全增强插件，专为中小型网站设计，提供易用的安全防护和用户体验优化。
 
@@ -37,7 +37,7 @@
 
 ## 📥 安装方法
 
-1.  **下载插件**：从 [GitHub Releases](https://github.com/yourusername/security-suite/releases) 下载最新版 ZIP。
+1.  **下载插件**：从 [Releases](https://github.com/guoshh1978/Site-Behavior-Auditor/releases) 下载最新版 ZIP。
 2.  **上传安装**：WP 后台 -> 插件 -> 安装插件 -> 上传 ZIP；或解压后上传至 `/wp-content/plugins/`。
 3.  **启用配置**：
     * 进入“全行为审计” → “SMTP 邮件设置”填写服务器信息。
@@ -50,9 +50,9 @@
 ### 防御设置
 | 选项 | 说明 |
 | :--- | :--- |
-| **用户名白名单** | 填入用户名，登录后自动豁免所有拦截（包括 CC、Gate、UA 等） |
+| **用户名白名单** | 填入用户名，登录后自动豁免所有拦截 |
 | **IP 白名单** | 每行一个 IP，该范围内 IP 完全豁免 |
-| **CC 封禁阈值** | 非浏览器请求每分钟最大请求数，超出则封禁（0 为关闭） |
+| **CC 封禁阈值** | 非浏览器请求每分钟最大请求数，超出则封禁 |
 | **Gate 钥匙** | 必填参数，必须通过 `wp-login.php?gate=钥匙` 生成会话 |
 | **追加拦截路径** | 逗号分隔的自定义路径，与内置恶意路径合并拦截 |
 | **拦截重定向 URL** | 拦截后跳转地址（留空则显示默认 403 页面） |
@@ -69,21 +69,20 @@
 ## 🛠️ 技术栈与扩展
 
 * **技术架构**：PHP 7.4+ / jQuery / Chart.js / PHPMailer / Session 管理。
-* **代码扩展**：
-    * **禁用新用户通知邮件**：
-        ```php
-        add_filter( 'wp_new_user_notification_email_admin', '__return_false' );
-        ```
+* **代码扩展**（禁用新用户通知邮件）：
+    ```php
+    add_filter( 'wp_new_user_notification_email_admin', '__return_false' );
+    ```
 
 ---
 
 ## 🐛 常见问题 (FAQ)
 
-> **Q: 注册后收不到激活邮件？**
-> A: 请在“SMTP 邮件设置”中发送测试邮件。QQ 等邮箱需使用“授权码”。
+> **Q: 设置 Gate 钥匙后进不去后台怎么办？**
+> A: 请访问 `你的域名/wp-login.php?gate=你的钥匙`。如果忘记钥匙，请在数据库 `wp_options` 表中搜索 `sba_settings` 手动修改。
 
-> **Q: 访问统计显示“未知”归属地？**
-> A: 您可以在“防御设置”中按照 `起始IP|结束IP|地址` 格式上传自定义 IP 段库。
+> **Q: 为什么注册后收不到激活邮件？**
+> A: 请在“SMTP 邮件设置”中发送测试邮件。QQ/网易等邮箱需使用“授权码”。
 
 ---
-**License**: GPLv2 | **Repository**: [Link](https://github.com/yourusername/security-suite)
+**License**: [GPLv2](https://github.com/guoshh1978/Site-Behavior-Auditor/blob/main/LICENSE) | **GitHub**: [guoshh1978/Site-Behavior-Auditor](https://github.com/guoshh1978/Site-Behavior-Auditor)
