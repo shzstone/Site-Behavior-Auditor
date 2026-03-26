@@ -1090,20 +1090,48 @@ function sba_audit_render_dashboard() {
 			display: block;
 			margin-top: 5px;
 		}
-		/* 手机端优化：保留横向滚动，调整列宽 */
+		/* ========== 手机端优化 ========== */
 		@media (max-width: 768px) {
-			.sba-table {
-				min-width: 700px;
+			.sba-card .sba-table {
+				min-width: 680px;
+				table-layout: auto;
 			}
-			.col-time { width: 65px; }
-			.col-ip   { width: 160px; }
-			.col-geo  { width: 140px; }
-			.col-pv   { width: 55px; }
-			.sba-table td:nth-child(4) { width: 55px; }
-			.sba-table th, .sba-table td {
+			.sba-card .sba-table th,
+			.sba-card .sba-table td {
 				font-size: 12px;
-				padding: 8px 5px;
+				padding: 8px 6px;
+				white-space: normal;
+				word-break: break-word;
 			}
+			.sba-grid .sba-card:first-child .sba-table {
+				table-layout: fixed;
+				min-width: 500px;
+			}
+			.sba-grid .sba-card:first-child .sba-table th,
+			.sba-grid .sba-card:first-child .sba-table td {
+				width: 25%;
+			}
+			.sba-grid .sba-card:first-child .sba-table th,
+			.sba-grid .sba-card:first-child .sba-table td {
+				padding-left: 4px;
+				padding-right: 4px;
+			}
+			.sba-card:not(:last-of-type) .sba-table th:first-child,
+			.sba-card:not(:last-of-type) .sba-table td:first-child { width: 70px; }
+			.sba-card:not(:last-of-type) .sba-table th:nth-child(2),
+			.sba-card:not(:last-of-type) .sba-table td:nth-child(2) { width: 170px; }
+			.sba-card:not(:last-of-type) .sba-table th:nth-child(3),
+			.sba-card:not(:last-of-type) .sba-table td:nth-child(3) { width: 140px; }
+			.sba-card:not(:last-of-type) .sba-table th:nth-child(4),
+			.sba-card:not(:last-of-type) .sba-table td:nth-child(4) { width: auto; }
+			.sba-card:not(:last-of-type) .sba-table th:last-child,
+			.sba-card:not(:last-of-type) .sba-table td:last-child { width: 60px; }
+			.sba-card:last-of-type .sba-table th:first-child,
+			.sba-card:last-of-type .sba-table td:first-child { width: 90px; }
+			.sba-card:last-of-type .sba-table th:nth-child(2),
+			.sba-card:last-of-type .sba-table td:nth-child(2) { width: 180px; }
+			.sba-card:last-of-type .sba-table th:nth-child(3),
+			.sba-card:last-of-type .sba-table td:nth-child(3) { width: auto; }
 		}
 	</style>
     <div class="wrap sba-wrap">
