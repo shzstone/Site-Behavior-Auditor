@@ -1090,6 +1090,21 @@ function sba_audit_render_dashboard() {
 			display: block;
 			margin-top: 5px;
 		}
+		/* 手机端优化：保留横向滚动，调整列宽 */
+		@media (max-width: 768px) {
+			.sba-table {
+				min-width: 700px;
+			}
+			.col-time { width: 65px; }
+			.col-ip   { width: 160px; }
+			.col-geo  { width: 140px; }
+			.col-pv   { width: 55px; }
+			.sba-table td:nth-child(4) { width: 55px; }
+			.sba-table th, .sba-table td {
+				font-size: 12px;
+				padding: 8px 5px;
+			}
+		}
 	</style>
     <div class="wrap sba-wrap">
         <h2>🚀 SBA 站点行为监控 v1.0</h2>
