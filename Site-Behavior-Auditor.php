@@ -168,6 +168,12 @@ add_action( 'init', function() {
 
     // Gate 钥匙（支持 URL 一次性入口 + 会话令牌）
     $stored_slug = sba_audit_get_opt( 'login_slug', '' );
+	$internal_params = ['interim-login', 'auth-check', 'wp_scrape_key', 'wp_scrape_nonce'];
+	foreach ($internal_params as $param) {
+	    if (isset($_GET[$param])) {
+	        return;
+	    }
+	}
     if ( ! empty( $stored_slug ) && $is_login_page && empty( $current_action ) ) {
         // 1. 检查 URL 中的 gate 参数（一次性入口）
         if ( isset( $_GET['gate'] ) && ! empty( $_GET['gate'] ) ) {
