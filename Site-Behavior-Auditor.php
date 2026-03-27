@@ -211,21 +211,28 @@ add_action( 'init', function() {
 	// CC 频率限制（仅对非浏览器且未登录的请求进行限制）
 	$limit = (int) sba_audit_get_opt( 'auto_block_limit', 0 );
 	if ( $limit > 0 ) {
-		if ( is_user_logged_in() ) {
-		} else {
-			$ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-			$is_browser = preg_match( '/Mozilla\/|Chrome\/|Firefox\/|Safari\/|Edge\/|Opera\/|MSIE/', $ua );
-			if ( ! $is_browser ) {
-				global $wpdb;
-				$count = $wpdb->get_var( $wpdb->prepare(
-					"SELECT SUM(pv) FROM {$wpdb->prefix}dis_stats WHERE ip = %s AND last_visit > DATE_SUB(NOW(), INTERVAL 1 MINUTE)",
-					$ip
-				) );
-				if ( $count > $limit ) {
-					sba_audit_execute_block( "频率超限 (CC风险)" );
-				}
-			}
-		}
+	    if ( is_user_logged_in() ) {
+	        // 已登录用户不限制
+	    } else {
+	        $ip = sba_combined_get_ip();
+	        // 跳过本地回环地址
+	        if ( $ip === '127.0.0.1' || $ip === '::1' ) {
+	            // 本地访问不限制
+	        } else {
+	            $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+	            $is_browser = preg_match( '/Mozilla\/|Chrome\/|Firefox\/|Safari\/|Edge\/|Opera\/|MSIE/', $ua );
+	            if ( ! $is_browser ) {
+	                global $wpdb;
+	                $count = $wpdb->get_var( $wpdb->prepare(
+	                    "SELECT SUM(pv) FROM {$wpdb->prefix}dis_stats WHERE ip = %s AND last_visit > DATE_SUB(NOW(), INTERVAL 1 MINUTE)",
+	                    $ip
+	                ) );
+	                if ( $count > $limit ) {
+	                    sba_audit_execute_block( "频率超限 (CC风险)" );
+	                }
+	            }
+	        }
+	    }
 	}
 
     // 写入访问统计
