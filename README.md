@@ -48,13 +48,13 @@
 <table border="0" cellpadding="0" cellspacing="0">
   <tr>
     <td valign="top">
-      <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" alt="注册" style="width: 15%;">
+      <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" alt="注册" style="width: 15%; height: auto;">
     </td>
     <td valign="top">
-      <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" alt="登录" style="width: 15%;">
+      <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" alt="登录" style="width: 15%; height: auto;">
     </td>
     <td valign="top">
-      <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" alt="忘记密码" style="width: 15%;">
+      <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" alt="忘记密码" style="width: 15%; height: auto;">
     </td>
   </tr>
 </table>
