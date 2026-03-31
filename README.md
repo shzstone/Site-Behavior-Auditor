@@ -35,7 +35,9 @@
 *   **阶梯限流 (Tiered Rate Limit)**：针对 `feed`、`rest_route`、`?m=` 等高频采集路径执行更严苛的 CC 限制（默认阈值的 1/3）。
 *   **Cookie 身份校验**：自动识别真实浏览器指纹，对无法维持会话的恶意采集脚本进行强力降速。
 *   **诱饵陷阱 (Honeypot)**：页面底部自动布设动态隐藏诱饵，脚本一旦触碰即刻触发“死路”，封禁该 IP。
-<img width="400" height="300" alt="image" src="https://github.com/user-attachments/assets/f15a3ed2-5896-4910-b98e-05bc863a0978" />
+<div style="text-align: left;">
+  <img src="https://github.com/user-attachments/assets/f15a3ed2-5896-4910-b98e-05bc863a0978" alt="防御设置" width="50%">
+</div>
 
 
 ### 3. 🔐 iOS 风格登录盒 (Login Box)
@@ -43,11 +45,19 @@
 *   **去 Session 化**：彻底抛弃 `session_start()`，采用 WP Transient API，完美兼容 Redis/Memcached 环境，用户登录永不掉线。
 *   **Gate 钥匙保护**：支持隐藏后端登录地址，只有持有特定“钥匙”的 URL 才能开启入口。
 
-<div style="display: flex; justify-content: flex-start; align-items: flex-start;">
-  <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" alt="注册" style="width: 15%; display: block;">
-  <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" alt="登录" style="width: 15%; display: block;">
-  <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" alt="忘记密码" style="width: 15%; display: block;">
-</div>
+<table border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <td valign="top">
+      <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" alt="注册" style="width: 15%;">
+    </td>
+    <td valign="top">
+      <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" alt="登录" style="width: 15%;">
+    </td>
+    <td valign="top">
+      <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" alt="忘记密码" style="width: 15%;">
+    </td>
+  </tr>
+</table>
 
 
 
