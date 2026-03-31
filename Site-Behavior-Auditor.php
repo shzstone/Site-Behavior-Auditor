@@ -1,21 +1,45 @@
 <?php
 /**
  * Plugin Name: 综合安全套件 (Site Behavior Auditor + Login Box + SMTP)
- * Description: 集成站点全行为审计、iOS风格登录/注册/忘记密码面板（简码: sba_login_box）和SMTP邮件配置。IP归属地使用 ip2region xdb 内存查询（支持 IPv4/IPv6），分片上传库文件。
- * Version: 2.0
+ * Description: 集成站点全行为审计、iOS风格登录/注册/忘记密码面板（简码: sba_login_box）和SMTP邮件配置。IP归属地使用 ip2region xdb 内存查询（支持 IPv4/IPv6），分片上传库文件，并提供高级爬虫防御（阶梯限制、Cookie校验、诱饵陷阱）。
+ * Version: 2.1.6
  * Author: Stone
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 /* ================= 常量定义 ================= */
-define( 'SBA_VERSION', '2.0' );
+define( 'SBA_VERSION', '2.1.6' );
 define( 'SBA_IP_DATA_DIR', WP_CONTENT_DIR . '/uploads/sba_ip_data/' );
 define( 'SBA_IP_V4_FILE', SBA_IP_DATA_DIR . 'ip2region_v4.xdb' );
 define( 'SBA_IP_V6_FILE', SBA_IP_DATA_DIR . 'ip2region_v6.xdb' );
-define( 'SBA_CHUNK_SIZE_INITIAL', 2 * 1024 * 1024 ); // 2MB 初始分片
-define( 'SBA_MIN_CHUNK_SIZE', 512 * 1024 );          // 最小 512KB
-define( 'SBA_MAX_CHUNK_SIZE', 10 * 1024 * 1024 );    // 最大 10MB
+define( 'SBA_CHUNK_SIZE_INITIAL', 2 * 1024 * 1024 );
+define( 'SBA_MIN_CHUNK_SIZE', 512 * 1024 );
+define( 'SBA_MAX_CHUNK_SIZE', 10 * 1024 * 1024 );
+
+/* ================= 检测官方类库 ================= */
+$sba_official_lib_path = plugin_dir_path( __FILE__ ) . 'lib/ip2region/xdb/Searcher.class.php';
+if ( file_exists( $sba_official_lib_path ) ) {
+    require_once $sba_official_lib_path;
+    define( 'SBA_USE_OFFICIAL', true );
+} else {
+    define( 'SBA_USE_OFFICIAL', false );
+}
+
+/* ================= 后台提醒：官方类库缺失 ================= */
+add_action( 'admin_notices', 'sba_official_lib_missing_notice' );
+function sba_official_lib_missing_notice() {
+    if ( ! defined( 'SBA_USE_OFFICIAL' ) || SBA_USE_OFFICIAL ) {
+        return;
+    }
+    $screen = get_current_screen();
+    if ( $screen && strpos( $screen->id, 'sba_' ) === false && strpos( $screen->id, 'toplevel_page_sba_audit' ) === false ) {
+        return;
+    }
+    echo '<div class="notice notice-warning is-dismissible"><p>';
+    echo '⚠️ <strong>SBA 安全套件</strong>：未检测到官方 ip2region 类库，已自动降级为内置简化版（仅支持 IPv4 查询）。如需完整 IPv6 支持，请将官方类库放置于 <code>' . esc_html( plugin_dir_path( __FILE__ ) . 'lib/ip2region/xdb/Searcher.class.php' ) . '</code>。';
+    echo '</p></div>';
+}
 
 /* ================= 创建目录 ================= */
 register_activation_hook( __FILE__, 'sba_create_dirs' );
@@ -23,7 +47,6 @@ function sba_create_dirs() {
     if ( ! file_exists( SBA_IP_DATA_DIR ) ) {
         wp_mkdir_p( SBA_IP_DATA_DIR );
     }
-    // 确保 .htaccess 禁止直接访问
     $htaccess = SBA_IP_DATA_DIR . '.htaccess';
     if ( ! file_exists( $htaccess ) ) {
         file_put_contents( $htaccess, "Deny from all\n" );
@@ -36,7 +59,6 @@ function sba_combined_activate() {
     global $wpdb;
     $charset_collate = $wpdb->get_charset_collate();
 
-    // 审计统计表
     $sql[] = "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}dis_stats (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
         ip VARCHAR(45),
@@ -49,7 +71,6 @@ function sba_combined_activate() {
         INDEX idx_lookup (visit_date, last_visit DESC)
     ) $charset_collate;";
 
-    // 拦截日志表
     $sql[] = "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}sba_blocked_log (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
         ip VARCHAR(45),
@@ -58,7 +79,6 @@ function sba_combined_activate() {
         block_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) $charset_collate;";
 
-    // 登录失败记录表
     $sql[] = "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}sba_login_failures (
         id bigint(20) NOT NULL AUTO_INCREMENT,
         ip varchar(45) NOT NULL,
@@ -76,31 +96,50 @@ function sba_combined_activate() {
         dbDelta( $s );
     }
 
-    // 删除旧版 IP 库表（如果存在）
-    $old_ip_table = $wpdb->prefix . 'sba_ip_data';
-    $wpdb->query( "DROP TABLE IF EXISTS $old_ip_table" );
+    $installed_version = get_option( 'sba_version', '0' );
+    if ( version_compare( $installed_version, '2.0', '<' ) ) {
+        $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}sba_ip_data" );
+        delete_option( 'sba_geo_v1' );
+        update_option( 'sba_version', SBA_VERSION );
+    }
 
-    // 删除旧版缓存选项
-    delete_option( 'sba_geo_v1' );
-
-    // 安排每日清理任务
     if ( ! wp_next_scheduled( 'sba_daily_cleanup' ) ) {
         wp_schedule_event( time(), 'daily', 'sba_daily_cleanup' );
     }
 
-    // 更新版本号
-    update_option( 'sba_version', SBA_VERSION );
+    $defaults = [
+        'auto_block_limit'      => '60',
+        'login_slug'            => '',
+        'evil_paths'            => '',
+        'block_target_url'      => '',
+        'user_whitelist'        => '',
+        'ip_whitelist'          => '',
+        'scraper_paths'         => 'feed=|rest_route=|[\?&]m=|\?p=',
+        'enable_cookie_check'   => 1,
+    ];
+    $current = get_option( 'sba_settings' );
+    if ( empty( $current ) ) {
+        update_option( 'sba_settings', $defaults );
+    } else {
+        $updated = false;
+        foreach ( $defaults as $key => $val ) {
+            if ( ! isset( $current[ $key ] ) ) {
+                $current[ $key ] = $val;
+                $updated = true;
+            }
+        }
+        if ( $updated ) {
+            update_option( 'sba_settings', $current );
+        }
+    }
 }
 
 /* ================= 每日清理 ================= */
 add_action( 'sba_daily_cleanup', 'sba_cleanup_old_data' );
 function sba_cleanup_old_data() {
     global $wpdb;
-    // 保留最近30天的访问统计
     $wpdb->query( "DELETE FROM {$wpdb->prefix}dis_stats WHERE visit_date < DATE_SUB(NOW(), INTERVAL 30 DAY)" );
-    // 保留最近7天的拦截日志
     $wpdb->query( "DELETE FROM {$wpdb->prefix}sba_blocked_log WHERE block_time < DATE_SUB(NOW(), INTERVAL 7 DAY)" );
-    // 清理过期的登录失败记录（超过30天未活动）
     $wpdb->query( "DELETE FROM {$wpdb->prefix}sba_login_failures WHERE last_failed_time < DATE_SUB(NOW(), INTERVAL 30 DAY)" );
 }
 
@@ -115,14 +154,70 @@ function sba_audit_get_opt( $k, $d = '' ) {
     return ( isset( $o[ $k ] ) && $o[ $k ] !== '' ) ? $o[ $k ] : $d;
 }
 
-/* ================= 引入 ip2region 官方 PHP 客户端 ================= */
-// 官方类库路径（请将 Searcher.class.php 放在插件目录下的 lib/ip2region/xdb/ 中）
-require_once plugin_dir_path( __FILE__ ) . 'lib/ip2region/xdb/Searcher.class.php';
-use ip2region\xdb\Searcher;
-use ip2region\xdb\Util;
-use ip2region\xdb\IPv4;
-use ip2region\xdb\IPv6;
+/* ================= 内置降级 IP 查询类（简化版，仅 IPv4） ================= */
+if ( ! class_exists( 'SBA_Fallback_XdbSearcher' ) ) {
+    class SBA_Fallback_XdbSearcher
+    {
+        const HeaderInfoLength = 256;
+        const VectorIndexRows = 256;
+        const VectorIndexCols = 256;
+        const VectorIndexSize = 8;
+        const SegmentIndexSize = 14;
 
+        private $buffer = null;
+        private $vectorIndex = null;
+
+        public static function loadContentFromFile( $xdbPath ) {
+            $content = file_get_contents( $xdbPath );
+            return $content === false ? null : $content;
+        }
+
+        public static function newWithBuffer( $cBuff ) {
+            $searcher = new self();
+            $searcher->buffer = $cBuff;
+            $searcher->vectorIndex = substr( $cBuff, self::HeaderInfoLength, self::VectorIndexRows * self::VectorIndexCols * self::VectorIndexSize );
+            return $searcher;
+        }
+
+        public function search( $ip ) {
+            if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) === false ) {
+                return null;
+            }
+            $ipNum = ip2long( $ip );
+            if ( $ipNum === false ) return null;
+            $ipNum = sprintf( '%u', $ipNum );
+
+            $il0 = ( $ipNum >> 24 ) & 0xFF;
+            $il1 = ( $ipNum >> 16 ) & 0xFF;
+            $idx = $il0 * self::VectorIndexCols * self::VectorIndexSize + $il1 * self::VectorIndexSize;
+            $sPtr = unpack( 'V', substr( $this->vectorIndex, $idx, 4 ) )[1];
+            $ePtr = unpack( 'V', substr( $this->vectorIndex, $idx + 4, 4 ) )[1];
+
+            $l = 0;
+            $h = ( $ePtr - $sPtr ) / self::SegmentIndexSize;
+            while ( $l <= $h ) {
+                $m = ( $l + $h ) >> 1;
+                $p = $sPtr + $m * self::SegmentIndexSize;
+                $startIp = unpack( 'V', substr( $this->buffer, $p, 4 ) )[1];
+                if ( $ipNum < $startIp ) {
+                    $h = $m - 1;
+                } else {
+                    $endIp = unpack( 'V', substr( $this->buffer, $p + 4, 4 ) )[1];
+                    if ( $ipNum > $endIp ) {
+                        $l = $m + 1;
+                    } else {
+                        $dataLen = unpack( 'v', substr( $this->buffer, $p + 8, 2 ) )[1];
+                        $dataPtr = unpack( 'V', substr( $this->buffer, $p + 10, 4 ) )[1];
+                        return substr( $this->buffer, $dataPtr, $dataLen );
+                    }
+                }
+            }
+            return null;
+        }
+    }
+}
+
+/* ================= IP 归属地查询类（统一接口，自动选择官方或降级） ================= */
 class SBA_IP_Searcher {
     private static $instance = null;
     private $searcher_v4 = null;
@@ -141,32 +236,40 @@ class SBA_IP_Searcher {
     }
 
     private function load_searcher() {
-        // 加载 IPv4 库
-        if ( file_exists( SBA_IP_V4_FILE ) && filesize( SBA_IP_V4_FILE ) > 0 ) {
-            try {
-                $cBuff = Util::loadContentFromFile( SBA_IP_V4_FILE );
-                if ( $cBuff ) {
-                    $this->searcher_v4 = Searcher::newWithBuffer( IPv4::default(), $cBuff );
+        if ( SBA_USE_OFFICIAL ) {
+            // 使用官方类库（支持 IPv4 和 IPv6）
+            if ( file_exists( SBA_IP_V4_FILE ) && filesize( SBA_IP_V4_FILE ) > 0 ) {
+                try {
+                    $cBuff = \ip2region\xdb\Util::loadContentFromFile( SBA_IP_V4_FILE );
+                    if ( $cBuff ) {
+                        $this->searcher_v4 = \ip2region\xdb\Searcher::newWithBuffer( \ip2region\xdb\IPv4::default(), $cBuff );
+                    }
+                } catch ( Exception $e ) {
+                    error_log( "SBA: IPv4 库加载失败: " . $e->getMessage() );
                 }
-            } catch ( Exception $e ) {
-                error_log( "SBA: IPv4 库加载失败: " . $e->getMessage() );
             }
-        }
-        // 加载 IPv6 库
-        if ( file_exists( SBA_IP_V6_FILE ) && filesize( SBA_IP_V6_FILE ) > 0 ) {
-            try {
-                $cBuff = Util::loadContentFromFile( SBA_IP_V6_FILE );
-                if ( $cBuff ) {
-                    $this->searcher_v6 = Searcher::newWithBuffer( IPv6::default(), $cBuff );
+            if ( file_exists( SBA_IP_V6_FILE ) && filesize( SBA_IP_V6_FILE ) > 0 ) {
+                try {
+                    $cBuff = \ip2region\xdb\Util::loadContentFromFile( SBA_IP_V6_FILE );
+                    if ( $cBuff ) {
+                        $this->searcher_v6 = \ip2region\xdb\Searcher::newWithBuffer( \ip2region\xdb\IPv6::default(), $cBuff );
+                    }
+                } catch ( Exception $e ) {
+                    error_log( "SBA: IPv6 库加载失败: " . $e->getMessage() );
                 }
-            } catch ( Exception $e ) {
-                error_log( "SBA: IPv6 库加载失败: " . $e->getMessage() );
+            }
+        } else {
+            // 降级：使用内置简化版（仅 IPv4）
+            if ( file_exists( SBA_IP_V4_FILE ) && filesize( SBA_IP_V4_FILE ) > 0 ) {
+                $cBuff = SBA_Fallback_XdbSearcher::loadContentFromFile( SBA_IP_V4_FILE );
+                if ( $cBuff ) {
+                    $this->searcher_v4 = SBA_Fallback_XdbSearcher::newWithBuffer( $cBuff );
+                }
             }
         }
     }
 
     public function search( $ip ) {
-        // 请求内缓存
         if ( isset( self::$ip_cache[ $ip ] ) ) {
             return self::$ip_cache[ $ip ];
         }
@@ -186,7 +289,7 @@ class SBA_IP_Searcher {
                 if ( $region !== null && $region !== '' ) {
                     $result = $this->format_region( $region );
                 } elseif ( $is_v6 && !$this->searcher_v6 ) {
-                    $result = 'IPv6库未上传或无效';
+                    $result = 'IPv6库未上传或官方类库缺失';
                 }
             }
         } catch ( Exception $e ) {
@@ -207,7 +310,39 @@ class SBA_IP_Searcher {
     }
 }
 
-/* ================= 站点行为审计模块 ================= */
+/* ================= Cookie 校验函数 ================= */
+function sba_set_human_cookie( $ip ) {
+    $cookie_name = 'sba_human';
+    $value = hash_hmac( 'sha256', $ip, wp_salt() );
+    setcookie( $cookie_name, $value, time() + 3600, COOKIEPATH, COOKIE_DOMAIN, false, true );
+}
+
+function sba_has_valid_cookie( $ip ) {
+    $cookie_name = 'sba_human';
+    if ( ! isset( $_COOKIE[ $cookie_name ] ) ) {
+        return false;
+    }
+    $expected = hash_hmac( 'sha256', $ip, wp_salt() );
+    return hash_equals( $expected, $_COOKIE[ $cookie_name ] );
+}
+
+/* ================= CC 频率限制（使用 Transient） ================= */
+function sba_check_cc_limit( $ip, $limit ) {
+    if ( $limit <= 0 ) return false;
+    $key = 'sba_cc_' . $ip;
+    $count = get_transient( $key );
+    if ( $count === false ) {
+        set_transient( $key, 1, 60 );
+        return false;
+    }
+    if ( $count >= $limit ) {
+        return true;
+    }
+    set_transient( $key, $count + 1, 60 );
+    return false;
+}
+
+/* ================= 拦截执行 ================= */
 function sba_audit_execute_block( $reason ) {
     if ( get_current_user_id() === 1 ) return;
 
@@ -234,30 +369,7 @@ function sba_audit_execute_block( $reason ) {
     wp_die( "🛡️ SBA 系统拦截：$reason", "Security Block", 403 );
 }
 
-// 屏蔽 REST API 用户枚举
-add_filter( 'rest_endpoints', function( $endpoints ) {
-    if ( isset( $endpoints['/wp/v2/users'] ) ) unset( $endpoints['/wp/v2/users'] );
-    if ( isset( $endpoints['/wp/v2/users/(?P<id>[\d]+)'] ) ) unset( $endpoints['/wp/v2/users/(?P<id>[\d]+)'] );
-    return $endpoints;
-} );
-
-// CC 频率限制（使用 Transient）
-function sba_check_cc_limit( $ip, $limit ) {
-    if ( $limit <= 0 ) return false;
-    $key = 'sba_cc_' . $ip;
-    $count = get_transient( $key );
-    if ( $count === false ) {
-        set_transient( $key, 1, 60 );
-        return false;
-    }
-    if ( $count >= $limit ) {
-        return true;
-    }
-    set_transient( $key, $count + 1, 60 );
-    return false;
-}
-
-// 主拦截逻辑
+/* ================= 主拦截逻辑（包含三层防御） ================= */
 add_action( 'init', function() {
     if ( is_admin() ) return;
 
@@ -269,6 +381,23 @@ add_action( 'init', function() {
     // 跳过登录简码的 AJAX 请求
     if ( defined( 'DOING_AJAX' ) && DOING_AJAX && isset( $_POST['action'] ) && strpos( $_POST['action'], 'sba_ios_' ) === 0 ) {
         return;
+    }
+
+    // ========== 诱饵陷阱检测（最高优先级） ==========
+    foreach ( $_GET as $key => $val ) {
+        if ( strpos( $key, 'sba_trap_' ) === 0 ) {
+            $trap_key = $key;
+            if ( get_transient( 'sba_trap_' . $trap_key ) ) {
+                $ip = sba_combined_get_ip();
+                // 快速累加失败次数至封禁阈值
+                for ( $i = 0; $i < 6; $i++ ) {
+                    sba_ios_record_failure( $ip, false );
+                }
+                sba_audit_execute_block( '蜜罐陷阱触发' );
+            }
+            delete_transient( 'sba_trap_' . $trap_key );
+            break;
+        }
     }
 
     $ip = sba_combined_get_ip();
@@ -303,7 +432,7 @@ add_action( 'init', function() {
         if ( ! empty( $path ) && strpos( $uri, $path ) !== false ) sba_audit_execute_block( "非法路径探测: $path" );
     }
 
-    // Gate 钥匙（使用 Transient 替代 Session）
+    // Gate 钥匙（使用 Transient）
     $stored_slug = sba_audit_get_opt( 'login_slug', '' );
     $internal_params = ['interim-login', 'auth-check', 'wp_scrape_key', 'wp_scrape_nonce'];
     foreach ($internal_params as $param) {
@@ -312,15 +441,12 @@ add_action( 'init', function() {
         }
     }
     if ( ! empty( $stored_slug ) && $is_login_page && empty( $current_action ) ) {
-        // 1. 检查 URL 中的 gate 参数
         if ( isset( $_GET['gate'] ) && ! empty( $_GET['gate'] ) ) {
             $provided_gate = $_GET['gate'];
             $salt_fixed = defined( 'NONCE_SALT' ) ? NONCE_SALT : 'sba_fallback_salt';
             $expected_token_fixed = hash_hmac( 'sha256', $stored_slug, $salt_fixed );
             $provided_token_fixed = hash_hmac( 'sha256', $provided_gate, $salt_fixed );
-
             if ( hash_equals( $expected_token_fixed, $provided_token_fixed ) ) {
-                // 生成临时令牌，存入 Transient
                 $token = wp_generate_password( 20, false );
                 set_transient( 'sba_gate_token_' . $ip, $token, 1800 );
                 $redirect_url = remove_query_arg( 'gate' );
@@ -330,16 +456,12 @@ add_action( 'init', function() {
                 sba_audit_execute_block( "Gate 钥匙错误或已失效" );
             }
         }
-
-        // 2. 页面加载时检查令牌是否存在
         if ( $_SERVER['REQUEST_METHOD'] !== 'POST' ) {
             if ( ! get_transient( 'sba_gate_token_' . $ip ) ) {
                 sba_audit_execute_block( "Gate 钥匙错误或已失效" );
             }
             return;
         }
-
-        // 3. POST 请求验证隐藏字段
         $stored_token = get_transient( 'sba_gate_token_' . $ip );
         if ( ! $stored_token ) {
             $stored_token = wp_generate_password( 20, false );
@@ -352,23 +474,27 @@ add_action( 'init', function() {
         }
     }
 
-    // CC 频率限制（仅对非浏览器且未登录的请求进行限制）
+    // ========== 三层防御：阶梯限制 + Cookie 校验 ==========
     $limit = (int) sba_audit_get_opt( 'auto_block_limit', 0 );
-    if ( $limit > 0 ) {
-        if ( is_user_logged_in() ) {
-            // 已登录用户不限制
-        } else {
-            $ip = sba_combined_get_ip();
-            if ( $ip === '127.0.0.1' || $ip === '::1' ) {
-                // 本地不限制
-            } else {
-                $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-                $is_browser = preg_match( '/Mozilla\/|Chrome\/|Firefox\/|Safari\/|Edge\/|Opera\/|MSIE/', $ua );
-                if ( ! $is_browser ) {
-                    if ( sba_check_cc_limit( $ip, $limit ) ) {
-                        sba_audit_execute_block( "频率超限 (CC风险)" );
-                    }
-                }
+    if ( $limit > 0 && ! is_user_logged_in() ) {
+        if ( ! ( $ip === '127.0.0.1' || $ip === '::1' ) ) {
+            $is_browser = preg_match( '/Mozilla\/|Chrome\/|Firefox\/|Safari\/|Edge\/|Opera\/|MSIE/', $ua );
+            $scraper_paths = sba_audit_get_opt( 'scraper_paths', 'feed=|rest_route=|[\?&]m=|\?p=' );
+            $is_scraper_path = preg_match( '/' . str_replace( '/', '\/', $scraper_paths ) . '/i', $_SERVER['REQUEST_URI'] );
+            $current_limit = $is_scraper_path ? max( 5, floor( $limit / 3 ) ) : $limit;
+
+            $cookie_check_enabled = (bool) sba_audit_get_opt( 'enable_cookie_check', 1 );
+            if ( $cookie_check_enabled && ! sba_has_valid_cookie( $ip ) && ! $is_browser ) {
+                $current_limit = max( 5, floor( $current_limit / 2 ) );
+            }
+
+            if ( sba_check_cc_limit( $ip, $current_limit ) ) {
+                $reason = $is_scraper_path ? "采集器高频抓取" : "频率超限 (CC风险)";
+                sba_audit_execute_block( $reason );
+            }
+
+            if ( $cookie_check_enabled && ! sba_has_valid_cookie( $ip ) && $_SERVER['REQUEST_METHOD'] === 'GET' ) {
+                sba_set_human_cookie( $ip );
             }
         }
     }
@@ -386,7 +512,18 @@ add_action( 'init', function() {
     ) );
 } );
 
-// 强制重定向作者存档页面
+/* ================= 诱饵陷阱输出 ================= */
+add_action( 'wp_footer', 'sba_output_honeypot_link' );
+function sba_output_honeypot_link() {
+    if ( is_admin() || is_user_logged_in() ) {
+        return;
+    }
+    $trap_param = 'sba_trap_' . substr( md5( wp_salt() . time() ), 0, 8 );
+    set_transient( 'sba_trap_' . $trap_param, 1, 3600 );
+    echo '<a href="' . home_url( '/?' . $trap_param . '=1' ) . '" style="display:none; visibility:hidden;" rel="nofollow">.</a>';
+}
+
+/* ================= 其余原有功能（作者重定向、登录表单令牌、归属地AJAX、轨迹、拦截日志等） ================= */
 add_action( 'template_redirect', function() {
     if ( is_author() || isset( $_GET['author'] ) ) {
         wp_redirect( home_url(), 301 );
@@ -394,7 +531,6 @@ add_action( 'template_redirect', function() {
     }
 } );
 
-// 登录表单注入隐藏令牌
 add_action( 'login_form', function() {
     $stored_slug = sba_audit_get_opt( 'login_slug', '' );
     if ( ! empty( $stored_slug ) ) {
@@ -407,7 +543,6 @@ add_action( 'login_form', function() {
     }
 } );
 
-// 登录/退出时销毁令牌
 add_action( 'wp_login', function() {
     $ip = sba_combined_get_ip();
     delete_transient( 'sba_gate_token_' . $ip );
@@ -465,17 +600,12 @@ function sba_audit_ajax_blocked_logs() {
     $p = intval( $_POST['page'] ?? 1 );
     $per = 15;
     $off = ( $p - 1 ) * $per;
-    
     $total = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}sba_blocked_log WHERE DATE(block_time) = CURDATE()" );
     $pages = ceil( $total / $per );
-    
     $rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT * FROM {$wpdb->prefix}sba_blocked_log 
-         WHERE DATE(block_time) = CURDATE() 
-         ORDER BY block_time DESC LIMIT %d, %d",
+        "SELECT * FROM {$wpdb->prefix}sba_blocked_log WHERE DATE(block_time) = CURDATE() ORDER BY block_time DESC LIMIT %d, %d",
         $off, $per
     ) );
-    
     $html = '';
     if ( $rows ) {
         foreach ( $rows as $b ) {
@@ -488,7 +618,6 @@ function sba_audit_ajax_blocked_logs() {
     } else {
         $html = '<tr><td colspan="3">暂无拦截记录</td></tr>';
     }
-    
     wp_send_json_success( [ 'html' => $html, 'pages' => $pages, 'total' => $total ] );
 }
 
@@ -560,7 +689,6 @@ function sba_ios_check_ban_and_captcha( $ip, $action = '' ) {
     $row = $wpdb->get_row( $wpdb->prepare( "SELECT failed_count, banned_until FROM {$wpdb->prefix}sba_login_failures WHERE ip = %s", $ip ) );
     if ( ! $row ) return [ 'banned' => false, 'need_captcha' => false ];
     if ( $row->banned_until && strtotime( $row->banned_until ) > time() ) return [ 'banned' => true, 'need_captcha' => false ];
-
     $need_captcha = ( $row->failed_count >= 3 && $row->failed_count < 6 );
     if ( in_array( $action, [ 'register', 'forgot' ] ) ) {
         $need_captcha = true;
@@ -577,10 +705,8 @@ add_shortcode( 'sba_login_box', 'sba_ios_login_shortcode' );
 function sba_ios_login_shortcode() {
     if ( is_user_logged_in() ) {
         $user = wp_get_current_user();
-        $logout_url = wp_logout_url( home_url() );
-        return sba_ios_logged_in_html( $user, $logout_url );
+        return sba_ios_logged_in_html( $user, wp_logout_url( home_url() ) );
     }
-
     $nonce = wp_create_nonce( 'sba_ios_action' );
     ob_start();
     ?>
@@ -650,7 +776,6 @@ function sba_ios_login_shortcode() {
             </div>
         </div>
     </div>
-
     <style>
         #sba-ios-login-container { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 380px; margin: 30px auto; padding: 0 16px; }
         .sba-ios-card { background: #ffffff; border-radius: 20px; box-shadow: 0 8px 28px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.02); overflow: hidden; }
@@ -892,23 +1017,18 @@ JS;
         wp_add_inline_script( 'sba-ios-login-js', $script );
         wp_enqueue_script( 'sba-ios-login-js' );
     }
-
     return $html;
 }
 
-// 处理邮箱激活
 add_action( 'init', function() {
     if ( isset( $_GET['action'] ) && $_GET['action'] === 'sba_activate' ) {
         $user_id = intval( $_GET['user'] );
         $key     = sanitize_text_field( $_GET['key'] );
-
         $stored_key = get_user_meta( $user_id, '_activation_key', true );
         $activated  = get_user_meta( $user_id, '_activated', true );
-
         if ( ! $stored_key || $activated === '1' ) {
             wp_die( '激活链接无效或已使用。', '激活失败', array( 'response' => 400 ) );
         }
-
         if ( $stored_key === $key ) {
             update_user_meta( $user_id, '_activated', '1' );
             delete_user_meta( $user_id, '_activation_key' );
@@ -940,17 +1060,13 @@ function sba_ios_logged_in_html( $user, $logout_url ) {
     return ob_get_clean();
 }
 
-// AJAX 获取验证码（使用 Transient）
+// AJAX 验证码
 add_action( 'wp_ajax_nopriv_sba_ios_get_captcha', 'sba_ios_ajax_get_captcha' );
 function sba_ios_ajax_get_captcha() {
     check_ajax_referer( 'sba_ios_action', '_ajax_nonce' );
     $ip = sba_combined_get_ip();
     $force = isset($_POST['force']) ? (int)$_POST['force'] : 0;
-    if ( $force ) {
-        $status = [ 'banned' => false, 'need_captcha' => true ];
-    } else {
-        $status = sba_ios_check_ban_and_captcha( $ip );
-    }
+    $status = $force ? [ 'banned' => false, 'need_captcha' => true ] : sba_ios_check_ban_and_captcha( $ip );
     if ( $status['banned'] ) wp_send_json_error( [ 'message' => '您已被封禁24小时，请稍后再试。' ] );
     if ( ! $status['need_captcha'] ) wp_send_json_error( [ 'message' => '当前无需验证码' ] );
     $num1 = rand( 1, 9 );
@@ -959,8 +1075,6 @@ function sba_ios_ajax_get_captcha() {
     set_transient( 'sba_captcha_' . $ip, $answer, 300 );
     wp_send_json_success( [ 'question' => "验证码：$num1 + $num2 = ?", 'answer' => $answer ] );
 }
-
-// AJAX 检查是否需要验证码
 add_action( 'wp_ajax_nopriv_sba_ios_check_captcha', 'sba_ios_ajax_check_captcha' );
 function sba_ios_ajax_check_captcha() {
     check_ajax_referer( 'sba_ios_action', '_ajax_nonce' );
@@ -969,8 +1083,6 @@ function sba_ios_ajax_check_captcha() {
     if ( $status['banned'] ) wp_send_json_error( [ 'banned' => true ] );
     wp_send_json_success( [ 'need_captcha' => $status['need_captcha'] ] );
 }
-
-// AJAX 登录处理
 add_action( 'wp_ajax_nopriv_sba_ios_login', 'sba_ios_ajax_login' );
 function sba_ios_ajax_login() {
     check_ajax_referer( 'sba_ios_action', '_ajax_nonce' );
@@ -978,15 +1090,12 @@ function sba_ios_ajax_login() {
     if ( ! sba_ios_check_rate_limit( $ip, 10 ) ) wp_send_json_error( [ 'message' => '操作过于频繁，请稍后再试。' ] );
     $status = sba_ios_check_ban_and_captcha( $ip );
     if ( $status['banned'] ) wp_send_json_error( [ 'message' => '由于多次失败，您的IP已被封禁24小时。' ] );
-
     $username = sanitize_user( $_POST['username'] );
     $password = $_POST['password'];
     $remember = (int) $_POST['remember'];
     $provided_captcha = sanitize_text_field( $_POST['captcha'] );
     $need_captcha = (int) $_POST['need_captcha'];
-
     sleep(2);
-
     if ( $need_captcha ) {
         $stored_answer = get_transient( 'sba_captcha_' . $ip );
         if ( ! $stored_answer || $provided_captcha != $stored_answer ) {
@@ -995,14 +1104,12 @@ function sba_ios_ajax_login() {
         }
         delete_transient( 'sba_captcha_' . $ip );
     }
-
     $creds = [
         'user_login'    => $username,
         'user_password' => $password,
         'remember'      => (bool) $remember,
     ];
     $user = wp_signon( $creds, false );
-
     if ( is_wp_error( $user ) ) {
         $fail_count = sba_ios_record_failure( $ip, false );
         $message = $user->get_error_message();
@@ -1021,8 +1128,6 @@ function sba_ios_ajax_login() {
         wp_send_json_success( [ 'message' => '登录成功' ] );
     }
 }
-
-// AJAX 注册处理
 add_action( 'wp_ajax_nopriv_sba_ios_register', 'sba_ios_ajax_register' );
 function sba_ios_ajax_register() {
     check_ajax_referer( 'sba_ios_action', '_ajax_nonce' );
@@ -1030,13 +1135,11 @@ function sba_ios_ajax_register() {
     if ( ! sba_ios_check_rate_limit( $ip, 10 ) ) wp_send_json_error( [ 'message' => '操作过于频繁，请稍后再试。' ] );
     $status = sba_ios_check_ban_and_captcha( $ip, 'register' );
     if ( $status['banned'] ) wp_send_json_error( [ 'message' => '由于多次失败，您的IP已被封禁24小时。' ] );
-
     $username = sanitize_user( $_POST['username'] );
     $email    = sanitize_email( $_POST['email'] );
     $password = $_POST['password'];
     $provided_captcha = sanitize_text_field( $_POST['captcha'] );
     $need_captcha = (int) $_POST['need_captcha'];
-
     if ( $need_captcha ) {
         $stored_answer = get_transient( 'sba_captcha_' . $ip );
         if ( ! $stored_answer || $provided_captcha != $stored_answer ) {
@@ -1045,7 +1148,6 @@ function sba_ios_ajax_register() {
         }
         delete_transient( 'sba_captcha_' . $ip );
     }
-
     if ( empty( $username ) || empty( $email ) || empty( $password ) ) {
         sba_ios_record_failure( $ip, false );
         wp_send_json_error( [ 'message' => '所有字段都不能为空。' ] );
@@ -1062,17 +1164,14 @@ function sba_ios_ajax_register() {
         sba_ios_record_failure( $ip, false );
         wp_send_json_error( [ 'message' => '邮箱已被注册。' ] );
     }
-
     $user_id = wp_create_user( $username, $password, $email );
     if ( is_wp_error( $user_id ) ) {
         sba_ios_record_failure( $ip, false );
         wp_send_json_error( [ 'message' => $user_id->get_error_message() ] );
     }
-
     $activation_key = wp_generate_password( 20, false );
     update_user_meta( $user_id, '_activation_key', $activation_key );
     update_user_meta( $user_id, '_activated', '0' );
-
     $activation_url = add_query_arg( array(
         'action' => 'sba_activate',
         'user'   => $user_id,
@@ -1081,18 +1180,14 @@ function sba_ios_ajax_register() {
     $subject = '请激活您的账号 - ' . get_bloginfo( 'name' );
     $message = "您好 {$username},\n\n请点击以下链接激活您的账号（链接24小时内有效）：\n{$activation_url}\n\n如果没有注册过，请忽略此邮件。";
     $sent = wp_mail( $email, $subject, $message );
-
     if ( ! $sent ) {
         wp_delete_user( $user_id );
         sba_ios_record_failure( $ip, false );
         wp_send_json_error( [ 'message' => '邮件发送失败，请联系管理员。' ] );
     }
-
     sba_ios_record_failure( $ip, true );
     wp_send_json_success( [ 'message' => '注册成功，请查收激活邮件。' ] );
 }
-
-// AJAX 忘记密码处理
 add_action( 'wp_ajax_nopriv_sba_ios_forgot', 'sba_ios_ajax_forgot' );
 function sba_ios_ajax_forgot() {
     check_ajax_referer( 'sba_ios_action', '_ajax_nonce' );
@@ -1100,11 +1195,9 @@ function sba_ios_ajax_forgot() {
     if ( ! sba_ios_check_rate_limit( $ip, 10 ) ) wp_send_json_error( [ 'message' => '操作过于频繁，请稍后再试。' ] );
     $status = sba_ios_check_ban_and_captcha( $ip, 'forgot' );
     if ( $status['banned'] ) wp_send_json_error( [ 'message' => '由于多次失败，您的IP已被封禁24小时。' ] );
-
     $login_or_email = sanitize_text_field( $_POST['email'] );
     $provided_captcha = sanitize_text_field( $_POST['captcha'] );
     $need_captcha = (int) $_POST['need_captcha'];
-
     if ( $need_captcha ) {
         $stored_answer = get_transient( 'sba_captcha_' . $ip );
         if ( ! $stored_answer || $provided_captcha != $stored_answer ) {
@@ -1113,7 +1206,6 @@ function sba_ios_ajax_forgot() {
         }
         delete_transient( 'sba_captcha_' . $ip );
     }
-
     $user = false;
     if ( is_email( $login_or_email ) ) {
         $user = get_user_by( 'email', $login_or_email );
@@ -1124,18 +1216,15 @@ function sba_ios_ajax_forgot() {
         sba_ios_record_failure( $ip, false );
         wp_send_json_error( [ 'message' => '用户名或邮箱未注册。' ] );
     }
-
     $key = get_password_reset_key( $user );
     if ( is_wp_error( $key ) ) {
         sba_ios_record_failure( $ip, false );
         wp_send_json_error( [ 'message' => '无法生成重置链接，请稍后重试。' ] );
     }
-
     $reset_url = network_site_url( "wp-login.php?action=rp&key=$key&login=" . rawurlencode( $user->user_login ), 'login' );
     $subject = '重置密码';
     $message = "请点击以下链接重置密码（链接24小时内有效）：\n" . $reset_url;
     $sent = wp_mail( $user->user_email, $subject, $message );
-
     if ( $sent ) {
         sba_ios_record_failure( $ip, true );
         wp_send_json_success( [ 'message' => '重置链接已发送至您的邮箱。' ] );
@@ -1145,7 +1234,7 @@ function sba_ios_ajax_forgot() {
     }
 }
 
-/* ================= SMTP 邮件配置模块 ================= */
+/* ================= SMTP 模块 ================= */
 function sba_smtp_activate() {
     $defaults = [
         'smtp_host'      => '',
@@ -1172,6 +1261,48 @@ add_action( 'admin_init', function() {
     register_setting( 'sba_settings_group', 'sba_settings' );
 } );
 
+/* ================= 环境检测面板（显示关键配置） ================= */
+function sba_environment_panel() {
+    $max_upload = ini_get( 'upload_max_filesize' );
+    $post_max = ini_get( 'post_max_size' );
+    $memory_limit = ini_get( 'memory_limit' );
+    $max_execution = ini_get( 'max_execution_time' );
+    $php_version = PHP_VERSION;
+    $curl_enabled = extension_loaded( 'curl' ) ? '✓' : '✗';
+    ?>
+    <div class="sba-card" style="margin-top:20px;">
+        <h3>⚙️ 服务器环境检测</h3>
+        <table class="widefat" style="width: auto;">
+            <tr>
+                <th>PHP 版本</th>
+                <td><?php echo esc_html( $php_version ); ?></td>
+            </tr>
+            <tr>
+                <th>upload_max_filesize</th>
+                <td><?php echo esc_html( $max_upload ); ?></td>
+            </tr>
+            <tr>
+                <th>post_max_size</th>
+                <td><?php echo esc_html( $post_max ); ?></td>
+            </tr>
+            <tr>
+                <th>memory_limit</th>
+                <td><?php echo esc_html( $memory_limit ); ?></td>
+            </tr>
+            <tr>
+                <th>max_execution_time</th>
+                <td><?php echo esc_html( $max_execution ); ?> 秒</td>
+            </tr>
+            <tr>
+                <th>cURL 扩展</th>
+                <td><?php echo $curl_enabled; ?></td>
+            </tr>
+        </table>
+        <p class="description">若需上传大文件（超过 10MB），建议将 <code>upload_max_filesize</code> 和 <code>post_max_size</code> 调至至少 64M。</p>
+    </div>
+    <?php
+}
+
 function sba_audit_render_dashboard() {
     global $wpdb;
     $online = $wpdb->get_var( "SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE last_visit > DATE_SUB(NOW(), INTERVAL 5 MINUTE)" );
@@ -1194,118 +1325,70 @@ function sba_audit_render_dashboard() {
         .sba-grid { display:grid; grid-template-columns: 1fr 1fr; gap:20px; }
         @media (max-width: 1000px) { .sba-grid { grid-template-columns: 1fr; } }
         .sba-scroll-x { width: 100%; overflow-x: auto; border: 1px solid #eee; border-radius:8px; }
-        .sba-table {
-            width: 100%;
-            min-width: 850px;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-        .sba-table th,
-        .sba-table td {
-            text-align: left;
-            padding: 12px 10px;
-            border-bottom: 1px solid #f9f9f9;
-            font-size: 13px;
-            background-color: #fff;
-            color: #333;
-            vertical-align: middle;
-        }
-        .sba-table td code {
-            font-size: inherit;
-            background: none;
-            padding: 0;
-            color: inherit;
-        }
+        .sba-table { width: 100%; min-width: 850px; border-collapse: collapse; table-layout: fixed; }
+        .sba-table th, .sba-table td { text-align: left; padding: 12px 10px; border-bottom: 1px solid #f9f9f9; font-size: 13px; background-color: #fff; color: #333; vertical-align: middle; }
+        .sba-table td code { font-size: inherit; background: none; padding: 0; color: inherit; }
         .col-time { width: 80px; }
         .col-ip { width: 240px; min-width: 200px; max-width: 280px; word-break: keep-all; }
         .col-geo { width: 180px; }
         .col-pv { width: 70px; }
-        .sba-table tbody tr td:first-child,
-        .sba-table thead tr th:first-child {
-            width: 100px;
-        }
-        .sba-table tbody tr td:nth-child(2),
-        .sba-table thead tr th:nth-child(2) {
-            width: 240px;
-            word-break: keep-all;
-        }
-        .sba-cell-wrap {
-            white-space: normal;
-            word-break: break-all;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            line-height: 1.4;
-            font-size: 12px;
-        }
-        .stat-val {
-            font-size: 26px;
-            font-weight: bold;
-            display: block;
-            margin-top: 5px;
-        }
+        .sba-table tbody tr td:first-child, .sba-table thead tr th:first-child { width: 100px; }
+        .sba-table tbody tr td:nth-child(2), .sba-table thead tr th:nth-child(2) { width: 240px; word-break: keep-all; }
+        .sba-cell-wrap { white-space: normal; word-break: break-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; font-size: 12px; }
+        .stat-val { font-size: 26px; font-weight: bold; display: block; margin-top: 5px; }
         @media (max-width: 768px) {
-            .sba-card .sba-table {
-                min-width: 680px;
-                table-layout: auto;
-            }
-            .sba-card .sba-table th,
-            .sba-card .sba-table td {
-                font-size: 12px;
-                padding: 8px 6px;
-                white-space: normal;
-                word-break: break-word;
-            }
-            .sba-grid .sba-card:first-child .sba-table {
-                table-layout: fixed;
-                min-width: 500px;
-            }
-            .sba-grid .sba-card:first-child .sba-table th,
-            .sba-grid .sba-card:first-child .sba-table td {
-                width: 25%;
-            }
-            .sba-grid .sba-card:first-child .sba-table th,
-            .sba-grid .sba-card:first-child .sba-table td {
-                padding-left: 4px;
-                padding-right: 4px;
-            }
-            .sba-card:not(:last-of-type) .sba-table th:first-child,
-            .sba-card:not(:last-of-type) .sba-table td:first-child { width: 70px; }
-            .sba-card:not(:last-of-type) .sba-table th:nth-child(2),
-            .sba-card:not(:last-of-type) .sba-table td:nth-child(2) { width: 170px; }
-            .sba-card:not(:last-of-type) .sba-table th:nth-child(3),
-            .sba-card:not(:last-of-type) .sba-table td:nth-child(3) { width: 140px; }
-            .sba-card:not(:last-of-type) .sba-table th:nth-child(4),
-            .sba-card:not(:last-of-type) .sba-table td:nth-child(4) { width: auto; }
-            .sba-card:not(:last-of-type) .sba-table th:last-child,
-            .sba-card:not(:last-of-type) .sba-table td:last-child { width: 60px; }
-            .sba-card:last-of-type .sba-table th:first-child,
-            .sba-card:last-of-type .sba-table td:first-child { width: 90px; }
-            .sba-card:last-of-type .sba-table th:nth-child(2),
-            .sba-card:last-of-type .sba-table td:nth-child(2) { width: 180px; }
-            .sba-card:last-of-type .sba-table th:nth-child(3),
-            .sba-card:last-of-type .sba-table td:nth-child(3) { width: auto; }
+            .sba-card .sba-table { min-width: 680px; table-layout: auto; }
+            .sba-card .sba-table th, .sba-card .sba-table td { font-size: 12px; padding: 8px 6px; white-space: normal; word-break: break-word; }
+            .sba-grid .sba-card:first-child .sba-table { table-layout: fixed; min-width: 500px; }
+            .sba-grid .sba-card:first-child .sba-table th, .sba-grid .sba-card:first-child .sba-table td { width: 25%; }
+            .sba-grid .sba-card:first-child .sba-table th, .sba-grid .sba-card:first-child .sba-table td { padding-left: 4px; padding-right: 4px; }
+            .sba-card:not(:last-of-type) .sba-table th:first-child, .sba-card:not(:last-of-type) .sba-table td:first-child { width: 70px; }
+            .sba-card:not(:last-of-type) .sba-table th:nth-child(2), .sba-card:not(:last-of-type) .sba-table td:nth-child(2) { width: 170px; }
+            .sba-card:not(:last-of-type) .sba-table th:nth-child(3), .sba-card:not(:last-of-type) .sba-table td:nth-child(3) { width: 140px; }
+            .sba-card:not(:last-of-type) .sba-table th:nth-child(4), .sba-card:not(:last-of-type) .sba-table td:nth-child(4) { width: auto; }
+            .sba-card:not(:last-of-type) .sba-table th:last-child, .sba-card:not(:last-of-type) .sba-table td:last-child { width: 60px; }
+            .sba-card:last-of-type .sba-table th:first-child, .sba-card:last-of-type .sba-table td:first-child { width: 90px; }
+            .sba-card:last-of-type .sba-table th:nth-child(2), .sba-card:last-of-type .sba-table td:nth-child(2) { width: 180px; }
+            .sba-card:last-of-type .sba-table th:nth-child(3), .sba-card:last-of-type .sba-table td:nth-child(3) { width: auto; }
         }
     </style>
     <div class="wrap sba-wrap">
-        <h2>🚀 SBA 站点行为监控 v2.0</h2>
+        <h2>🚀 SBA 站点行为监控 v<?php echo SBA_VERSION; ?></h2>
         <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap;">
             <div class="sba-card" style="flex:1; border-left:4px solid #46b450;">当前在线: <span class="stat-val" style="color:#46b450;"><?php echo $online ?: 0; ?></span></div>
             <div class="sba-card" style="flex:1; border-left:4px solid #2271b1;">今日 (<?php echo $latest_date; ?>) UV: <span class="stat-val" style="color:#2271b1;"><?php echo $today_stat->uv ?: 0; ?></span></div>
             <div class="sba-card" style="flex:1; border-left:4px solid #4fc3f7;">今日 (<?php echo $latest_date; ?>) PV: <span class="stat-val" style="color:#4fc3f7;"><?php echo $today_stat->pv ?: 0; ?></span></div>
         </div>
-        <div class="sba-grid">
-            <div class="sba-card"><h3>📈 30天访问趋势</h3><div style="height:250px;"><canvas id="sbaChart10"></canvas></div></div>
-            <div class="sba-card"><h3>📊 50天审计详表</h3>
-                <div class="sba-scroll-x" style="height:250px;"><table class="sba-table" style="min-width:400px;">
-                <thead>)<th>日期</th><th>UV (人)</th><th>PV (次)</th><th>深度</th></thead>
-                <tbody><?php for ( $j = 0; $j < 50; $j++ ): $d = date( 'Y-m-d', $latest_ts - ( $j * 86400 ) ); $u = isset( $history_50[ $d ] ) ? $history_50[ $d ]->uv : 0; $p = isset( $history_50[ $d ] ) ? $history_50[ $d ]->pv : 0; ?>
-                 <tr><td><b><?php echo $d; ?></b></td><td><?php echo $u; ?></td><td><?php echo $p; ?></td><td><code><?php echo round( $p / max( 1, $u ), 1 ); ?></code></td></tr>
-                <?php endfor; ?></tbody>
-                </table></div>
-            </div>
-        </div>
+		<div class="sba-grid">
+			<div class="sba-card"><h3>📈 30天访问趋势</h3><div style="height:250px;"><canvas id="sbaChart10"></canvas></div></div>
+			<div class="sba-card"><h3>📊 50天审计详表</h3>
+				<div class="sba-scroll-x" style="height:250px;">
+					<table class="sba-table" style="min-width:400px;">
+						<thead>
+							 <tr>
+								<th>日期</th>
+								<th>UV (人)</th>
+								<th>PV (次)</th>
+								<th>深度</th>
+							</tr>
+						</thead>
+						<tbody>
+						<?php for ( $j = 0; $j < 50; $j++ ): 
+							$d = date( 'Y-m-d', $latest_ts - ( $j * 86400 ) ); 
+							$u = isset( $history_50[ $d ] ) ? $history_50[ $d ]->uv : 0; 
+							$p = isset( $history_50[ $d ] ) ? $history_50[ $d ]->pv : 0; ?>
+							<tr>
+								<td><b><?php echo $d; ?></b></td>
+								<td><?php echo $u; ?></td>
+								<td><?php echo $p; ?></td>
+								<td><code><?php echo round( $p / max( 1, $u ), 1 ); ?></code></td>
+							</tr>
+						<?php endfor; ?>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
         <div class="sba-card">
             <h3>👣 访客轨迹 (<?php echo $latest_date; ?>)</h3>
             <div class="sba-scroll-x"><table class="sba-table">
@@ -1319,27 +1402,13 @@ function sba_audit_render_dashboard() {
         </div>
         <div class="sba-card" style="border-top:3px solid #d63638;">
             <h3>🚫 拦截日志 (<?php echo $latest_date; ?>)</h3>
-            <div class="sba-scroll-x">
-                <table class="sba-table">
-                    <thead>
-                         <tr>
-                            <th width="100">时间</th>
-                            <th width="150">拦截 IP</th>
-                            <th>原因与目标</th>
-                         </tr>
-                    </thead>
-                    <tbody id="blocked-log-body"></tbody>
-                </table>
-            </div>
+            <div class="sba-scroll-x"><table class="sba-table"><thead><tr><th width="100">时间</th><th width="150">拦截 IP</th><th>原因与目标</th></tr></thead><tbody id="blocked-log-body"></tbody></table></div>
             <div style="margin-top:15px; display:flex; justify-content: space-between;">
                 <div>总记录: <b id="blocked-total-rows">0</b></div>
-                <div>
-                    <button id="blocked-prev-page" class="button">上页</button>
-                    第 <b id="blocked-current-page">1</b> / <b id="blocked-total-pages">1</b> 页
-                    <button id="blocked-next-page" class="button">下页</button>
-                </div>
+                <div><button id="blocked-prev-page" class="button">上页</button> 第 <b id="blocked-current-page">1</b> / <b id="blocked-total-pages">1</b> 页 <button id="blocked-next-page" class="button">下页</button></div>
             </div>
         </div>
+        <?php sba_environment_panel(); ?>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -1371,10 +1440,7 @@ function sba_audit_render_dashboard() {
     loadT(1);
     var blockedCurPage = 1, blockedMaxPages = 1;
     function loadBlockedLogs(page) {
-        fetch(ajaxurl, { 
-            method: 'POST', 
-            body: new URLSearchParams({action:'sba_load_blocked_logs', page:page}) 
-        }).then(r => r.json()).then(res => {
+        fetch(ajaxurl, { method: 'POST', body: new URLSearchParams({action:'sba_load_blocked_logs', page:page}) }).then(r => r.json()).then(res => {
             if(res.success) {
                 document.getElementById('blocked-log-body').innerHTML = res.data.html;
                 blockedCurPage = page;
@@ -1396,6 +1462,7 @@ function sba_audit_render_settings() {
     $opts = get_option( 'sba_settings' );
     ?>
     <div class="wrap sba-wrap">
+	    <?php settings_errors(); ?>
         <h1>🛠️ SBA 防御设置</h1>
         <div class="sba-card" style="background:#fffbe6; border-left:5px solid #faad14;">
             <h3>📖 使用说明</h3>
@@ -1403,6 +1470,7 @@ function sba_audit_render_settings() {
             <p>2. <b>Gate 钥匙：</b> 设置后，访问 <code>wp-login.php?gate=钥匙</code> 可开启登录入口（地址栏自动去除参数）。此后登录表单通过隐藏字段提交令牌，退出后令牌失效。</p>
             <p>3. <b>指纹库：</b> 自动识别 <code>sqlmap, curl, wget, python</code> 等 UA 特征并阻断。</p>
             <p>4. <b>归属地：</b> 使用 ip2region xdb 内存查询。请通过下方按钮上传 IPv4 和 IPv6 的 xdb 文件（支持分片上传、断点续传）。</p>
+            <p>5. <b>爬虫防御：</b> 启用阶梯限制和 Cookie 校验可有效识别采集器，蜜罐陷阱触发即封禁。</p>
         </div>
         <form method="post" action="options.php">
             <?php settings_fields( 'sba_settings_group' ); ?>
@@ -1410,36 +1478,20 @@ function sba_audit_render_settings() {
                 <div class="sba-card">
                     <h3>✅ 信任通道</h3>
                     <table class="form-table">
-                         <tr>
-                            <th>用户名白名单</th>
-                            <td><input type="text" name="sba_settings[user_whitelist]" value="<?php echo esc_attr( $opts['user_whitelist'] ?? '' ); ?>" class="regular-text" /><br><small>登录此用户时，系统自动信任，不执行拦截逻辑。</small></td>
-                         </tr>
-                         <tr>
-                            <th>IP 白名单</th>
-                            <td><textarea name="sba_settings[ip_whitelist]" rows="3" style="width:100%"><?php echo esc_textarea( $opts['ip_whitelist'] ?? '' ); ?></textarea><br><small>每行一个 IP。</small></td>
-                         </tr>
-                     </table>
+                         <tr><th>用户名白名单</th><td><input type="text" name="sba_settings[user_whitelist]" value="<?php echo esc_attr( $opts['user_whitelist'] ?? '' ); ?>" class="regular-text" /><br><small>登录此用户时，系统自动信任，不执行拦截逻辑。</small></td></tr>
+                         <tr><th>IP 白名单</th><td><textarea name="sba_settings[ip_whitelist]" rows="3" style="width:100%"><?php echo esc_textarea( $opts['ip_whitelist'] ?? '' ); ?></textarea><br><small>每行一个 IP。</small></td></tr>
+                    </table>
                 </div>
                 <div class="sba-card">
                     <h3>🚫 防御配置</h3>
                     <table class="form-table">
-                         <tr>
-                            <th>CC 封禁阈值</th>
-                            <td><input type="number" name="sba_settings[auto_block_limit]" value="<?php echo esc_attr( $opts['auto_block_limit'] ?? '60' ); ?>" /> 次/分<br><small>单 IP 每分钟请求超过此值自动封禁（0 为关闭）。</small></td>
-                         </tr>
-                         <tr>
-                            <th>Gate 钥匙</th>
-                            <td><input type="text" name="sba_settings[login_slug]" value="<?php echo esc_attr( $opts['login_slug'] ?? '' ); ?>" /><br><small>保护登录入口。访问 <code>wp-login.php?gate=钥匙</code> 开启入口，之后自动隐藏。</small></td>
-                         </tr>
-                         <tr>
-                            <th>追加拦截路径</th>
-                            <td><input type="text" name="sba_settings[evil_paths]" value="<?php echo esc_attr( $opts['evil_paths'] ?? '' ); ?>" style="width:100%" placeholder="/test.php, /backup.zip" /><br><small>逗号分隔。内置已含 .env/.git 等，此处用于扩充。</small></td>
-                         </tr>
-                         <tr>
-                            <th>拦截重定向 URL</th>
-                            <td><input type="text" name="sba_settings[block_target_url]" value="<?php echo esc_attr( $opts['block_target_url'] ?? '' ); ?>" style="width:100%" placeholder="https://127.0.0.1" /><br><small>拦截后将对方跳转至此页面（留空则显示默认 403 页面）。</small></td>
-                         </tr>
-                     </table>
+                         <tr><th>CC 封禁阈值</th><td><input type="number" name="sba_settings[auto_block_limit]" value="<?php echo esc_attr( $opts['auto_block_limit'] ?? '60' ); ?>" /> 次/分<br><small>单 IP 每分钟请求超过此值自动封禁（0 为关闭）。</small></td></tr>
+                         <tr><th>Gate 钥匙</th><td><input type="text" name="sba_settings[login_slug]" value="<?php echo esc_attr( $opts['login_slug'] ?? '' ); ?>" /><br><small>保护登录入口。访问 <code>wp-login.php?gate=钥匙</code> 开启入口，之后自动隐藏。</small></td></tr>
+                         <tr><th>追加拦截路径</th><td><input type="text" name="sba_settings[evil_paths]" value="<?php echo esc_attr( $opts['evil_paths'] ?? '' ); ?>" style="width:100%" placeholder="/test.php, /backup.zip" /><br><small>逗号分隔。内置已含 .env/.git 等，此处用于扩充。</small></td></tr>
+                         <tr><th>爬虫特征路径 (正则)</th><td><input type="text" name="sba_settings[scraper_paths]" value="<?php echo esc_attr( $opts['scraper_paths'] ?? 'feed=|rest_route=|[\?&]m=|\?p=' ); ?>" style="width:100%" /><br><small>正则表达式，匹配的 URL 将使用更严格的频率限制（默认阈值的 1/3）。</small></td></tr>
+                         <tr><th>Cookie 校验</th><td><label><input type="checkbox" name="sba_settings[enable_cookie_check]" value="1" <?php checked( $opts['enable_cookie_check'] ?? 1, 1 ); ?> /> 启用 Cookie 校验（无有效 Cookie 且非浏览器的请求将受到更严格限制）</label></td></tr>
+                         <tr><th>拦截重定向 URL</th><td><input type="text" name="sba_settings[block_target_url]" value="<?php echo esc_attr( $opts['block_target_url'] ?? '' ); ?>" style="width:100%" placeholder="https://127.0.0.1" /><br><small>拦截后将对方跳转至此页面（留空则显示默认 403 页面）。</small></td></tr>
+                    </table>
                     <?php submit_button( '保存核心配置' ); ?>
                 </div>
             </div>
@@ -1448,13 +1500,7 @@ function sba_audit_render_settings() {
         <div class="sba-card">
             <h3>📁 IP 归属地库 (ip2region xdb) 分片上传</h3>
             <div style="margin-bottom:20px;">
-                <p><strong>IPv4 库</strong> 
-                    <?php if ( file_exists( SBA_IP_V4_FILE ) ) : ?>
-                        <span style="color:green;">✓ 已上传 (<?php echo size_format( filesize( SBA_IP_V4_FILE ) ); ?>)</span>
-                    <?php else : ?>
-                        <span style="color:red;">✗ 未上传</span>
-                    <?php endif; ?>
-                </p>
+                <p><strong>IPv4 库</strong> <?php if ( file_exists( SBA_IP_V4_FILE ) ) : ?><span style="color:green;">✓ 已上传 (<?php echo size_format( filesize( SBA_IP_V4_FILE ) ); ?>)</span><?php else : ?><span style="color:red;">✗ 未上传</span><?php endif; ?></p>
                 <div id="upload-v4-area">
                     <input type="file" id="sba-ip-v4-file" accept=".xdb">
                     <button id="sba-upload-v4-btn" class="button button-primary">上传 IPv4 库</button>
@@ -1467,13 +1513,7 @@ function sba_audit_render_settings() {
                     </div>
                 </div>
                 <hr style="margin:20px 0;">
-                <p><strong>IPv6 库</strong> 
-                    <?php if ( file_exists( SBA_IP_V6_FILE ) ) : ?>
-                        <span style="color:green;">✓ 已上传 (<?php echo size_format( filesize( SBA_IP_V6_FILE ) ); ?>)</span>
-                    <?php else : ?>
-                        <span style="color:red;">✗ 未上传</span>
-                    <?php endif; ?>
-                </p>
+                <p><strong>IPv6 库</strong> <?php if ( file_exists( SBA_IP_V6_FILE ) ) : ?><span style="color:green;">✓ 已上传 (<?php echo size_format( filesize( SBA_IP_V6_FILE ) ); ?>)</span><?php else : ?><span style="color:red;">✗ 未上传</span><?php endif; ?></p>
                 <div id="upload-v6-area">
                     <input type="file" id="sba-ip-v6-file" accept=".xdb">
                     <button id="sba-upload-v6-btn" class="button button-primary">上传 IPv6 库</button>
@@ -1487,6 +1527,7 @@ function sba_audit_render_settings() {
                 </div>
             </div>
         </div>
+        <?php sba_environment_panel(); ?>
     </div>
     <?php
 }
@@ -1499,31 +1540,20 @@ add_action( 'wp_ajax_sba_upload_xdb_cancel', 'sba_ajax_upload_xdb_cancel' );
 function sba_ajax_upload_xdb_chunk() {
     if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( '无权限' );
     if ( ! wp_verify_nonce( $_POST['_wpnonce'], 'sba_upload_xdb' ) ) wp_send_json_error( '无效请求' );
-
-    $type = sanitize_text_field( $_POST['type'] ); // 'v4' or 'v6'
+    $type = sanitize_text_field( $_POST['type'] );
     $filename = sanitize_file_name( $_POST['filename'] );
     $start = intval( $_POST['start'] );
     $end = intval( $_POST['end'] );
     $file_size = intval( $_POST['file_size'] );
-
     if ( ! in_array( $type, [ 'v4', 'v6' ] ) ) wp_send_json_error( '无效类型' );
-    if ( empty( $filename ) || $start < 0 || $end <= $start || ! isset( $_FILES['file_chunk'] ) ) {
-        wp_send_json_error( '参数错误' );
-    }
-
+    if ( empty( $filename ) || $start < 0 || $end <= $start || ! isset( $_FILES['file_chunk'] ) ) wp_send_json_error( '参数错误' );
     $chunk = $_FILES['file_chunk'];
     if ( $chunk['error'] !== UPLOAD_ERR_OK ) wp_send_json_error( '分片上传错误' );
-
     $temp_dir = SBA_IP_DATA_DIR . 'upload_temp';
     if ( ! is_dir( $temp_dir ) ) wp_mkdir_p( $temp_dir );
-
     $task_id = md5( $type . $filename . $file_size . get_current_user_id() );
     $part_file = $temp_dir . '/' . $task_id . '_' . $start . '_' . $end . '.part';
-
-    if ( ! move_uploaded_file( $chunk['tmp_name'], $part_file ) ) {
-        wp_send_json_error( '保存分片失败' );
-    }
-
+    if ( ! move_uploaded_file( $chunk['tmp_name'], $part_file ) ) wp_send_json_error( '保存分片失败' );
     $meta_file = $temp_dir . '/' . $task_id . '_meta.json';
     $meta = file_exists( $meta_file ) ? json_decode( file_get_contents( $meta_file ), true ) : [];
     $meta['filename'] = $filename;
@@ -1533,15 +1563,11 @@ function sba_ajax_upload_xdb_chunk() {
     $meta['parts'][] = [ 'start' => $start, 'end' => $end ];
     $meta['parts'] = array_unique( $meta['parts'], SORT_REGULAR );
     file_put_contents( $meta_file, json_encode( $meta ) );
-
-    // 检查是否覆盖全部
     $covered = sba_is_range_fully_covered( $meta['parts'], $file_size );
     if ( $covered ) {
         $final_file = ( $type === 'v4' ) ? SBA_IP_V4_FILE : SBA_IP_V6_FILE;
         $handle = fopen( $final_file, 'wb' );
-        if ( ! $handle ) {
-            wp_send_json_error( '无法创建最终文件，请检查目录权限' );
-        }
+        if ( ! $handle ) wp_send_json_error( '无法创建最终文件，请检查目录权限' );
         usort( $meta['parts'], function($a, $b) { return $a['start'] - $b['start']; } );
         foreach ( $meta['parts'] as $part ) {
             $part_path = $temp_dir . '/' . $task_id . '_' . $part['start'] . '_' . $part['end'] . '.part';
@@ -1570,15 +1596,12 @@ function sba_ajax_upload_xdb_chunk() {
 function sba_ajax_upload_xdb_status() {
     if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( '无权限' );
     if ( ! wp_verify_nonce( $_POST['_wpnonce'], 'sba_upload_xdb' ) ) wp_send_json_error( '无效请求' );
-
     $type = sanitize_text_field( $_POST['type'] );
     $filename = sanitize_file_name( $_POST['filename'] );
     $file_size = intval( $_POST['file_size'] );
-
     $temp_dir = SBA_IP_DATA_DIR . 'upload_temp';
     $task_id = md5( $type . $filename . $file_size . get_current_user_id() );
     $meta_file = $temp_dir . '/' . $task_id . '_meta.json';
-
     if ( file_exists( $meta_file ) ) {
         $meta = json_decode( file_get_contents( $meta_file ), true );
         wp_send_json_success( [ 'parts' => $meta['parts'] ] );
@@ -1590,17 +1613,14 @@ function sba_ajax_upload_xdb_status() {
 function sba_ajax_upload_xdb_cancel() {
     if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( '无权限' );
     if ( ! wp_verify_nonce( $_POST['_wpnonce'], 'sba_upload_xdb' ) ) wp_send_json_error( '无效请求' );
-
     $type = sanitize_text_field( $_POST['type'] );
     $filename = sanitize_file_name( $_POST['filename'] );
     $file_size = intval( $_POST['file_size'] );
-
     $temp_dir = SBA_IP_DATA_DIR . 'upload_temp';
     $task_id = md5( $type . $filename . $file_size . get_current_user_id() );
     $pattern = $temp_dir . '/' . $task_id . '_*';
     foreach ( glob( $pattern ) as $file ) @unlink( $file );
     @unlink( $temp_dir . '/' . $task_id . '_meta.json' );
-
     wp_send_json_success( [ 'message' => '已中断并清理临时文件' ] );
 }
 
@@ -1615,17 +1635,13 @@ function sba_is_range_fully_covered( $parts, $size ) {
     return $covered >= $size;
 }
 
-/* ================= 分片上传前端脚本（修正版） ================= */
+/* ================= 分片上传前端脚本 ================= */
 add_action( 'admin_footer', 'sba_upload_script' );
 function sba_upload_script() {
-    // 只在防御设置页面输出脚本（通过页面 URL 参数判断，更可靠）
-    if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'sba_settings' ) {
-        return;
-    }
+    if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'sba_settings' ) return;
     ?>
     <script>
     jQuery(document).ready(function($) {
-        // 确保 ajaxurl 可用
         if (typeof ajaxurl === 'undefined') {
             var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
         }
@@ -1765,7 +1781,6 @@ function sba_upload_script() {
                     const totalBytes = file.size;
                     let uploadedBytes = uploadedParts.reduce((sum, p) => sum + (p.end - p.start), 0);
                     let initialPercent = Math.round((uploadedBytes / totalBytes) * 100);
-                    
                     $('#' + progressDivId).show();
                     $('#' + barId).css('width', initialPercent + '%').text(initialPercent + '%');
                     $('#' + statusId).html(`准备上传，动态分片大小 ${(chunkSize/1024/1024).toFixed(1)}MB，剩余 ${remainingIntervals.length} 个区间`);
@@ -1831,7 +1846,6 @@ function sba_upload_script() {
                 }
             }
 
-            // 绑定按钮事件（注意：此处已加上 #）
             $('#' + uploadBtnId).click(function() {
                 const fileInput = document.getElementById(fileInputId);
                 const file = fileInput.files[0];
@@ -1839,7 +1853,6 @@ function sba_upload_script() {
                 if (!file.name.endsWith('.xdb')) { alert('只允许 .xdb 格式的文件'); return; }
                 uploadFileInChunks(file);
             });
-
             $('#' + cancelBtnId).click(async function() {
                 if (!currentFile || !isUploading) return;
                 if (confirm('确定要中断上传并清理已上传的临时文件吗？')) {
@@ -1857,10 +1870,8 @@ function sba_upload_script() {
             });
         }
 
-        // 初始化 IPv4 上传器（注意 ID 不带 #）
         createUploader('v4', 'sba-ip-v4-file', 'sba-upload-v4-btn', 'sba-cancel-upload-v4-btn',
                        'sba-upload-v4-progress', 'sba-upload-v4-bar', 'sba-upload-v4-status');
-        // 初始化 IPv6 上传器
         createUploader('v6', 'sba-ip-v6-file', 'sba-upload-v6-btn', 'sba-cancel-upload-v6-btn',
                        'sba-upload-v6-progress', 'sba-upload-v6-bar', 'sba-upload-v6-status');
     });
@@ -1868,10 +1879,9 @@ function sba_upload_script() {
     <?php
 }
 
-/* ================= SMTP 邮件配置页面（保持不变） ================= */
+/* ================= SMTP 邮件设置页面 ================= */
 function sba_smtp_settings_page() {
     $opts = get_option( 'sba_smtp_settings', array() );
-
     if ( isset( $_POST['smtp_save'] ) && check_admin_referer( 'sba_smtp_save' ) ) {
         $settings = array(
             'smtp_host'      => sanitize_text_field( $_POST['smtp_host'] ),
@@ -1887,7 +1897,6 @@ function sba_smtp_settings_page() {
         echo '<div class="updated"><p>设置已保存。</p></div>';
         $opts = get_option( 'sba_smtp_settings', array() );
     }
-
     if ( isset( $_POST['test_email'] ) && check_admin_referer( 'sba_smtp_save' ) ) {
         $to = sanitize_email( $_POST['test_to'] );
         if ( $to ) {
@@ -1901,65 +1910,28 @@ function sba_smtp_settings_page() {
             echo '<div class="error"><p>请输入有效的测试邮箱地址。</p></div>';
         }
     }
-
     ?>
     <div class="wrap">
         <h1>SMTP 邮件设置</h1>
         <form method="post" action="">
             <?php wp_nonce_field( 'sba_smtp_save' ); ?>
             <table class="form-table">
-                 <tr>
-                    <th><label for="smtp_host">SMTP 主机</label></th>
-                    <td><input type="text" id="smtp_host" name="smtp_host" value="<?php echo esc_attr( $opts['smtp_host'] ?? '' ); ?>" class="regular-text" placeholder="例如：smtp.gmail.com" /></td>
-                 </tr>
-                 <tr>
-                    <th><label for="smtp_port">端口</label></th>
-                    <td><input type="number" id="smtp_port" name="smtp_port" value="<?php echo esc_attr( $opts['smtp_port'] ?? '587' ); ?>" class="small-text" /> 常用：587 (TLS) 或 465 (SSL)</td>
-                 </tr>
-                 <tr>
-                    <th><label for="smtp_encryption">加密方式</label></th>
-                    <td>
-                        <select id="smtp_encryption" name="smtp_encryption">
-                            <option value="none" <?php selected( $opts['smtp_encryption'] ?? '', 'none' ); ?>>无</option>
-                            <option value="tls" <?php selected( $opts['smtp_encryption'] ?? '', 'tls' ); ?>>TLS</option>
-                            <option value="ssl" <?php selected( $opts['smtp_encryption'] ?? '', 'ssl' ); ?>>SSL</option>
-                        </select>
-                    </td>
-                 </tr>
-                 <tr>
-                    <th><label for="smtp_auth">启用认证</label></th>
-                    <td><input type="checkbox" id="smtp_auth" name="smtp_auth" value="1" <?php checked( $opts['smtp_auth'] ?? 1, 1 ); ?> /> 通常需要勾选</td>
-                 </tr>
-                 <tr>
-                    <th><label for="smtp_username">用户名</label></th>
-                    <td><input type="text" id="smtp_username" name="smtp_username" value="<?php echo esc_attr( $opts['smtp_username'] ?? '' ); ?>" class="regular-text" /></td>
-                 </tr>
-                 <tr>
-                    <th><label for="smtp_password">密码</label></th>
-                    <td><input type="password" id="smtp_password" name="smtp_password" value="<?php echo esc_attr( $opts['smtp_password'] ?? '' ); ?>" class="regular-text" /></td>
-                 </tr>
-                 <tr>
-                    <th><label for="from_email">发件人邮箱</label></th>
-                    <td><input type="email" id="from_email" name="from_email" value="<?php echo esc_attr( $opts['from_email'] ?? '' ); ?>" class="regular-text" placeholder="留空则使用 WordPress 默认" /></td>
-                 </tr>
-                 <tr>
-                    <th><label for="from_name">发件人名称</label></th>
-                    <td><input type="text" id="from_name" name="from_name" value="<?php echo esc_attr( $opts['from_name'] ?? '' ); ?>" class="regular-text" placeholder="例如：网站名称" /></td>
-                 </tr>
+                 <tr><th><label for="smtp_host">SMTP 主机</label></th><td><input type="text" id="smtp_host" name="smtp_host" value="<?php echo esc_attr( $opts['smtp_host'] ?? '' ); ?>" class="regular-text" placeholder="例如：smtp.gmail.com" /></td></tr>
+                 <tr><th><label for="smtp_port">端口</label></th><td><input type="number" id="smtp_port" name="smtp_port" value="<?php echo esc_attr( $opts['smtp_port'] ?? '587' ); ?>" class="small-text" /> 常用：587 (TLS) 或 465 (SSL)</td></tr>
+                 <tr><th><label for="smtp_encryption">加密方式</label></th><td><select id="smtp_encryption" name="smtp_encryption"><option value="none" <?php selected( $opts['smtp_encryption'] ?? '', 'none' ); ?>>无</option><option value="tls" <?php selected( $opts['smtp_encryption'] ?? '', 'tls' ); ?>>TLS</option><option value="ssl" <?php selected( $opts['smtp_encryption'] ?? '', 'ssl' ); ?>>SSL</option></select></td></tr>
+                 <tr><th><label for="smtp_auth">启用认证</label></th><td><input type="checkbox" id="smtp_auth" name="smtp_auth" value="1" <?php checked( $opts['smtp_auth'] ?? 1, 1 ); ?> /> 通常需要勾选</td></tr>
+                 <tr><th><label for="smtp_username">用户名</label></th><td><input type="text" id="smtp_username" name="smtp_username" value="<?php echo esc_attr( $opts['smtp_username'] ?? '' ); ?>" class="regular-text" /></td></tr>
+                 <tr><th><label for="smtp_password">密码</label></th><td><input type="password" id="smtp_password" name="smtp_password" value="<?php echo esc_attr( $opts['smtp_password'] ?? '' ); ?>" class="regular-text" /></td></tr>
+                 <tr><th><label for="from_email">发件人邮箱</label></th><td><input type="email" id="from_email" name="from_email" value="<?php echo esc_attr( $opts['from_email'] ?? '' ); ?>" class="regular-text" placeholder="留空则使用 WordPress 默认" /></td></tr>
+                 <tr><th><label for="from_name">发件人名称</label></th><td><input type="text" id="from_name" name="from_name" value="<?php echo esc_attr( $opts['from_name'] ?? '' ); ?>" class="regular-text" placeholder="例如：网站名称" /></td></tr>
             </table>
             <?php submit_button( '保存设置', 'primary', 'smtp_save' ); ?>
         </form>
-
         <hr />
         <h2>测试邮件发送</h2>
         <form method="post" action="">
             <?php wp_nonce_field( 'sba_smtp_save' ); ?>
-            <table class="form-table">
-                 <tr>
-                    <th><label for="test_to">接收测试邮箱</label></th>
-                    <td><input type="email" id="test_to" name="test_to" class="regular-text" placeholder="your@email.com" /></td>
-                 </tr>
-            </table>
+            <table class="form-table"><tr><th><label for="test_to">接收测试邮箱</label></th><td><input type="email" id="test_to" name="test_to" class="regular-text" placeholder="your@email.com" /></td></tr></table>
             <?php submit_button( '发送测试邮件', 'secondary', 'test_email' ); ?>
         </form>
     </div>
@@ -2025,7 +1997,6 @@ add_shortcode( 'sba_stats', function() {
 } );
 add_filter( 'widget_text', 'do_shortcode' );
 
-/* 注销后重定向到首页 */
 add_action( 'wp_logout', function() {
     wp_redirect( home_url() );
     exit;
