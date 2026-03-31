@@ -1615,18 +1615,17 @@ function sba_is_range_fully_covered( $parts, $size ) {
     return $covered >= $size;
 }
 
-/* ================= 分片上传前端脚本 ================= */
+/* ================= 分片上传前端脚本（修正版） ================= */
 add_action( 'admin_footer', 'sba_upload_script' );
 function sba_upload_script() {
-    $screen = get_current_screen();
-    // 页面 ID 可能是 'sba_audit_page_sba_settings' 或类似，根据实际情况调整
-    if ( ! $screen || ! in_array( $screen->id, [ 'sba_audit_page_sba_settings', 'toplevel_page_sba_audit_page_sba_settings' ] ) ) {
+    // 只在防御设置页面输出脚本（通过页面 URL 参数判断，更可靠）
+    if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'sba_settings' ) {
         return;
     }
     ?>
     <script>
     jQuery(document).ready(function($) {
-        // 确保 ajaxurl 存在
+        // 确保 ajaxurl 可用
         if (typeof ajaxurl === 'undefined') {
             var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
         }
@@ -1657,7 +1656,7 @@ function sba_upload_script() {
                                     consecutiveSuccess++;
                                     if (consecutiveSuccess >= 3 && chunkSize < maxChunkSize) {
                                         chunkSize = Math.min(chunkSize * 2, maxChunkSize);
-                                        $(statusId).append(`<br><small>网络良好，分片大小提升至 ${(chunkSize/1024/1024).toFixed(1)}MB</small>`);
+                                        $('#' + statusId).append(`<br><small>网络良好，分片大小提升至 ${(chunkSize/1024/1024).toFixed(1)}MB</small>`);
                                         consecutiveSuccess = 0;
                                     }
                                     resolve(res);
@@ -1667,7 +1666,7 @@ function sba_upload_script() {
                             } catch(e) { reject(e); }
                         } else if (xhr.status === 413) {
                             chunkSize = Math.max(chunkSize / 2, minChunkSize);
-                            $(statusId).html(`<span style="color:#d63638;">单片过大，已降低至 ${(chunkSize/1024/1024).toFixed(1)}MB，重试中...</span>`);
+                            $('#' + statusId).html(`<span style="color:#d63638;">单片过大，已降低至 ${(chunkSize/1024/1024).toFixed(1)}MB，重试中...</span>`);
                             reject(new Error('Chunk too large'));
                         } else {
                             reject(new Error(`HTTP ${xhr.status}`));
@@ -1687,7 +1686,7 @@ function sba_upload_script() {
                     } catch (error) {
                         if (attempt === maxRetries) throw error;
                         const wait = delay * Math.pow(2, attempt - 1);
-                        $(statusId).html(`<span style="color:#d63638;">区间 ${start}-${end} 上传失败，${wait/1000}秒后重试 (${attempt}/${maxRetries})...</span>`);
+                        $('#' + statusId).html(`<span style="color:#d63638;">区间 ${start}-${end} 上传失败，${wait/1000}秒后重试 (${attempt}/${maxRetries})...</span>`);
                         await sleep(wait);
                     }
                 }
@@ -1832,6 +1831,7 @@ function sba_upload_script() {
                 }
             }
 
+            // 绑定按钮事件（注意：此处已加上 #）
             $('#' + uploadBtnId).click(function() {
                 const fileInput = document.getElementById(fileInputId);
                 const file = fileInput.files[0];
@@ -1857,7 +1857,7 @@ function sba_upload_script() {
             });
         }
 
-        // 初始化 IPv4 上传器
+        // 初始化 IPv4 上传器（注意 ID 不带 #）
         createUploader('v4', 'sba-ip-v4-file', 'sba-upload-v4-btn', 'sba-cancel-upload-v4-btn',
                        'sba-upload-v4-progress', 'sba-upload-v4-bar', 'sba-upload-v4-status');
         // 初始化 IPv6 上传器
