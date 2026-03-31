@@ -1,83 +1,83 @@
-# SBA 综合安全引擎 (v2.0) 🛡️
+# SBA 综合安全运维引擎 (v2.1.6) 🛡️
 
-[![Version](https://img.shields.io/badge/Version-2.0-brightgreen)](https://github.com/your-username/sba-security-suite)
+[![Version](https://img.shields.io/badge/Version-2.1.6-brightgreen)](https://github.com/your-username/sba-security-suite)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-blue)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-brightgreen)](https://wordpress.org/)
 [![License](https://img.shields.io/badge/License-GPL%20v2-orange)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
 
-SBA (Site Behavior Auditor) 是一款专为 WordPress 深度定制的高性能综合安全套件。它集成了 **访客审计、iOS 风格登录面板、SMTP 发信** 三大核心功能。
+**SBA (Site Behavior Auditor)** 是一款专为 WordPress 深度定制的高性能综合安全套件。它不是简单的功能堆砌，而是将 **全行为审计、主动爬虫防御、iOS 风格登录交互、SMTP 发信** 四大核心运维模块通过“全内存架构”完美融合。
 
-> ⚡ **核心突破**：2.0 版本彻底抛弃传统数据库 IP 查询，改为 **全内存索引 (xdb) 查询**，单次解析耗时仅 **0.0x 毫秒**。配合**分片上传**技术，大体积 IP 库也能轻松部署。
+> ⚡ **开发初衷**：解决市面安全插件臃肿、消耗数据库资源、无法有效拦截高级伪装采集器的痛点。本套件追求：**极致性能、静默防御、业务闭环**。
 
 ---
 
-## ⚙️ 服务器环境配置建议 (重要)
+## ✨ 核心模块能力
 
-为了发挥全内存查询的极致性能，并确保 `.xdb` 库文件分片上传的稳定性，请务必根据以下建议调整服务器参数：
+### 1. 🔍 站点行为审计 (Auditor)
+*   **实时轨迹**：毫秒级记录访客 IP、路径、归属地及 PV 状态，支持 30 天可视化趋势图。
+*   **本地解析**：集成 `ip2region xdb` 内存版。单次解析耗时仅 **0.0x 毫秒**，完全不请求外部接口，不占 SQL 资源。
+*   **自动化清理**：系统每日自动“脱水”，清理陈旧日志，确保数据库始终轻盈。
 
-### 1. PHP 配置 (`php.ini`)
-建议将以下参数统一设为 **512M**，以支撑大数据量处理：
+### 2. 🚫 三层主动防御系统 (Bot Shield)
+*   **阶梯限流 (Tiered Rate Limit)**：针对 `feed`、`rest_route`、`?m=` 等高频采集路径执行更严苛的 CC 限制（默认阈值的 1/3）。
+*   **Cookie 身份校验**：自动识别真实浏览器指纹，对无法维持会话的恶意采集脚本进行强力降速。
+*   **诱饵陷阱 (Honeypot)**：页面底部自动布设动态隐藏诱饵，脚本一旦触碰即刻触发“死路”，封禁该 IP。
+
+### 3. 🔐 iOS 风格登录盒 (Login Box)
+*   **极简美学**：全 AJAX 驱动的 iOS 风格登录/注册/重置密码面板。
+*   **去 Session 化**：彻底抛弃 `session_start()`，采用 WP Transient API，完美兼容 Redis/Memcached 环境，用户登录永不掉线。
+*   **Gate 钥匙保护**：支持隐藏后端登录地址，只有持有特定“钥匙”的 URL 才能开启入口。
+
+### 4. 📧 SMTP 发信系统
+*   **原生集成**：内置轻量级发信逻辑，支持 TLS/SSL 加密，完美闭环注册激活与密码找回流程。
+
+---
+
+## ⚙️ 推荐服务器配置
+
+为确保分片上传及全内存索引的高效运行，建议调整以下参数：
+
+**PHP (`php.ini`)**:
 ```ini
 upload_max_filesize = 512M
 post_max_size = 512M
 memory_limit = 512M
 max_execution_time = 0
 ```
-
-### 2. Nginx 配置 (`nginx.conf`)
-若使用 Nginx，请在 `http` 或 `server` 段增加以下配置，防止上传大文件时出现 413 错误：
-```nginx
-client_max_body_size 512M;
-```
-
----
-
-## ✨ 核心特性
-
-- **🔍 站点全行为审计**：实时记录轨迹，自动识别并阻断 `sqlmap`、`python` 等自动化扫描器。
-- **🔐 iOS 风格登录盒**：精美的 AJAX 交互面板，内置基于 IP 的暴力破解防护与自动封禁。
-- **📧 SMTP 邮件系统**：原生集成加密发信逻辑，完美闭环注册验证与密码重置。
-- **⚡ 极致性能架构**：
-    - **内存查询**：集成 `ip2region xdb` 内存版，查询速度提升百倍。
-    - **去 Session 化**：采用 Transients API，完美兼容 Redis/Memcached 缓存。
-    - **分片上传**：内置**动态分片 + 断点续传**，无视网络波动。
+*注：Nginx 用户请设置 `client_max_body_size 512M;`*
 
 ---
 
 ## 🛠️ 安装与部署
 
-### 1. 插件安装
-- 下载本项目 ZIP 包。
-- 将文件夹 `sba-security-suite` 上传至 WP 插件目录 `/wp-content/plugins/`。
-- 在后台启用 “综合安全套件”。
+### 1. 获取插件
+- 下载本项目 ZIP 包，上传至 WordPress 插件目录 `/wp-content/plugins/` 并启用。
 
-### 2. 获取并上传 IP 库 (必选)
-- **下载 xdb**：前往 [ip2region 官方仓库](https://github.com/lionsoul2014/ip2region/tree/master/data) 下载 `ip2region.xdb`。
-- **执行上传**：进入「工具」→「全行为审计」→「防御设置」，在页面底部通过分片上传组件上传该文件。
-- **生效**：上传完成后页面自动刷新，审计系统的归属地功能即刻启用。
+### 2. 准备 IP 库文件 (核心步骤)
+- 前往 [ip2region 官方数据目录](https://github.com/lionsoul2014/ip2region/tree/master/data) 下载最新的 `ip2region.xdb`。
+- 进入「工具」→「全行为审计」→「防御设置」，在页面底部上传该文件。
+- **技术特色**：支持**动态分片上传 + 断点续传**，即便在弱网环境下也能轻松完成 11MB+ 的库文件同步。
 
----
-
-## 🚀 快速入门
-
-1. **Gate 钥匙**：在设置中填写一个 Slug（如 `myadmin`）。此后您必须访问 `域名/wp-login.php?gate=myadmin` 才能看到登录框。
-2. **SMTP 配置**：在「SMTP 邮件」中填写发信信息，建议使用专用授权码。
-3. **前端调用**：
-    - 使用简码 `[sba_login_box]` 调用登录面板。
-    - 使用简码 `[sba_stats]` 展示实时访客统计。
+### 3. 配置 Gate 钥匙
+- 在设置中填写一个独特的 Slug（如 `myadmin`）。
+- 您必须访问 `你的域名/wp-login.php?gate=myadmin` 才能开启登录入口。
 
 ---
 
-## 📊 还原与维护
-- **自动清理**：系统每日凌晨自动清理 30 天前的访问日志与 7 天前的拦截记录，确保数据库轻量化。
-- **安全保护**：库文件存储于 `uploads/sba_ip_data/`，内置 `.htaccess` 严格禁止 Web 访问。
+## 📋 简码参考 (Shortcodes)
+
+| 简码 | 功能 | 建议位置 |
+| :--- | :--- | :--- |
+| `[sba_login_box]` | 弹出/嵌入式 iOS 风格登录面板 | 自定义登录页、会员中心 |
+| `[sba_stats]` | 实时在线人数与访客统计统计 | 侧边栏 Widget、页脚区域 |
 
 ---
 
-## 🤝 鸣谢
+## 🤝 鸣谢与支持
 
-本项目的高性能 IP 解析能力得益于以下开源项目：
-*   **[ip2region](https://github.com/lionsoul2014/ip2region)**：由 [lionsoul2014](https://github.com/lionsoul2014) 开发的高性能 IP 地址定位库。
+本项目的高性能解析引擎离不开以下开源项目的支持：
+
+*   **[ip2region](https://github.com/lionsoul2014/ip2region)**：由 [lionsoul2014](https://github.com/lionsoul2014) 开发的高性能 IP 地址定位库。本项目集成了其最新的 **xdb 内存查询方案**。
 
 ---
 
