@@ -37,7 +37,7 @@
 *   **去 Session 化**：彻底抛弃 `session_start()`，采用 WP Transient API，完美兼容 Redis/Memcached 环境，用户登录永不掉线。
 *   **Gate 钥匙保护**：支持隐藏后端登录地址，只有持有特定“钥匙”的 URL 才能开启入口。
 
-<img width="150" height="300" alt="image" src="https://github.com/user-attachments/assets/35d555c6-8254-45c2-bdb1-23d400d4817a" /><img width="150" height="400" alt="image" src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" /><img width="150" height="300" alt="image" src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" />
+<img width="150" height="300" alt="image" src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" /><img width="150" height="400" alt="image" src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" /><img width="150" height="300" alt="image" src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" />
 
 
 
