@@ -1336,21 +1336,74 @@ function sba_audit_render_dashboard() {
         .sba-table tbody tr td:nth-child(2), .sba-table thead tr th:nth-child(2) { width: 240px; word-break: keep-all; }
         .sba-cell-wrap { white-space: normal; word-break: break-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; font-size: 12px; }
         .stat-val { font-size: 26px; font-weight: bold; display: block; margin-top: 5px; }
-        @media (max-width: 768px) {
-            .sba-card .sba-table { min-width: 680px; table-layout: auto; }
-            .sba-card .sba-table th, .sba-card .sba-table td { font-size: 12px; padding: 8px 6px; white-space: normal; word-break: break-word; }
-            .sba-grid .sba-card:first-child .sba-table { table-layout: fixed; min-width: 500px; }
-            .sba-grid .sba-card:first-child .sba-table th, .sba-grid .sba-card:first-child .sba-table td { width: 25%; }
-            .sba-grid .sba-card:first-child .sba-table th, .sba-grid .sba-card:first-child .sba-table td { padding-left: 4px; padding-right: 4px; }
-            .sba-card:not(:last-of-type) .sba-table th:first-child, .sba-card:not(:last-of-type) .sba-table td:first-child { width: 70px; }
-            .sba-card:not(:last-of-type) .sba-table th:nth-child(2), .sba-card:not(:last-of-type) .sba-table td:nth-child(2) { width: 170px; }
-            .sba-card:not(:last-of-type) .sba-table th:nth-child(3), .sba-card:not(:last-of-type) .sba-table td:nth-child(3) { width: 140px; }
-            .sba-card:not(:last-of-type) .sba-table th:nth-child(4), .sba-card:not(:last-of-type) .sba-table td:nth-child(4) { width: auto; }
-            .sba-card:not(:last-of-type) .sba-table th:last-child, .sba-card:not(:last-of-type) .sba-table td:last-child { width: 60px; }
-            .sba-card:last-of-type .sba-table th:first-child, .sba-card:last-of-type .sba-table td:first-child { width: 90px; }
-            .sba-card:last-of-type .sba-table th:nth-child(2), .sba-card:last-of-type .sba-table td:nth-child(2) { width: 180px; }
-            .sba-card:last-of-type .sba-table th:nth-child(3), .sba-card:last-of-type .sba-table td:nth-child(3) { width: auto; }
-        }
+		@media (max-width: 768px) {
+			.sba-card .sba-table {
+				min-width: 680px;
+				table-layout: auto;
+			}
+			.sba-card .sba-table th,
+			.sba-card .sba-table td {
+				font-size: 12px;
+				padding: 8px 6px;
+				white-space: normal;
+				word-break: break-word;
+			}
+			.sba-grid .sba-card:first-child .sba-table {
+				table-layout: fixed;
+				min-width: 500px;
+			}
+			.sba-grid .sba-card:first-child .sba-table th,
+			.sba-grid .sba-card:first-child .sba-table td {
+				width: 25%;
+				padding-left: 4px;
+				padding-right: 4px;
+			}
+			.sba-card:not(.sba-blocked-card) .sba-table {
+				table-layout: auto;
+			}
+			.sba-card:not(.sba-blocked-card) .sba-table th:first-child,
+			.sba-card:not(.sba-blocked-card) .sba-table td:first-child {
+				width: auto;
+				min-width: 70px;
+			}
+			.sba-card:not(.sba-blocked-card) .sba-table th:nth-child(2),
+			.sba-card:not(.sba-blocked-card) .sba-table td:nth-child(2) {
+				width: auto;
+				min-width: 60px;
+			}
+			.sba-card:not(.sba-blocked-card) .sba-table th:nth-child(3),
+			.sba-card:not(.sba-blocked-card) .sba-table td:nth-child(3) {
+				width: auto;
+				min-width: 60px;
+			}
+			.sba-card:not(.sba-blocked-card) .sba-table th:nth-child(4),
+			.sba-card:not(.sba-blocked-card) .sba-table td:nth-child(4) {
+				width: auto;
+				min-width: 90px;
+				white-space: normal;
+			}
+			.sba-blocked-card .sba-table th:first-child,
+			.sba-blocked-card .sba-table td:first-child {
+				width: 90px;
+			}
+			.sba-blocked-card .sba-table th:nth-child(2),
+			.sba-blocked-card .sba-table td:nth-child(2) {
+				width: 180px;
+			}
+			.sba-blocked-card .sba-table th:nth-child(3),
+			.sba-blocked-card .sba-table td:nth-child(3) {
+				width: auto;
+				min-width: 150px;
+			}
+			.sba-blocked-card .sba-cell-wrap {
+				-webkit-line-clamp: unset !important;
+				display: block !important;
+				overflow: visible !important;
+				white-space: normal !important;
+				word-break: break-word !important;
+				line-height: 1.4;
+			}
+		}
     </style>
     <div class="wrap sba-wrap">
         <h2>🚀 SBA 站点行为监控 v<?php echo SBA_VERSION; ?></h2>
