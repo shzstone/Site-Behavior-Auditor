@@ -9,7 +9,9 @@
 
 > ⚡ **开发初衷**：解决市面安全插件臃肿、消耗数据库资源、无法有效拦截高级伪装采集器的痛点。本套件追求：**极致性能、静默防御、业务闭环**。
 
-<img width="500" height="250" alt="image" src="https://github.com/user-attachments/assets/2ec59019-108d-4f61-a2a0-e1f0abf61cb8" />
+<div style="text-align: left;">
+  <img src="https://github.com/user-attachments/assets/2ec59019-108d-4f61-a2a0-e1f0abf61cb8" alt="Site Behavior Auditor" width="50%">
+</div>
 
 
 ---
@@ -41,14 +43,24 @@
 *   **去 Session 化**：彻底抛弃 `session_start()`，采用 WP Transient API，完美兼容 Redis/Memcached 环境，用户登录永不掉线。
 *   **Gate 钥匙保护**：支持隐藏后端登录地址，只有持有特定“钥匙”的 URL 才能开启入口。
 
-<img width="150" height="300" alt="image" src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" /><img width="150" height="400" alt="image" src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" /><img width="150" height="300" alt="image" src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" />
+<div style="display: flex; justify-content: flex-start; align-items: flex-start;">
+
+  <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" alt="注册" style="width: 50%; display: block;">
+
+  <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" alt="登录" style="width: 50%; display: block;">
+
+  <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" alt="忘记密码" style="width: 50%; display: block;">
+
+</div>
 
 
 
 
 ### 4. 📧 SMTP 发信系统
 *   **原生集成**：内置轻量级发信逻辑，支持 TLS/SSL 加密，完美闭环注册激活与密码找回流程。
-<img width="300" height="400" alt="image" src="https://github.com/user-attachments/assets/efcdb931-0517-459c-8e7b-d60099e09f15" />
+<div style="text-align: left;">
+  <img src="https://github.com/user-attachments/assets/efcdb931-0517-459c-8e7b-d60099e09f15" alt="Site Behavior Auditor" width="50%">
+</div>
 
 
 ---
