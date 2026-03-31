@@ -20,19 +20,30 @@
 *   **实时轨迹**：毫秒级记录访客 IP、路径、归属地及 PV 状态，支持 30 天可视化趋势图。
 *   **本地解析**：集成 `ip2region xdb` 内存版。单次解析耗时仅 **0.0x 毫秒**，完全不请求外部接口，不占 SQL 资源。
 *   **自动化清理**：系统每日自动“脱水”，清理陈旧日志，确保数据库始终轻盈。
+<img width="500" height="250" alt="image" src="https://github.com/user-attachments/assets/b773d840-b64a-4e1e-807d-05e3707dec51" />
+<img width="500" height="250" alt="image" src="https://github.com/user-attachments/assets/171bc999-e8d6-4978-870a-9760000478b1" />
+
 
 ### 2. 🚫 三层主动防御系统 (Bot Shield)
 *   **阶梯限流 (Tiered Rate Limit)**：针对 `feed`、`rest_route`、`?m=` 等高频采集路径执行更严苛的 CC 限制（默认阈值的 1/3）。
 *   **Cookie 身份校验**：自动识别真实浏览器指纹，对无法维持会话的恶意采集脚本进行强力降速。
 *   **诱饵陷阱 (Honeypot)**：页面底部自动布设动态隐藏诱饵，脚本一旦触碰即刻触发“死路”，封禁该 IP。
+<img width="400" height="300" alt="image" src="https://github.com/user-attachments/assets/f15a3ed2-5896-4910-b98e-05bc863a0978" />
+
 
 ### 3. 🔐 iOS 风格登录盒 (Login Box)
 *   **极简美学**：全 AJAX 驱动的 iOS 风格登录/注册/重置密码面板。
 *   **去 Session 化**：彻底抛弃 `session_start()`，采用 WP Transient API，完美兼容 Redis/Memcached 环境，用户登录永不掉线。
 *   **Gate 钥匙保护**：支持隐藏后端登录地址，只有持有特定“钥匙”的 URL 才能开启入口。
+<img width="150" height="300" alt="image" src="https://github.com/user-attachments/assets/35d555c6-8254-45c2-bdb1-23d400d4817a" /><img width="150" height="400" alt="image" src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" /><img width="150" height="300" alt="image" src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" />
+
+
+
 
 ### 4. 📧 SMTP 发信系统
 *   **原生集成**：内置轻量级发信逻辑，支持 TLS/SSL 加密，完美闭环注册激活与密码找回流程。
+<img width="300" height="400" alt="image" src="https://github.com/user-attachments/assets/efcdb931-0517-459c-8e7b-d60099e09f15" />
+
 
 ---
 
