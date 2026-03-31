@@ -20,9 +20,13 @@
 *   **实时轨迹**：毫秒级记录访客 IP、路径、归属地及 PV 状态，支持 30 天可视化趋势图。
 *   **本地解析**：集成 `ip2region xdb` 内存版。单次解析耗时仅 **0.0x 毫秒**，完全不请求外部接口，不占 SQL 资源。
 *   **自动化清理**：系统每日自动“脱水”，清理陈旧日志，确保数据库始终轻盈。
-<img width="500" height="250" alt="image" src="https://github.com/user-attachments/assets/b773d840-b64a-4e1e-807d-05e3707dec51" /><br>
+<div style="text-align: left;">
+  <img src="https://github.com/user-attachments/assets/b773d840-b64a-4e1e-807d-05e3707dec51" alt="访客轨迹" width="50%">
+</div>
 
-<img width="500" height="250" alt="image" src="https://github.com/user-attachments/assets/171bc999-e8d6-4978-870a-9760000478b1" />
+<div style="text-align: left;">
+  <img src="https://github.com/user-attachments/assets/171bc999-e8d6-4978-870a-9760000478b1" alt="拦截日志" width="50%">
+</div>
 
 
 ### 2. 🚫 三层主动防御系统 (Bot Shield)
