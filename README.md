@@ -1,72 +1,75 @@
-# 🛡️ SBA 综合安全套件 (Site Behavior Auditor)
+# SBA 综合安全引擎 (v2.0) 🛡️
 
-[![WordPress-5.0+](https://img.shields.io/badge/WordPress-5.0%2B-blue.svg?style=flat-square&logo=wordpress)](https://wordpress.org)
-[![PHP-7.4+](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg?style=flat-square&logo=php)](https://www.php.net)
-[![License-GPLv2-green](https://img.shields.io/badge/License-GPLv2-green.svg?style=flat-square)](https://github.com/guoshh1978/Site-Behavior-Auditor/blob/main/LICENSE)
+[![Version](https://img.shields.io/badge/Version-2.0-brightgreen)](https://github.com/your-username/sba-security-suite)
+[![PHP](https://img.shields.io/badge/PHP-7.4%2B-blue)](https://www.php.net/)
+[![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-brightgreen)](https://wordpress.org/)
 
-**SBA 综合安全套件** 是一个集站点行为审计、iOS 风格登录面板、SMTP 邮件配置于一体的安全增强插件，专为中小型网站设计，提供易用的安全防护和用户体验优化。
+SBA (Site Behavior Auditor) 是一款为 WordPress 深度定制的高性能综合安全套件。它不仅是一个防火墙，更是一个集成了 **访客审计、iOS 风格登录交互、SMTP 发信** 的全能运维中心。
 
----
-
-## ✨ 功能特性
-
-### 🔒 站点行为审计 (Security Audit)
-* **信息泄露防护**：屏蔽 REST API 用户枚举接口，拦截 `?author=X` 及 `/author/` 作者存档页面访问，自动重定向至首页。
-* **恶意路径扫描防护**：内置常见敏感路径拦截（如 `/.env`, `/.git`, `/xmlrpc.php` 等），支持通过后台追加自定义拦截路径。
-* **自动化工具拦截**：自动识别并拦截 `sqlmap`, `curl`, `wget`, `python-requests` 等扫描工具 UA。
-* **CC 攻击防护**：对非浏览器请求进行频率限制（支持后台配置每分钟请求阈值）。
-* **Gate 钥匙机制**：必须通过 `wp-login.php?gate=钥匙` 访问才能进入登录页，生成一次性会话令牌，退出后令牌失效。
-* **实时统计与日志**：支持 IPv4/IPv6 归属地本地解析，提供可视化监控（UV/PV/在线人数/访客轨迹及拦截日志）。
-
-### 📱 iOS 风格登录面板 (AJAX)
-* **无刷新交互**：通过简码 `[sba_login_box]` 调用，实现登录/注册/忘记密码全流程 AJAX 操作。
-* **注册验证机制**：**强制开启邮件地址验证**。新用户注册后需在 **24 小时内** 点击邮件中的验证链接才能激活账号并注册成功，有效杜绝垃圾注册。
-* **暴力破解防护**：
-    * 登录失败 **3 次**后显示算术验证码。
-    * 连续失败 **6 次**封禁 IP 24 小时。
-    * 注册与找回密码流程强制开启验证码校验。
-
-### 📧 SMTP 邮件配置
-* **可视化配置**：支持设置 SMTP 主机、端口、加密方式（TLS/SSL）、认证、用户名及密码。
-* **稳定投递**：自动覆盖 WordPress 默认邮件发送，确保注册激活、密码重置等邮件 100% 送达。
+> ⚡ **核心突破**：2.0 版本彻底摒弃了传统的数据库查询 IP 逻辑，改为 **全内存索引 (xdb)** 查询，单次解析耗时仅 **0.0x 毫秒**。
 
 ---
 
-## 📥 安装方法
+## ✨ 核心模块
 
-1.  **下载插件**：从 [Releases](https://github.com/guoshh1978/Site-Behavior-Auditor/releases) 下载最新版 ZIP。
-2.  **上传安装**：WP 后台 -> 插件 -> 安装插件 -> 上传 ZIP；或解压后上传至 `/wp-content/plugins/`。
-3.  **配置**：进入“全行为审计”菜单，优先完成 **SMTP 邮件设置**（注册验证依赖此项）。
+### 1. 🔍 站点行为审计 (Auditor)
+- **实时轨迹**：精确记录访客 IP、路径、PV 统计及归属地。
+- **可视化看板**：内置 Chart.js 绘制的 30 天访问趋势图。
+- **智能拦截**：自动识别并阻断 `sqlmap`、`nmap`、`python-requests` 等自动化扫描工具。
+- **恶意路径防护**：内置针对 `.env`、`.git`、`xmlrpc.php` 等敏感路径的实时阻断。
+
+### 2. 🔐 iOS 风格登录盒 (Login Box)
+- **极简美学**：精心设计的 iOS 风格 AJAX 登录/注册/忘记密码面板。
+- **暴力破解防护**：基于 IP 的错误频率限制，支持自动封禁恶意 IP 24 小时。
+- **去 Session 化**：采用 WordPress Transient API 存储令牌，完美兼容开启 Redis 缓存的服务器。
+- **Gate 钥匙保护**：支持隐藏后端登录地址，仅限持有“钥匙”的 URL 访问。
+
+### 3. 📧 SMTP 邮件系统
+- **原生集成**：无需安装第三方臃肿的 SMTP 插件。
+- **发信稳定**：支持主流服务商（Gmail, 阿里云, 腾讯云等）的 TLS/SSL 加密发信。
+- **业务闭环**：配合登录盒，实现新用户注册验证与重置密码功能。
 
 ---
 
-## ⚙️ 配置说明
+## 🚀 技术亮点 (v2.0)
 
-### 防御设置
-| 选项 | 说明 |
+- **内存级查询**：集成 `ip2region xdb`。11MB 库文件全量加载至内存，查询效率提升 100 倍。
+- **分片上传技术**：针对大体积 `.xdb` 库文件，内置**动态分片上传 + 断点续传**机制。
+- **零数据库负载**：CC 频率统计与网关令牌均在内存（Transient）中完成计算，不再频繁读写 SQL。
+- **自动数据脱水**：每日定时清理陈旧日志，确保数据库始终轻盈。
+
+---
+
+## 🛠️ 安装与配置
+
+1. **上传插件**：将 `sba-security-suite` 文件夹上传至 `/wp-content/plugins/`。
+2. **启用插件**：在后台启用“综合安全套件”。
+3. **初始化 IP 库**：
+   - 进入「工具」→「全行为审计」→「防御设置」。
+   - 在页面底部，通过分片上传组件上传 `ip2region_v4.xdb` 文件（及可选的 v6 库）。
+4. **启用 SMTP**：在设置页面填写发信账户，建议使用专用授权码。
+
+---
+
+## 📋 简码说明
+
+| 简码 | 功能说明 |
 | :--- | :--- |
-| **用户名白名单** | 填入用户名，登录后自动豁免所有拦截 |
-| **IP 白名单** | 每行一个 IP，该范围内 IP 完全豁免 |
-| **CC 封禁阈值** | 非浏览器请求每分钟最大请求数，超出则封禁 |
-| **Gate 钥匙** | 必填参数，必须通过 `wp-login.php?gate=钥匙` 生成会话 |
-| **追加拦截路径** | 逗号分隔的自定义路径，与内置恶意路径合并拦截 |
+| `[sba_login_box]` | 在前端页面任何位置调用 iOS 风格登录盒。 |
+| `[sba_stats]` | 在侧边栏或页脚显示实时在线人数及访问统计。 |
 
 ---
 
-## 🎯 使用简码
+## 🔒 运维建议
 
-* **登录面板**：在任意页面加入 `[sba_login_box]`。
-* **访问统计卡片**：在侧边栏或页脚加入 `[sba_stats]`。
-
----
-
-## 🐛 常见问题 (FAQ)
-
-> **Q: 为什么新用户注册后无法直接登录？**
-> A: 插件启用了严格的邮件验证机制。用户必须在收到邮件后的 **24 小时内** 点击验证链接完成激活，否则注册流程不会完成。
-
-> **Q: 设置 Gate 钥匙后进不去后台怎么办？**
-> A: 请访问 `你的域名/wp-login.php?gate=你的钥匙`。若忘记钥匙，请在数据库 `wp_options` 表中修改 `sba_settings` 字段。
+- **Gate 钥匙**：启用后，您的登录地址将变为 `wp-login.php?gate=您的钥匙`。
+- **日志监控**：审计系统会自动保留 7 天内的拦截记录，便于复盘分析攻击源。
+- **环境要求**：建议 PHP 7.4+，MySQL 5.7+，服务器剩余空间 > 50MB。
 
 ---
-**License**: [GPLv2](https://github.com/guoshh1978/Site-Behavior-Auditor/blob/main/LICENSE) | **GitHub**: [guoshh1978/Site-Behavior-Auditor](https://github.com/guoshh1978/Site-Behavior-Auditor)
+
+## 📄 许可证
+GPL v2 or later
+
+---
+**Developed by Stone** | 追求极致性能的 WordPress 运维实践。
