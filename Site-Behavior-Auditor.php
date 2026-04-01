@@ -4,6 +4,7 @@
  * Description: 集成站点全行为审计、iOS风格登录/注册/忘记密码面板（简码: sba_login_box）和SMTP邮件配置。IP归属地使用 ip2region xdb 内存查询（支持 IPv4/IPv6），分片上传库文件，并提供高级爬虫防御（阶梯限制、Cookie校验、诱饵陷阱）。
  * Version: 2.1.6
  * Author: Stone
+ * Author URI: https://blog.cacca.cc
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
