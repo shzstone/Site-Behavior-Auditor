@@ -10,7 +10,7 @@
 > ⚡ **开发初衷**：解决市面安全插件臃肿、消耗数据库资源、无法有效拦截高级伪装采集器的痛点。本套件追求：**极致性能、静默防御、业务闭环**。
 
 <div style="text-align: left;">
-  <img src="https://github.com/user-attachments/assets/2ec59019-108d-4f61-a2a0-e1f0abf61cb8" alt="Site Behavior Auditor" width="40%">
+  <img src="https://github.com/user-attachments/assets/2ec59019-108d-4f61-a2a0-e1f0abf61cb8" alt="Site Behavior Auditor" width="45%">
 </div>
 
 
