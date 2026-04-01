@@ -24,13 +24,13 @@
 *   **自动化清理**：系统每日自动“脱水”，清理陈旧日志，确保数据库始终轻盈。
 <table border="0" cellpadding="0" cellspacing="0" align="left">
   <tr>
-    <td valign="top" width="15%">
+    <td valign="top" width="10%">
       <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" width="100%" style="max-width: 100%;">
     </td>
-    <td valign="top" width="15%">
+    <td valign="top" width="10%">
       <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" width="100%" style="max-width: 100%;">
     </td>
-    <td valign="top" width="15%">
+    <td valign="top" width="10%">
       <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" width="100%" style="max-width: 100%;">
     </td>
   </tr>
