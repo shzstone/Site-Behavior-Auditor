@@ -76,12 +76,12 @@
 
 **PHP (`php.ini`)**:
 ```ini
-upload_max_filesize = 512M
-post_max_size = 512M
+upload_max_filesize = 64M
+post_max_size = 64M
 memory_limit = 512M
-max_execution_time = 0
+max_execution_time = 300
 ```
-*注：Nginx 用户请设置 `client_max_body_size 512M;`*
+*注：Nginx 用户请设置 `client_max_body_size 64M;`*
 
 ---
 
