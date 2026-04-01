@@ -52,19 +52,11 @@
 *   **去 Session 化**：彻底抛弃 `session_start()`，采用 WP Transient API，完美兼容 Redis/Memcached 环境，用户登录永不掉线。
 *   **Gate 钥匙保护**：支持隐藏后端登录地址，只有持有特定“钥匙”的 URL 才能开启入口。
 
-<table border="0" cellpadding="0" cellspacing="0">
-  <tr>
-    <td valign="top">
-      <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" alt="注册" style="width: 15%; height: auto;">
-    </td>
-    <td valign="top">
-      <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" alt="登录" style="width: 15%; height: auto;">
-    </td>
-    <td valign="top">
-      <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" alt="忘记密码" style="width: 15%; height: auto;">
-    </td>
-  </tr>
-</table>
+<div style="overflow: hidden;">
+  <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" style="width: 15%; height: auto; float: left; display: block;">
+  <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" style="width: 15%; height: auto; float: left; display: block;">
+  <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" style="width: 15%; height: auto; float: left; display: block;">
+</div>
 
 
 
