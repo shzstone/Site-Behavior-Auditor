@@ -22,20 +22,12 @@
 *   **实时轨迹**：毫秒级记录访客 IP、路径、归属地及 PV 状态，支持 30 天可视化趋势图。
 *   **本地解析**：集成 `ip2region xdb` 内存版。单次解析耗时仅 **0.0x 毫秒**，完全不请求外部接口，不占 SQL 资源。
 *   **自动化清理**：系统每日自动“脱水”，清理陈旧日志，确保数据库始终轻盈。
-<table border="0" cellpadding="0" cellspacing="0" align="left">
-  <tr>
-    <td valign="top" width="15%">
-      <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" width="auto" style="max-width: 60%;">
-    </td>
-    <td valign="top" width="15%">
-      <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" width="auto" style="max-width: 60%;">
-    </td>
-    <td valign="top" width="15%">
-      <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" width="auto" style="max-width: 60%;">
-    </td>
-  </tr>
-</table>
-<br clear="all">
+<div style="text-align: left;">
+  <img src="https://github.com/user-attachments/assets/171bc999-e8d6-4978-870a-9760000478b1" alt="访客轨迹" width="50%">
+</div>
+<div style="text-align: left;">
+  <img src="https://github.com/user-attachments/assets/2ec59019-108d-4f61-a2a0-e1f0abf61cb8" alt="拦截日志" width="50%">
+</div>
 
 
 ### 2. 🚫 三层主动防御系统 (Bot Shield)
@@ -52,12 +44,20 @@
 *   **去 Session 化**：彻底抛弃 `session_start()`，采用 WP Transient API，完美兼容 Redis/Memcached 环境，用户登录永不掉线。
 *   **Gate 钥匙保护**：支持隐藏后端登录地址，只有持有特定“钥匙”的 URL 才能开启入口。
 
-<div style="text-align: left;">
-  <img src="https://github.com/user-attachments/assets/171bc999-e8d6-4978-870a-9760000478b1" alt="访客轨迹" width="50%">
-</div>
-<div style="text-align: left;">
-  <img src="https://github.com/user-attachments/assets/2ec59019-108d-4f61-a2a0-e1f0abf61cb8" alt="拦截日志" width="50%">
-</div>
+<table border="0" cellpadding="0" cellspacing="0" align="left">
+  <tr>
+    <td valign="top" width="15%">
+      <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" width="auto" style="max-width: 60%;">
+    </td>
+    <td valign="top" width="15%">
+      <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" width="auto" style="max-width: 60%;">
+    </td>
+    <td valign="top" width="15%">
+      <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" width="auto" style="max-width: 60%;">
+    </td>
+  </tr>
+</table>
+<br clear="all">
 
 
 
