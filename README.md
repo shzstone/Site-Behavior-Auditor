@@ -25,13 +25,13 @@
 <table border="0" cellpadding="0" cellspacing="0" align="left">
   <tr>
     <td valign="top" width="15%">
-      <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" width="60%" style="max-width: 60%;">
+      <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" width="auto" style="max-width: 60%;">
     </td>
     <td valign="top" width="15%">
-      <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" width="60%" style="max-width: 60%;">
+      <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" width="auto" style="max-width: 60%;">
     </td>
     <td valign="top" width="15%">
-      <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" width="60%" style="max-width: 60%;">
+      <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" width="auto" style="max-width: 60%;">
     </td>
   </tr>
 </table>
