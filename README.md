@@ -10,7 +10,7 @@
 > ⚡ **开发初衷**：解决市面安全插件臃肿、消耗数据库资源、无法有效拦截高级伪装采集器的痛点。本套件追求：**极致性能、静默防御、业务闭环**。
 
 <div style="text-align: left;">
-  <img src="https://github.com/user-attachments/assets/2ec59019-108d-4f61-a2a0-e1f0abf61cb8" alt="Site Behavior Auditor" width="50%">
+  <img src="https://github.com/user-attachments/assets/2ec59019-108d-4f61-a2a0-e1f0abf61cb8" alt="Site Behavior Auditor" width="25%">
 </div>
 
 
@@ -23,10 +23,10 @@
 *   **本地解析**：集成 `ip2region xdb` 内存版。单次解析耗时仅 **0.0x 毫秒**，完全不请求外部接口，不占 SQL 资源。
 *   **自动化清理**：系统每日自动“脱水”，清理陈旧日志，确保数据库始终轻盈。
 <div style="text-align: left;">
-  <img src="https://github.com/user-attachments/assets/b773d840-b64a-4e1e-807d-05e3707dec51" alt="访客轨迹" width="50%">
+  <img src="https://github.com/user-attachments/assets/b773d840-b64a-4e1e-807d-05e3707dec51" alt="访客轨迹" width="25%">
 </div>
 <div style="text-align: left;">
-  <img src="https://github.com/user-attachments/assets/171bc999-e8d6-4978-870a-9760000478b1" alt="拦截日志" width="50%">
+  <img src="https://github.com/user-attachments/assets/171bc999-e8d6-4978-870a-9760000478b1" alt="拦截日志" width="25%">
 </div>
 
 ### 2. 🚫 三层主动防御系统 (Bot Shield)
@@ -34,7 +34,7 @@
 *   **Cookie 身份校验**：自动识别真实浏览器指纹，对无法维持会话的恶意采集脚本进行强力降速。
 *   **诱饵陷阱 (Honeypot)**：页面底部自动布设动态隐藏诱饵，脚本一旦触碰即刻触发“死路”，封禁该 IP。
 <div style="text-align: left;">
-  <img src="https://github.com/user-attachments/assets/f15a3ed2-5896-4910-b98e-05bc863a0978" alt="防御设置" width="50%">
+  <img src="https://github.com/user-attachments/assets/f15a3ed2-5896-4910-b98e-05bc863a0978" alt="防御设置" width="25%">
 </div>
 
 
@@ -45,14 +45,14 @@
 
 <table border="0" cellpadding="0" cellspacing="0" align="left">
   <tr>
-    <td valign="top" width="180">
-      <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" width="180" style="display: block;">
+    <td valign="top" width="100">
+      <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" width="100" style="display: block;">
     </td>
-    <td valign="top" width="180">
-      <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" width="180" style="display: block;">
+    <td valign="top" width="100">
+      <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" width="100" style="display: block;">
     </td>
-    <td valign="top" width="180">
-      <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" width="180" style="display: block;">
+    <td valign="top" width="100">
+      <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" width="100" style="display: block;">
     </td>
   </tr>
 </table>
@@ -64,7 +64,7 @@
 ### 4. 📧 SMTP 发信系统
 *   **原生集成**：内置轻量级发信逻辑，支持 TLS/SSL 加密，完美闭环注册激活与密码找回流程。
 <div style="text-align: left;">
-  <img src="https://github.com/user-attachments/assets/efcdb931-0517-459c-8e7b-d60099e09f15" alt="Site Behavior Auditor" width="50%">
+  <img src="https://github.com/user-attachments/assets/efcdb931-0517-459c-8e7b-d60099e09f15" alt="Site Behavior Auditor" width="25%">
 </div>
 
 
