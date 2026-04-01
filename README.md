@@ -22,11 +22,20 @@
 *   **实时轨迹**：毫秒级记录访客 IP、路径、归属地及 PV 状态，支持 30 天可视化趋势图。
 *   **本地解析**：集成 `ip2region xdb` 内存版。单次解析耗时仅 **0.0x 毫秒**，完全不请求外部接口，不占 SQL 资源。
 *   **自动化清理**：系统每日自动“脱水”，清理陈旧日志，确保数据库始终轻盈。
-<div style="overflow: hidden;">
-  <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" style="width: 15%; height: auto; float: left; display: block;">
-  <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" style="width: 15%; height: auto; float: left; display: block;">
-  <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" style="width: 15%; height: auto; float: left; display: block;">
-</div>
+<table border="0" cellpadding="0" cellspacing="0" align="left">
+  <tr>
+    <td valign="top" width="15%">
+      <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" width="100%" style="max-width: 100%;">
+    </td>
+    <td valign="top" width="15%">
+      <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" width="100%" style="max-width: 100%;">
+    </td>
+    <td valign="top" width="15%">
+      <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" width="100%" style="max-width: 100%;">
+    </td>
+  </tr>
+</table>
+<br clear="all">
 
 
 ### 2. 🚫 三层主动防御系统 (Bot Shield)
