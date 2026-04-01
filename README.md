@@ -45,14 +45,14 @@
 
 <table border="0" cellpadding="0" cellspacing="0" align="left">
   <tr>
-    <td valign="top" width="100">
-      <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" width="100" style="display: block;">
+    <td valign="top" width="130">
+      <img src="https://github.com/user-attachments/assets/977d3c9c-6b45-4abd-9786-4f5c4b9d3685" width="130" style="display: block;">
     </td>
-    <td valign="top" width="100">
-      <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" width="100" style="display: block;">
+    <td valign="top" width="130">
+      <img src="https://github.com/user-attachments/assets/be10d996-2585-4a5c-92c5-092869debb24" width="130" style="display: block;">
     </td>
-    <td valign="top" width="100">
-      <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" width="100" style="display: block;">
+    <td valign="top" width="130">
+      <img src="https://github.com/user-attachments/assets/37c346f0-386b-477e-b789-c68b6f384c5b" width="130" style="display: block;">
     </td>
   </tr>
 </table>
