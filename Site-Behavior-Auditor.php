@@ -2,7 +2,7 @@
 /**
  * Plugin Name: 综合安全套件 (Site Behavior Auditor + Login Box + SMTP)
  * Description: 集成站点全行为审计、iOS风格登录/注册/忘记密码面板（简码: sba_login_box）和SMTP邮件配置。IP归属地使用 ip2region xdb 内存查询（支持 IPv4/IPv6），分片上传库文件，并提供高级爬虫防御（阶梯限制、Cookie校验、诱饵陷阱）。
- * Version: 2.1.6
+ * Version: 2.1.7
  * Author: Stone
  * Author URI: https://blog.cacca.cc
  * Text Domain: site-behavior-auditor
@@ -651,20 +651,22 @@ function sba_audit_ajax_tracks() {
     $p = intval( $_POST['page'] ?? 1 );
     $per = 50;
     $off = ( $p - 1 ) * $per;
+
+    $searcher = SBA_IP_Searcher::get_instance();
+
     $latest_date = $wpdb->get_var( "SELECT MAX(visit_date) FROM {$wpdb->prefix}dis_stats" );
-    if ( ! $latest_date ) $latest_date = current_time( 'Y-m-d' );
-    
-    $total = sba_get_pv_counter($latest_date);
-    
-    if ($total == 0) {
-        $total = $wpdb->get_var( $wpdb->prepare( 
-            "SELECT COUNT(*) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s", 
-            $latest_date 
+    if ( ! $latest_date ) {
+        $latest_date = current_time( 'Y-m-d' );
+    }
+
+    $total = sba_get_pv_counter( $latest_date );
+    if ( $total == 0 ) {
+        $total = $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s",
+            $latest_date
         ) );
     }
-    
-    $pages = ceil( $total / $per );
-    
+
     $rows = $wpdb->get_results( $wpdb->prepare(
         "SELECT ip, url, pv, last_visit 
          FROM {$wpdb->prefix}dis_stats 
@@ -673,27 +675,28 @@ function sba_audit_ajax_tracks() {
          LIMIT %d, %d",
         $latest_date, $off, $per
     ) );
-    
-    $html = "";
+
+    $html = '';
     if ( $rows ) {
         foreach ( $rows as $r ) {
+            $geo = $searcher->search( $r->ip );
             $html .= "<tr>
                 <td>" . date( 'H:i', strtotime( $r->last_visit ) ) . "</td>
-                <td><code>{$r->ip}</code></td>
-                <td><small class='geo-tag' data-ip='{$r->ip}'>" . __('解析中...', SBA_TEXT_DOMAIN) . "</small></td>
+                <td><code>" . esc_html( $r->ip ) . "</code></td>
+                <td><small>" . esc_html( $geo ) . "</small></td>
                 <td><div class='sba-cell-wrap'><small>" . esc_html( $r->url ) . "</small></div></td>
                 <td><b>{$r->pv}</b></td>
             </tr>";
         }
     } else {
-        $html = '<tr><td colspan="5">' . __('暂无更多记录', SBA_TEXT_DOMAIN) . '</td></tr>';
+        $html = '<tr><td colspan="5">' . __( '暂无更多记录', SBA_TEXT_DOMAIN ) . '</td></tr>';
     }
-    
-    wp_send_json_success( [ 
-        'html' => $html, 
-        'pages' => $pages, 
-        'total' => $total, 
-        'date' => $latest_date 
+
+    wp_send_json_success( [
+        'html'   => $html,
+        'pages'  => ceil( $total / $per ),
+        'total'  => $total,
+        'date'   => $latest_date,
     ] );
 }
 
@@ -1735,40 +1738,37 @@ function sba_audit_render_dashboard() {
         }
     });
     
-    let curP = 1, maxP = 1;
-    const loadTracks = (p) => {
-        fetch(ajaxurl, { 
-            method: 'POST', 
-            body: new URLSearchParams({action:'sba_load_tracks', page:p}) 
-        })
-        .then(r => r.json())
-        .then(res => {
-            if(res.success) { 
-                document.getElementById('track-body').innerHTML = res.data.html; 
-                curP = p; 
-                maxP = res.data.pages; 
-                
-                const prevBtn = document.getElementById('prev-page');
-                const nextBtn = document.getElementById('next-page');
-                
-                prevBtn.disabled = (curP <= 1);
-                nextBtn.disabled = (curP >= maxP);
-                
-                prevBtn.textContent = prevBtn.disabled ? '◀' : '◀ <?php _e("上页", SBA_TEXT_DOMAIN); ?>';
-                nextBtn.textContent = nextBtn.disabled ? '▶' : '<?php _e("下页", SBA_TEXT_DOMAIN); ?> ▶';
-                
-                document.getElementById('current-page').innerText = p; 
-                document.getElementById('total-pages').innerText = maxP; 
-                document.getElementById('total-rows').innerText = res.data.total; 
-                processGeos(); 
-            }
-        })
-        .catch(error => {
-            console.error('<?php _e("加载数据失败:", SBA_TEXT_DOMAIN); ?>', error);
-            document.getElementById('track-body').innerHTML = 
-                '<tr><td colspan="5" style="color:#d63638;"><?php _e("加载失败，请刷新页面重试", SBA_TEXT_DOMAIN); ?></td></tr>';
-        });
-    };
+	let curP = 1, maxP = 1;
+	const loadTracks = (p) => {
+		fetch(ajaxurl, { 
+			method: 'POST', 
+			body: new URLSearchParams({action:'sba_load_tracks', page:p}) 
+		})
+		.then(r => r.json())
+		.then(res => {
+			if(res.success) { 
+				document.getElementById('track-body').innerHTML = res.data.html; 
+				curP = p; 
+				maxP = res.data.pages; 
+				
+				const prevBtn = document.getElementById('prev-page');
+				const nextBtn = document.getElementById('next-page');
+				prevBtn.disabled = (curP <= 1);
+				nextBtn.disabled = (curP >= maxP);
+				prevBtn.textContent = prevBtn.disabled ? '◀' : '◀ 上页';
+				nextBtn.textContent = nextBtn.disabled ? '▶' : '下页 ▶';
+				
+				document.getElementById('current-page').innerText = p; 
+				document.getElementById('total-pages').innerText = maxP; 
+				document.getElementById('total-rows').innerText = res.data.total; 
+			}
+		})
+		.catch(error => {
+			console.error('加载数据失败:', error);
+			document.getElementById('track-body').innerHTML = 
+				'<tr><td colspan="5" style="color:#d63638;">加载失败，请刷新页面重试</td></tr>';
+		});
+	};
     
     async function processGeos() {
         const badges = Array.from(document.querySelectorAll('.geo-tag')).filter(b => b.innerText === '<?php _e("解析中...", SBA_TEXT_DOMAIN); ?>');
