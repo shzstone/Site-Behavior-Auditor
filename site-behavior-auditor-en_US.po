@@ -1,0 +1,611 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Site Behavior Auditor 2.1.7\n"
+"POT-Creation-Date: 2025-03-15 12:00+0000\n"
+"PO-Revision-Date: 2025-03-15 14:00+0000\n"
+"Last-Translator: Translator <email@example.com>\n"
+"Language-Team: English\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Language: en_US\n"
+
+#: Site-Behavior-Auditor.php:44
+msgid "SBA 安全套件"
+msgstr "SBA Security Suite"
+
+#: Site-Behavior-Auditor.php:45
+msgid "未检测到官方 ip2region 类库，已自动降级为内置简化版（仅支持 IPv4 查询）。如需完整 IPv6 支持，请将官方类库放置于"
+msgstr "Official ip2region library not detected. Fallback to built-in simplified version (IPv4 only). For full IPv6 support, place the official library at"
+
+#: Site-Behavior-Auditor.php:197
+msgid "未知"
+msgstr "Unknown"
+
+#: Site-Behavior-Auditor.php:208
+msgid "IPv6库未上传或官方类库缺失"
+msgstr "IPv6 database not uploaded or official library missing"
+
+#: Site-Behavior-Auditor.php:212
+msgid "查询失败"
+msgstr "Query failed"
+
+#: Site-Behavior-Auditor.php:328
+msgid "蜜罐陷阱触发"
+msgstr "Honeypot trap triggered"
+
+#: Site-Behavior-Auditor.php:357
+msgid "自动化扫描器: %s"
+msgstr "Automated scanner: %s"
+
+#: Site-Behavior-Auditor.php:362
+msgid "作者枚举探测 (?author=X)"
+msgstr "Author enumeration detected (?author=X)"
+
+#: Site-Behavior-Auditor.php:369
+msgid "非法路径探测: %s"
+msgstr "Illegal path probe: %s"
+
+#: Site-Behavior-Auditor.php:383
+msgid "Gate 钥匙错误或已失效"
+msgstr "Gate key error or expired"
+
+#: Site-Behavior-Auditor.php:410
+msgid "采集器高频抓取"
+msgstr "High-frequency scraping"
+
+#: Site-Behavior-Auditor.php:410
+msgid "频率超限 (CC风险)"
+msgstr "Rate limit exceeded (CC risk)"
+
+#: Site-Behavior-Auditor.php:527
+msgid "暂无拦截记录"
+msgstr "No blocked records"
+
+#: Site-Behavior-Auditor.php:628
+msgid "安全提醒"
+msgstr "Security Alert"
+
+#: Site-Behavior-Auditor.php:631
+msgid "IP: %s\n失败次数: %d\n封禁至: %s"
+msgstr "IP: %s\nFailed attempts: %d\nBanned until: %s"
+
+#: Site-Behavior-Auditor.php:809
+msgid "激活链接无效或已使用。"
+msgstr "Activation link invalid or already used."
+
+#: Site-Behavior-Auditor.php:809
+msgid "激活失败"
+msgstr "Activation Failed"
+
+#: Site-Behavior-Auditor.php:817
+msgid "激活码不正确。"
+msgstr "Activation code incorrect."
+
+#: Site-Behavior-Auditor.php:832
+msgid "欢迎回来"
+msgstr "Welcome back"
+
+#: Site-Behavior-Auditor.php:835
+msgid "控制台"
+msgstr "Dashboard"
+
+#: Site-Behavior-Auditor.php:836
+msgid "个人资料"
+msgstr "Profile"
+
+#: Site-Behavior-Auditor.php:837
+msgid "注销"
+msgstr "Logout"
+
+#: Site-Behavior-Auditor.php:848
+msgid "您已被封禁24小时，请稍后再试。"
+msgstr "You have been banned for 24 hours. Please try again later."
+
+#: Site-Behavior-Auditor.php:849
+msgid "当前无需验证码"
+msgstr "No CAPTCHA required currently"
+
+#: Site-Behavior-Auditor.php:869
+msgid "操作过于频繁，请稍后再试。"
+msgstr "Too many requests. Please try again later."
+
+#: Site-Behavior-Auditor.php:870
+msgid "由于多次失败，您的IP已被封禁24小时。"
+msgstr "Your IP has been banned for 24 hours due to multiple failures."
+
+#: Site-Behavior-Auditor.php:882
+msgid "验证码错误"
+msgstr "CAPTCHA error"
+
+#: Site-Behavior-Auditor.php:904
+msgid "账号尚未激活，请查收激活邮件。"
+msgstr "Account not activated. Please check your activation email."
+
+#: Site-Behavior-Auditor.php:909
+msgid "登录成功"
+msgstr "Login successful"
+
+#: Site-Behavior-Auditor.php:929
+msgid "所有字段都不能为空。"
+msgstr "All fields are required."
+
+#: Site-Behavior-Auditor.php:934
+msgid "密码必须至少8位，且包含字母和数字。"
+msgstr "Password must be at least 8 characters and contain both letters and numbers."
+
+#: Site-Behavior-Auditor.php:939
+msgid "用户名已存在。"
+msgstr "Username already exists."
+
+#: Site-Behavior-Auditor.php:944
+msgid "邮箱已被注册。"
+msgstr "Email already registered."
+
+#: Site-Behavior-Auditor.php:963
+msgid "邮件发送失败，请联系管理员。"
+msgstr "Email sending failed. Please contact the administrator."
+
+#: Site-Behavior-Auditor.php:967
+msgid "注册成功，请查收激活邮件。"
+msgstr "Registration successful. Please check your activation email."
+
+#: Site-Behavior-Auditor.php:987
+msgid "用户名或邮箱未注册。"
+msgstr "Username or email not registered."
+
+#: Site-Behavior-Auditor.php:991
+msgid "无法生成重置链接，请稍后重试。"
+msgstr "Unable to generate reset link. Please try again later."
+
+#: Site-Behavior-Auditor.php:996
+msgid "重置密码"
+msgstr "Reset Password"
+
+#: Site-Behavior-Auditor.php:997
+msgid "请点击以下链接重置密码（链接24小时内有效）：\n%s"
+msgstr "Please click the following link to reset your password (valid for 24 hours):\n%s"
+
+#: Site-Behavior-Auditor.php:1001
+msgid "重置链接已发送至您的邮箱。"
+msgstr "Reset link has been sent to your email."
+
+#: Site-Behavior-Auditor.php:1015
+msgid "全行为审计"
+msgstr "Behavior Audit"
+
+#: Site-Behavior-Auditor.php:1016
+msgid "防御设置"
+msgstr "Defense Settings"
+
+#: Site-Behavior-Auditor.php:1017 Site-Behavior-Auditor.php:1440
+msgid "SMTP 邮件设置"
+msgstr "SMTP Mail Settings"
+
+#: Site-Behavior-Auditor.php:1029
+msgid "⚙️ 服务器环境检测"
+msgstr "⚙️ Server Environment Check"
+
+#: Site-Behavior-Auditor.php:1032
+msgid "PHP 版本"
+msgstr "PHP Version"
+
+#: Site-Behavior-Auditor.php:1039
+msgid "秒"
+msgstr "seconds"
+
+#: Site-Behavior-Auditor.php:1041
+msgid "cURL 扩展"
+msgstr "cURL Extension"
+
+#: Site-Behavior-Auditor.php:1043
+msgid "若需上传大文件（超过 10MB），建议将 <code>upload_max_filesize</code> 和 <code>post_max_size</code> 调至至少 64M。"
+msgstr "For uploading large files (>10MB), it is recommended to set <code>upload_max_filesize</code> and <code>post_max_size</code> to at least 64M."
+
+#: Site-Behavior-Auditor.php:1077
+msgid "🚀 SBA 站点行为监控 v%s"
+msgstr "🚀 SBA Site Behavior Monitor v%s"
+
+#: Site-Behavior-Auditor.php:1079
+msgid "当前在线:"
+msgstr "Online now:"
+
+#: Site-Behavior-Auditor.php:1080
+msgid "今日 (%s) UV:"
+msgstr "Today (%s) UV:"
+
+#: Site-Behavior-Auditor.php:1081
+msgid "今日 (%s) PV:"
+msgstr "Today (%s) PV:"
+
+#: Site-Behavior-Auditor.php:1084
+msgid "📈 30天访问趋势"
+msgstr "📈 30-Day Trend"
+
+#: Site-Behavior-Auditor.php:1085
+msgid "📊 50天审计详表"
+msgstr "📊 50-Day Audit Table"
+
+#: Site-Behavior-Auditor.php:1091
+msgid "日期"
+msgstr "Date"
+
+#: Site-Behavior-Auditor.php:1091
+msgid "UV (人)"
+msgstr "UV"
+
+#: Site-Behavior-Auditor.php:1091
+msgid "PV (次)"
+msgstr "PV"
+
+#: Site-Behavior-Auditor.php:1091
+msgid "深度"
+msgstr "Depth"
+
+#: Site-Behavior-Auditor.php:1103
+msgid "👣 访客轨迹 (%s)"
+msgstr "👣 Visitor Traces (%s)"
+
+#: Site-Behavior-Auditor.php:1106
+msgid "时间"
+msgstr "Time"
+
+#: Site-Behavior-Auditor.php:1106
+msgid "IP"
+msgstr "IP"
+
+#: Site-Behavior-Auditor.php:1106
+msgid "归属地"
+msgstr "Location"
+
+#: Site-Behavior-Auditor.php:1106
+msgid "访问路径"
+msgstr "Path"
+
+#: Site-Behavior-Auditor.php:1106
+msgid "PV"
+msgstr "PV"
+
+#: Site-Behavior-Auditor.php:1109 Site-Behavior-Auditor.php:1118
+msgid "总记录:"
+msgstr "Total:"
+
+#: Site-Behavior-Auditor.php:1110 Site-Behavior-Auditor.php:1119
+msgid "上页"
+msgstr "Prev"
+
+#: Site-Behavior-Auditor.php:1110 Site-Behavior-Auditor.php:1119
+msgid "第"
+msgstr "Page"
+
+#: Site-Behavior-Auditor.php:1110 Site-Behavior-Auditor.php:1119
+msgid "页"
+msgstr "of"
+
+#: Site-Behavior-Auditor.php:1110 Site-Behavior-Auditor.php:1119
+msgid "下页"
+msgstr "Next"
+
+#: Site-Behavior-Auditor.php:1114
+msgid "🚫 拦截日志 (%s)"
+msgstr "🚫 Blocked Logs (%s)"
+
+#: Site-Behavior-Auditor.php:1116
+msgid "拦截 IP"
+msgstr "Blocked IP"
+
+#: Site-Behavior-Auditor.php:1116
+msgid "原因与目标"
+msgstr "Reason & Target"
+
+#: Site-Behavior-Auditor.php:1151
+msgid "解析中..."
+msgstr "Resolving..."
+
+#: Site-Behavior-Auditor.php:1185
+msgid "🛠️ SBA 防御设置"
+msgstr "🛠️ SBA Defense Settings"
+
+#: Site-Behavior-Auditor.php:1187
+msgid "📖 使用说明"
+msgstr "📖 Instructions"
+
+#: Site-Behavior-Auditor.php:1188
+msgid "1. <b>防误杀：</b> 填入用户名后，登录时将免疫所有频率拦截和路径检测。"
+msgstr "1. <b>Whitelist Users:</b> Users listed here will bypass all rate limits and path checks."
+
+#: Site-Behavior-Auditor.php:1189
+msgid "2. <b>Gate 钥匙：</b> 设置后，访问 <code>wp-login.php?gate=钥匙</code> 可开启登录入口（地址栏自动去除参数）。此后登录表单通过隐藏字段提交令牌，退出后令牌失效。"
+msgstr "2. <b>Gate Key:</b> Set a secret key. Access <code>wp-login.php?gate=your-key</code> to enable the login page (the parameter will be removed). The login form will then submit a token via hidden field, which expires after logout."
+
+#: Site-Behavior-Auditor.php:1190
+msgid "3. <b>指纹库：</b> 自动识别 <code>sqlmap, curl, wget, python</code> 等 UA 特征并阻断。"
+msgstr "3. <b>Fingerprinting:</b> Automatically detects and blocks common scanner UA strings like <code>sqlmap, curl, wget, python</code>."
+
+#: Site-Behavior-Auditor.php:1191
+msgid "4. <b>归属地：</b> 使用 ip2region xdb 内存查询。请通过下方按钮上传 IPv4 和 IPv6 的 xdb 文件（支持分片上传、断点续传）。"
+msgstr "4. <b>GeoIP:</b> Uses ip2region xdb in-memory query. Upload IPv4 and IPv6 xdb files using the buttons below (chunked upload with resume support)."
+
+#: Site-Behavior-Auditor.php:1192
+msgid "5. <b>爬虫防御：</b> 启用阶梯限制和 Cookie 校验可有效识别采集器，蜜罐陷阱触发即封禁。"
+msgstr "5. <b>Anti-Scraping:</b> Enabling tiered rate limits and cookie validation effectively detects scrapers; honeypot traps will trigger an immediate ban."
+
+#: Site-Behavior-Auditor.php:1197
+msgid "✅ 信任通道"
+msgstr "✅ Trusted Channels"
+
+#: Site-Behavior-Auditor.php:1199
+msgid "用户名白名单"
+msgstr "Username Whitelist"
+
+#: Site-Behavior-Auditor.php:1199
+msgid "登录此用户时，系统自动信任，不执行拦截逻辑。"
+msgstr "These users will be fully trusted and not subject to any blocking."
+
+#: Site-Behavior-Auditor.php:1200
+msgid "IP 白名单"
+msgstr "IP Whitelist"
+
+#: Site-Behavior-Auditor.php:1200
+msgid "每行一个 IP。"
+msgstr "One IP per line."
+
+#: Site-Behavior-Auditor.php:1204
+msgid "🚫 防御配置"
+msgstr "🚫 Defense Configuration"
+
+#: Site-Behavior-Auditor.php:1206
+msgid "CC 封禁阈值"
+msgstr "CC Block Threshold"
+
+#: Site-Behavior-Auditor.php:1206
+msgid "次/分"
+msgstr "requests/min"
+
+#: Site-Behavior-Auditor.php:1206
+msgid "单 IP 每分钟请求超过此值自动封禁（0 为关闭）。"
+msgstr "If an IP exceeds this number of requests per minute, it will be blocked (0 = off)."
+
+#: Site-Behavior-Auditor.php:1207
+msgid "Gate 钥匙"
+msgstr "Gate Key"
+
+#: Site-Behavior-Auditor.php:1207
+msgid "保护登录入口。访问 <code>wp-login.php?gate=钥匙</code> 开启入口，之后自动隐藏。"
+msgstr "Protects the login page. Visit <code>wp-login.php?gate=your-key</code> to enable it (the parameter is then removed)."
+
+#: Site-Behavior-Auditor.php:1208
+msgid "追加拦截路径"
+msgstr "Extra Blocked Paths"
+
+#: Site-Behavior-Auditor.php:1208
+msgid "逗号分隔。内置已含 .env/.git 等，此处用于扩充。"
+msgstr "Comma separated. Built-in paths already include .env, .git, etc. Use this to add more."
+
+#: Site-Behavior-Auditor.php:1209
+msgid "爬虫特征路径 (正则)"
+msgstr "Scraper Path Pattern (regex)"
+
+#: Site-Behavior-Auditor.php:1209
+msgid "正则表达式，匹配的 URL 将使用更严格的频率限制（默认阈值的 1/3）。"
+msgstr "Regular expression. URLs matching this pattern will be subject to stricter rate limits (1/3 of the default threshold)."
+
+#: Site-Behavior-Auditor.php:1210
+msgid "Cookie 校验"
+msgstr "Cookie Validation"
+
+#: Site-Behavior-Auditor.php:1210
+msgid "启用 Cookie 校验（无有效 Cookie 且非浏览器的请求将受到更严格限制）"
+msgstr "Enable cookie validation (requests without a valid cookie and non-browser UA will face stricter limits)."
+
+#: Site-Behavior-Auditor.php:1211
+msgid "拦截重定向 URL"
+msgstr "Block Redirect URL"
+
+#: Site-Behavior-Auditor.php:1211
+msgid "拦截后将对方跳转至此页面（留空则显示默认 403 页面）。"
+msgstr "Redirect blocked requests to this URL (leave empty to show default 403 page)."
+
+#: Site-Behavior-Auditor.php:1214
+msgid "保存核心配置"
+msgstr "Save Core Settings"
+
+#: Site-Behavior-Auditor.php:1218
+msgid "📁 IP 归属地库 (ip2region xdb) 分片上传"
+msgstr "📁 IP Geo Database (ip2region xdb) Chunked Upload"
+
+#: Site-Behavior-Auditor.php:1220
+msgid "IPv4 库"
+msgstr "IPv4 Database"
+
+#: Site-Behavior-Auditor.php:1220
+msgid "已上传"
+msgstr "Uploaded"
+
+#: Site-Behavior-Auditor.php:1220 Site-Behavior-Auditor.php:184
+msgid "未上传"
+msgstr "Not uploaded"
+
+#: Site-Behavior-Auditor.php:1222
+msgid "上传 IPv4 库"
+msgstr "Upload IPv4 Database"
+
+#: Site-Behavior-Auditor.php:1223 Site-Behavior-Auditor.php:1233
+msgid "取消上传"
+msgstr "Cancel Upload"
+
+#: Site-Behavior-Auditor.php:1230
+msgid "IPv6 库"
+msgstr "IPv6 Database"
+
+#: Site-Behavior-Auditor.php:1232
+msgid "上传 IPv6 库"
+msgstr "Upload IPv6 Database"
+
+#: Site-Behavior-Auditor.php:1245
+msgid "无权限"
+msgstr "Permission denied"
+
+#: Site-Behavior-Auditor.php:1246
+msgid "无效请求"
+msgstr "Invalid request"
+
+#: Site-Behavior-Auditor.php:1251
+msgid "无效类型"
+msgstr "Invalid type"
+
+#: Site-Behavior-Auditor.php:1252
+msgid "参数错误"
+msgstr "Parameter error"
+
+#: Site-Behavior-Auditor.php:1254
+msgid "分片上传错误"
+msgstr "Chunk upload error"
+
+#: Site-Behavior-Auditor.php:1261
+msgid "保存分片失败"
+msgstr "Failed to save chunk"
+
+#: Site-Behavior-Auditor.php:1279
+msgid "无法创建最终文件，请检查目录权限"
+msgstr "Cannot create final file. Please check directory permissions."
+
+#: Site-Behavior-Auditor.php:1288
+msgid "分片文件丢失，合并失败"
+msgstr "Chunk file missing, merge failed"
+
+#: Site-Behavior-Auditor.php:1297
+msgid "上传并合并完成"
+msgstr "Upload and merge completed"
+
+#: Site-Behavior-Auditor.php:1299
+msgid "分片接收成功"
+msgstr "Chunk received successfully"
+
+#: Site-Behavior-Auditor.php:1329
+msgid "已中断并清理临时文件"
+msgstr "Upload cancelled and temporary files cleaned"
+
+#: Site-Behavior-Auditor.php:1420
+msgid "设置已保存。"
+msgstr "Settings saved."
+
+#: Site-Behavior-Auditor.php:1427
+msgid "测试邮件已发送到 %s，请检查收件箱。"
+msgstr "Test email sent to %s. Please check your inbox."
+
+#: Site-Behavior-Auditor.php:1429
+msgid "测试邮件发送失败：%s"
+msgstr "Test email failed: %s"
+
+#: Site-Behavior-Auditor.php:1432
+msgid "请输入有效的测试邮箱地址。"
+msgstr "Please enter a valid test email address."
+
+#: Site-Behavior-Auditor.php:1443
+msgid "SMTP 主机"
+msgstr "SMTP Host"
+
+#: Site-Behavior-Auditor.php:1443
+msgid "例如：smtp.gmail.com"
+msgstr "e.g., smtp.gmail.com"
+
+#: Site-Behavior-Auditor.php:1444
+msgid "端口"
+msgstr "Port"
+
+#: Site-Behavior-Auditor.php:1444
+msgid "常用：587 (TLS) 或 465 (SSL)"
+msgstr "Common: 587 (TLS) or 465 (SSL)"
+
+#: Site-Behavior-Auditor.php:1445
+msgid "加密方式"
+msgstr "Encryption"
+
+#: Site-Behavior-Auditor.php:1445
+msgid "无"
+msgstr "None"
+
+#: Site-Behavior-Auditor.php:1445
+msgid "TLS"
+msgstr "TLS"
+
+#: Site-Behavior-Auditor.php:1445
+msgid "SSL"
+msgstr "SSL"
+
+#: Site-Behavior-Auditor.php:1446
+msgid "启用认证"
+msgstr "Enable Authentication"
+
+#: Site-Behavior-Auditor.php:1446
+msgid "通常需要勾选"
+msgstr "Usually required"
+
+#: Site-Behavior-Auditor.php:1447
+msgid "用户名"
+msgstr "Username"
+
+#: Site-Behavior-Auditor.php:1448
+msgid "密码"
+msgstr "Password"
+
+#: Site-Behavior-Auditor.php:1449
+msgid "发件人邮箱"
+msgstr "From Email"
+
+#: Site-Behavior-Auditor.php:1449
+msgid "留空则使用 WordPress 默认"
+msgstr "Leave empty to use WordPress default"
+
+#: Site-Behavior-Auditor.php:1450
+msgid "发件人名称"
+msgstr "From Name"
+
+#: Site-Behavior-Auditor.php:1450
+msgid "例如：网站名称"
+msgstr "e.g., Site Name"
+
+#: Site-Behavior-Auditor.php:1452
+msgid "保存设置"
+msgstr "Save Settings"
+
+#: Site-Behavior-Auditor.php:1455
+msgid "测试邮件发送"
+msgstr "Send Test Email"
+
+#: Site-Behavior-Auditor.php:1457
+msgid "接收测试邮箱"
+msgstr "Recipient Email"
+
+#: Site-Behavior-Auditor.php:1458
+msgid "发送测试邮件"
+msgstr "Send Test Email"
+
+#: Site-Behavior-Auditor.php:1468
+msgid "SMTP 测试邮件 - %s"
+msgstr "SMTP Test Email - %s"
+
+#: Site-Behavior-Auditor.php:1469
+msgid "这是一封测试邮件，确认您的 SMTP 配置正确。"
+msgstr "This is a test email to confirm your SMTP configuration is correct."
+
+#: Site-Behavior-Auditor.php:1478
+msgid "未知错误，请检查日志。"
+msgstr "Unknown error. Please check logs."
+
+#: Site-Behavior-Auditor.php:1519
+msgid "当前在线"
+msgstr "Online Now"
+
+#: Site-Behavior-Auditor.php:1520
+msgid "今日访客"
+msgstr "Visitors Today"
+
+#: Site-Behavior-Auditor.php:1521
+msgid "累积浏览"
+msgstr "Total Views"
+
+msgid "SMTP 邮件"
+msgstr "SMTP Mail"
