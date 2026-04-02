@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Site Behavior Auditor 2.1.7\n"
+"Project-Id-Version: Site Behavior Auditor 2.1.6\n"
 "POT-Creation-Date: 2025-03-15 12:00+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
