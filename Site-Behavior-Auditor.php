@@ -140,6 +140,26 @@ function sba_combined_activate() {
             update_option( 'sba_settings', $current );
         }
     }
+
+    $today = current_time('Y-m-d');
+    $pv_today = sba_get_pv_counter($today);
+    if ( $pv_today == 0 ) {
+        $real_pv = $wpdb->get_var( $wpdb->prepare(
+            "SELECT SUM(pv) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s",
+            $today
+        ) );
+        if ( $real_pv > 0 ) {
+            update_option( SBA_COUNTER_PV_TODAY . '_' . $today, (int) $real_pv );
+
+            $real_uv = $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s",
+                $today
+            ) );
+            if ( $real_uv > 0 ) {
+                update_option( SBA_COUNTER_UV_TODAY . '_' . $today, (int) $real_uv );
+            }
+        }
+    }
 }
 
 add_action( 'sba_daily_cleanup', 'sba_cleanup_old_data' );
@@ -163,14 +183,14 @@ function sba_audit_get_opt( $k, $d = '' ) {
 function sba_atomic_increment_counter($counter_key) {
     global $wpdb;
     $sql = $wpdb->prepare(
-        "INSERT INTO {$wpdb->options} (option_name, option_value, autoload) 
-         VALUES (%s, '1', 'no') 
-         ON DUPLICATE KEY UPDATE 
+        "INSERT INTO {$wpdb->options} (option_name, option_value, autoload)
+         VALUES (%s, '1', 'no')
+         ON DUPLICATE KEY UPDATE
          option_value = CAST(option_value AS UNSIGNED) + 1,
          autoload = 'no'",
         $counter_key
     );
-    
+
     return $wpdb->query($sql);
 }
 
@@ -194,11 +214,11 @@ function sba_increment_blocked_counter() {
 
 function sba_get_counter($counter_key) {
     static $counter_cache = [];
-    
+
     if (isset($counter_cache[$counter_key])) {
         return $counter_cache[$counter_key];
     }
-    
+
     $value = get_option($counter_key, 0);
     $counter_cache[$counter_key] = (int)$value;
     return $counter_cache[$counter_key];
@@ -427,7 +447,7 @@ function sba_audit_execute_block( $reason ) {
         'reason'     => $reason,
         'target_url' => $_SERVER['REQUEST_URI']
     ] );
-    
+
     sba_increment_blocked_counter();
 
     $target = sba_audit_get_opt( 'block_target_url', '' );
@@ -575,7 +595,7 @@ add_action( 'init', function() {
                 "SELECT id FROM {$wpdb->prefix}dis_stats WHERE ip = %s AND visit_date = %s LIMIT 1",
                 $ip, $local_date
             ) );
-            
+
             if ( ! $exists ) {
                 $is_new_uv = true;
                 sba_increment_uv_counter();
@@ -584,7 +604,8 @@ add_action( 'init', function() {
             $transient_expire = strtotime('tomorrow', $wp_timestamp) - $wp_timestamp;
             set_transient($transient_key, '1', $transient_expire);
         }
-        $cookie_expire = strtotime('tomorrow', current_time('timestamp'));
+        $wp_timestamp = current_time('timestamp');
+        $cookie_expire = strtotime('tomorrow', $wp_timestamp);
         setcookie($uv_cookie_name, '1', $cookie_expire, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
     }
 
@@ -666,10 +687,10 @@ function sba_audit_ajax_tracks() {
     $pages = ceil( $total / $per );
     
     $rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT ip, url, pv, last_visit 
-         FROM {$wpdb->prefix}dis_stats 
-         WHERE visit_date = %s 
-         ORDER BY last_visit DESC 
+        "SELECT ip, url, pv, last_visit
+         FROM {$wpdb->prefix}dis_stats
+         WHERE visit_date = %s
+         ORDER BY last_visit DESC
          LIMIT %d, %d",
         $latest_date, $off, $per
     ) );
@@ -703,46 +724,46 @@ function sba_audit_ajax_blocked_logs() {
     $p = intval( $_POST['page'] ?? 1 );
     $per = 15;
     $off = ( $p - 1 ) * $per;
-    
+
     $today = current_time('Y-m-d');
     $total = sba_get_blocked_counter($today);
-    
+
     if ($total == 0) {
-        $total = $wpdb->get_var( 
-            "SELECT COUNT(*) FROM {$wpdb->prefix}sba_blocked_log WHERE DATE(block_time) = CURDATE()" 
+        $total = $wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}sba_blocked_log WHERE DATE(block_time) = CURDATE()"
         );
     }
-    
+
     $pages = ceil( $total / $per );
-    
+
     $rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT * 
-         FROM {$wpdb->prefix}sba_blocked_log 
-         WHERE DATE(block_time) = CURDATE() 
-         ORDER BY block_time DESC 
+        "SELECT *
+         FROM {$wpdb->prefix}sba_blocked_log
+         WHERE DATE(block_time) = CURDATE()
+         ORDER BY block_time DESC
          LIMIT %d, %d",
         $off, $per
     ) );
-    
+
     $html = '';
     if ( $rows ) {
         foreach ( $rows as $b ) {
             $html .= "<tr>
                 <td>" . date( 'm-d H:i', strtotime( $b->block_time ) ) . "</td>
                 <td><code>" . esc_html( $b->ip ) . "</code></td>
-                <td class='sba-cell-wrap' style='color:#d63638;'>" . 
-                    esc_html( $b->reason ) . " ⚡ " . esc_html( $b->target_url ) . 
+                <td class='sba-cell-wrap' style='color:#d63638;'>" .
+                    esc_html( $b->reason ) . " ⚡ " . esc_html( $b->target_url ) .
                 "</td>
             </tr>";
         }
     } else {
         $html = '<tr><td colspan="3">' . __('暂无拦截记录', SBA_TEXT_DOMAIN) . '</td></tr>';
     }
-    
-    wp_send_json_success( [ 
-        'html' => $html, 
-        'pages' => $pages, 
-        'total' => $total 
+
+    wp_send_json_success( [
+        'html' => $html,
+        'pages' => $pages,
+        'total' => $total
     ] );
 }
 
@@ -1432,29 +1453,29 @@ function sba_environment_panel() {
 
 function sba_audit_render_dashboard() {
     global $wpdb;
-    
+
     $online = $wpdb->get_var( "SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE last_visit > DATE_SUB(NOW(), INTERVAL 5 MINUTE)" );
-    
+
     $latest_date = $wpdb->get_var( "SELECT MAX(visit_date) FROM {$wpdb->prefix}dis_stats" );
     if ( ! $latest_date ) $latest_date = current_time( 'Y-m-d' );
-    
+
     $uv_today = sba_get_uv_counter($latest_date);
     $pv_today = sba_get_pv_counter($latest_date);
-    
+
     $history_50 = $wpdb->get_results( "SELECT visit_date, COUNT(DISTINCT ip) as uv, SUM(pv) as pv FROM {$wpdb->prefix}dis_stats GROUP BY visit_date ORDER BY visit_date DESC LIMIT 50", OBJECT_K );
-    
-    $chart_labels = []; 
-    $chart_uv = []; 
+
+    $chart_labels = [];
+    $chart_uv = [];
     $chart_pv = [];
     $latest_ts = strtotime( $latest_date );
-    
+
     for ( $i = 29; $i >= 0; $i-- ) {
         $target_date = date( 'Y-m-d', $latest_ts - ( $i * 86400 ) );
         $chart_labels[] = $target_date;
         $chart_uv[] = isset( $history_50[ $target_date ] ) ? (int) $history_50[ $target_date ]->uv : 0;
         $chart_pv[] = isset( $history_50[ $target_date ] ) ? (int) $history_50[ $target_date ]->pv : 0;
     }
-    
+
     ?>
     <style>
         .sba-wrap { max-width: 1400px; margin-top: 15px; }
@@ -1473,7 +1494,7 @@ function sba_audit_render_dashboard() {
         .sba-table tbody tr td:nth-child(2), .sba-table thead tr th:nth-child(2) { width: 240px; word-break: keep-all; }
         .sba-cell-wrap { white-space: normal; word-break: break-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; font-size: 12px; }
         .stat-val { font-size: 26px; font-weight: bold; display: block; margin-top: 5px; }
-        
+
         @media (max-width: 768px) {
             .sba-card .sba-table {
                 min-width: 680px;
@@ -1542,8 +1563,8 @@ function sba_audit_render_dashboard() {
                 line-height: 1.4;
             }
         }
-        
-        #prev-page, #next-page, 
+
+        #prev-page, #next-page,
         #blocked-prev-page, #blocked-next-page {
             padding: 8px 16px;
             border: 1px solid #ccc;
@@ -1554,25 +1575,25 @@ function sba_audit_render_dashboard() {
             transition: all 0.2s;
             min-width: 80px;
         }
-        
-        #prev-page:hover:not(:disabled), 
+
+        #prev-page:hover:not(:disabled),
         #next-page:hover:not(:disabled),
-        #blocked-prev-page:hover:not(:disabled), 
+        #blocked-prev-page:hover:not(:disabled),
         #blocked-next-page:hover:not(:disabled) {
             background: #e5e5e5;
             border-color: #999;
         }
-        
-        #prev-page:disabled, 
+
+        #prev-page:disabled,
         #next-page:disabled,
-        #blocked-prev-page:disabled, 
+        #blocked-prev-page:disabled,
         #blocked-next-page:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             background: #f0f0f0;
             color: #888;
         }
-        
+
         #current-page, #total-pages,
         #blocked-current-page, #blocked-total-pages {
             display: inline-block;
@@ -1581,25 +1602,32 @@ function sba_audit_render_dashboard() {
             color: #2271b1;
         }
     </style>
-    
+
     <div class="wrap sba-wrap">
         <h2><?php echo sprintf( __('🚀 SBA 站点行为监控 v%s', SBA_TEXT_DOMAIN), SBA_VERSION ); ?></h2>
-        
+
         <!-- 统计卡片区域 -->
-        <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap;">
-            <div class="sba-card" style="flex:1; border-left:4px solid #46b450;">
-                <?php _e('当前在线:', SBA_TEXT_DOMAIN); ?> 
-                <span class="stat-val" style="color:#46b450;"><?php echo $online ?: 0; ?></span>
-            </div>
-            <div class="sba-card" style="flex:1; border-left:4px solid #2271b1;">
-                <?php echo sprintf( __('今日 (%s) UV:', SBA_TEXT_DOMAIN), $latest_date ); ?> 
-                <span class="stat-val" style="color:#2271b1;"><?php echo $uv_today ?: 0; ?></span>
-            </div>
-            <div class="sba-card" style="flex:1; border-left:4px solid #4fc3f7;">
-                <?php echo sprintf( __('今日 (%s) PV:', SBA_TEXT_DOMAIN), $latest_date ); ?> 
-                <span class="stat-val" style="color:#4fc3f7;"><?php echo $pv_today ?: 0; ?></span>
-            </div>
-        </div>
+		<div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap;">
+			<div class="sba-card" style="flex:1; border-left:4px solid #46b450;">
+				<?php _e('当前在线:', SBA_TEXT_DOMAIN); ?>
+				<span class="stat-val" style="color:#46b450;"><?php echo $online ?: 0; ?></span>
+			</div>
+			<div class="sba-card" style="flex:1; border-left:4px solid #2271b1;">
+				<?php echo sprintf( __('今日 (%s) UV:', SBA_TEXT_DOMAIN), $latest_date ); ?>
+				<span class="stat-val" style="color:#2271b1;"><?php echo $uv_today ?: 0; ?></span>
+			</div>
+			<div class="sba-card" style="flex:1; border-left:4px solid #4fc3f7;">
+				<?php echo sprintf( __('今日 (%s) PV:', SBA_TEXT_DOMAIN), $latest_date ); ?>
+				<span class="stat-val" style="color:#4fc3f7;"><?php echo $pv_today ?: 0; ?></span>
+			</div>
+			<!-- 新增拦截数卡片 -->
+			<div class="sba-card" style="flex:1; border-left:4px solid #d63638;">
+				<?php echo sprintf( __('今日 (%s) 拦截:', SBA_TEXT_DOMAIN), $latest_date ); ?>
+				<span class="stat-val" style="color:#d63638;">
+					<?php echo sba_get_blocked_counter($latest_date); ?>
+				</span>
+			</div>
+		</div>
         
         <!-- 图表和审计详表区域 -->
         <div class="sba-grid">
@@ -2388,7 +2416,7 @@ add_action( 'sba_daily_cleanup', 'sba_reset_daily_counters' );
 function sba_reset_daily_counters() {
     $today = current_time('Y-m-d');
     $yesterday = date('Y-m-d', strtotime('-1 day'));
-    
+
     $seven_days_ago = date('Y-m-d', strtotime('-7 days'));
     for ($i = 7; $i < 30; $i++) {
         $old_date = date('Y-m-d', strtotime("-$i days"));
