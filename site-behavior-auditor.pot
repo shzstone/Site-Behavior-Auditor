@@ -1,622 +1,610 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Site Behavior Auditor 2.1.7\n"
-"POT-Creation-Date: 2025-04-02 10:00+0000\n"
+"POT-Creation-Date: 2025-03-15 12:00+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: Site-Behavior-Auditor.php:50
+#: Site-Behavior-Auditor.php:44
 msgid "SBA 安全套件"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:51
+#: Site-Behavior-Auditor.php:45
 msgid "未检测到官方 ip2region 类库，已自动降级为内置简化版（仅支持 IPv4 查询）。如需完整 IPv6 支持，请将官方类库放置于"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:233
+#: Site-Behavior-Auditor.php:197
 msgid "未知"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:244
+#: Site-Behavior-Auditor.php:208
 msgid "IPv6库未上传或官方类库缺失"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:248
+#: Site-Behavior-Auditor.php:212
 msgid "查询失败"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:367
+#: Site-Behavior-Auditor.php:328
 msgid "蜜罐陷阱触发"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:397
+#: Site-Behavior-Auditor.php:357
 msgid "自动化扫描器: %s"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:402
+#: Site-Behavior-Auditor.php:362
 msgid "作者枚举探测 (?author=X)"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:409
+#: Site-Behavior-Auditor.php:369
 msgid "非法路径探测: %s"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:423
+#: Site-Behavior-Auditor.php:383
 msgid "Gate 钥匙错误或已失效"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:450
+#: Site-Behavior-Auditor.php:410
 msgid "采集器高频抓取"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:450
+#: Site-Behavior-Auditor.php:410
 msgid "频率超限 (CC风险)"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:539
+#: Site-Behavior-Auditor.php:527
 msgid "暂无拦截记录"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:619
+#: Site-Behavior-Auditor.php:628
 msgid "安全提醒"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:622
+#: Site-Behavior-Auditor.php:631
 msgid "IP: %s\n失败次数: %d\n封禁至: %s"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:823
+#: Site-Behavior-Auditor.php:809
 msgid "激活链接无效或已使用。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:823
+#: Site-Behavior-Auditor.php:809
 msgid "激活失败"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:831
+#: Site-Behavior-Auditor.php:817
 msgid "激活码不正确。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:853
+#: Site-Behavior-Auditor.php:832
 msgid "欢迎回来"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:856
+#: Site-Behavior-Auditor.php:835
 msgid "控制台"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:857
+#: Site-Behavior-Auditor.php:836
 msgid "个人资料"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:858
+#: Site-Behavior-Auditor.php:837
 msgid "注销"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:868
+#: Site-Behavior-Auditor.php:848
 msgid "您已被封禁24小时，请稍后再试。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:869
+#: Site-Behavior-Auditor.php:849
 msgid "当前无需验证码"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:889
+#: Site-Behavior-Auditor.php:869
 msgid "操作过于频繁，请稍后再试。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:890
+#: Site-Behavior-Auditor.php:870
 msgid "由于多次失败，您的IP已被封禁24小时。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:902
+#: Site-Behavior-Auditor.php:882
 msgid "验证码错误"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:924
+#: Site-Behavior-Auditor.php:904
 msgid "账号尚未激活，请查收激活邮件。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:929
+#: Site-Behavior-Auditor.php:909
 msgid "登录成功"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:949
+#: Site-Behavior-Auditor.php:929
 msgid "所有字段都不能为空。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:954
+#: Site-Behavior-Auditor.php:934
 msgid "密码必须至少8位，且包含字母和数字。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:959
+#: Site-Behavior-Auditor.php:939
 msgid "用户名已存在。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:964
+#: Site-Behavior-Auditor.php:944
 msgid "邮箱已被注册。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:983
+#: Site-Behavior-Auditor.php:963
 msgid "邮件发送失败，请联系管理员。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:987
+#: Site-Behavior-Auditor.php:967
 msgid "注册成功，请查收激活邮件。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1007
+#: Site-Behavior-Auditor.php:987
 msgid "用户名或邮箱未注册。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1011
+#: Site-Behavior-Auditor.php:991
 msgid "无法生成重置链接，请稍后重试。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1016
+#: Site-Behavior-Auditor.php:996
 msgid "重置密码"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1017
+#: Site-Behavior-Auditor.php:997
 msgid "请点击以下链接重置密码（链接24小时内有效）：\n%s"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1021
+#: Site-Behavior-Auditor.php:1001
 msgid "重置链接已发送至您的邮箱。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1035
+#: Site-Behavior-Auditor.php:1015
 msgid "全行为审计"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1036
+#: Site-Behavior-Auditor.php:1016
 msgid "防御设置"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1037
+#: Site-Behavior-Auditor.php:1017 Site-Behavior-Auditor.php:1440
 msgid "SMTP 邮件设置"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1049
+#: Site-Behavior-Auditor.php:1029
 msgid "⚙️ 服务器环境检测"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1052
+#: Site-Behavior-Auditor.php:1032
 msgid "PHP 版本"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1059
+#: Site-Behavior-Auditor.php:1039
 msgid "秒"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1061
+#: Site-Behavior-Auditor.php:1041
 msgid "cURL 扩展"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1063
+#: Site-Behavior-Auditor.php:1043
 msgid "若需上传大文件（超过 10MB），建议将 <code>upload_max_filesize</code> 和 <code>post_max_size</code> 调至至少 64M。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1106
+#: Site-Behavior-Auditor.php:1077
 msgid "🚀 SBA 站点行为监控 v%s"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1108
+#: Site-Behavior-Auditor.php:1079
 msgid "当前在线:"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1109
+#: Site-Behavior-Auditor.php:1080
 msgid "今日 (%s) UV:"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1110
+#: Site-Behavior-Auditor.php:1081
 msgid "今日 (%s) PV:"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1113
+#: Site-Behavior-Auditor.php:1084
 msgid "📈 30天访问趋势"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1114
+#: Site-Behavior-Auditor.php:1085
 msgid "📊 50天审计详表"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1120
+#: Site-Behavior-Auditor.php:1091
 msgid "日期"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1120
+#: Site-Behavior-Auditor.php:1091
 msgid "UV (人)"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1120
+#: Site-Behavior-Auditor.php:1091
 msgid "PV (次)"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1120
+#: Site-Behavior-Auditor.php:1091
 msgid "深度"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1132
+#: Site-Behavior-Auditor.php:1103
 msgid "👣 访客轨迹 (%s)"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1135
+#: Site-Behavior-Auditor.php:1106
 msgid "时间"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1135
+#: Site-Behavior-Auditor.php:1106
 msgid "IP"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1135
+#: Site-Behavior-Auditor.php:1106
 msgid "归属地"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1135
+#: Site-Behavior-Auditor.php:1106
 msgid "访问路径"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1135
+#: Site-Behavior-Auditor.php:1106
 msgid "PV"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1138
+#: Site-Behavior-Auditor.php:1109 Site-Behavior-Auditor.php:1118
 msgid "总记录:"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1139
+#: Site-Behavior-Auditor.php:1110 Site-Behavior-Auditor.php:1119
 msgid "上页"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1139
+#: Site-Behavior-Auditor.php:1110 Site-Behavior-Auditor.php:1119
 msgid "第"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1139
+#: Site-Behavior-Auditor.php:1110 Site-Behavior-Auditor.php:1119
 msgid "页"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1139
+#: Site-Behavior-Auditor.php:1110 Site-Behavior-Auditor.php:1119
 msgid "下页"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1143
+#: Site-Behavior-Auditor.php:1114
 msgid "🚫 拦截日志 (%s)"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1145
+#: Site-Behavior-Auditor.php:1116
 msgid "拦截 IP"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1145
+#: Site-Behavior-Auditor.php:1116
 msgid "原因与目标"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1183
+#: Site-Behavior-Auditor.php:1151
 msgid "解析中..."
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1217
+#: Site-Behavior-Auditor.php:1185
 msgid "🛠️ SBA 防御设置"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1219
+#: Site-Behavior-Auditor.php:1187
 msgid "📖 使用说明"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1220
+#: Site-Behavior-Auditor.php:1188
 msgid "1. <b>防误杀：</b> 填入用户名后，登录时将免疫所有频率拦截和路径检测。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1221
+#: Site-Behavior-Auditor.php:1189
 msgid "2. <b>Gate 钥匙：</b> 设置后，访问 <code>wp-login.php?gate=钥匙</code> 可开启登录入口（地址栏自动去除参数）。此后登录表单通过隐藏字段提交令牌，退出后令牌失效。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1222
+#: Site-Behavior-Auditor.php:1190
 msgid "3. <b>指纹库：</b> 自动识别 <code>sqlmap, curl, wget, python</code> 等 UA 特征并阻断。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1223
+#: Site-Behavior-Auditor.php:1191
 msgid "4. <b>归属地：</b> 使用 ip2region xdb 内存查询。请通过下方按钮上传 IPv4 和 IPv6 的 xdb 文件（支持分片上传、断点续传）。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1224
+#: Site-Behavior-Auditor.php:1192
 msgid "5. <b>爬虫防御：</b> 启用阶梯限制和 Cookie 校验可有效识别采集器，蜜罐陷阱触发即封禁。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1229
+#: Site-Behavior-Auditor.php:1197
 msgid "✅ 信任通道"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1231
+#: Site-Behavior-Auditor.php:1199
 msgid "用户名白名单"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1232
+#: Site-Behavior-Auditor.php:1199
+msgid "登录此用户时，系统自动信任，不执行拦截逻辑。"
+msgstr ""
+
+#: Site-Behavior-Auditor.php:1200
 msgid "IP 白名单"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1232
+#: Site-Behavior-Auditor.php:1200
 msgid "每行一个 IP。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1236
+#: Site-Behavior-Auditor.php:1204
 msgid "🚫 防御配置"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1238
+#: Site-Behavior-Auditor.php:1206
 msgid "CC 封禁阈值"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1238
+#: Site-Behavior-Auditor.php:1206
 msgid "次/分"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1238
+#: Site-Behavior-Auditor.php:1206
 msgid "单 IP 每分钟请求超过此值自动封禁（0 为关闭）。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1239
+#: Site-Behavior-Auditor.php:1207
 msgid "Gate 钥匙"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1239
+#: Site-Behavior-Auditor.php:1207
 msgid "保护登录入口。访问 <code>wp-login.php?gate=钥匙</code> 开启入口，之后自动隐藏。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1240
+#: Site-Behavior-Auditor.php:1208
 msgid "追加拦截路径"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1241
+#: Site-Behavior-Auditor.php:1208
+msgid "逗号分隔。内置已含 .env/.git 等，此处用于扩充。"
+msgstr ""
+
+#: Site-Behavior-Auditor.php:1209
 msgid "爬虫特征路径 (正则)"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1242
+#: Site-Behavior-Auditor.php:1209
+msgid "正则表达式，匹配的 URL 将使用更严格的频率限制（默认阈值的 1/3）。"
+msgstr ""
+
+#: Site-Behavior-Auditor.php:1210
 msgid "Cookie 校验"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1243
+#: Site-Behavior-Auditor.php:1210
+msgid "启用 Cookie 校验（无有效 Cookie 且非浏览器的请求将受到更严格限制）"
+msgstr ""
+
+#: Site-Behavior-Auditor.php:1211
 msgid "拦截重定向 URL"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1246
+#: Site-Behavior-Auditor.php:1211
+msgid "拦截后将对方跳转至此页面（留空则显示默认 403 页面）。"
+msgstr ""
+
+#: Site-Behavior-Auditor.php:1214
 msgid "保存核心配置"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1250
+#: Site-Behavior-Auditor.php:1218
 msgid "📁 IP 归属地库 (ip2region xdb) 分片上传"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1252
+#: Site-Behavior-Auditor.php:1220
 msgid "IPv4 库"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1252
+#: Site-Behavior-Auditor.php:1220
 msgid "已上传"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1252
+#: Site-Behavior-Auditor.php:1220 Site-Behavior-Auditor.php:184
 msgid "未上传"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1254
+#: Site-Behavior-Auditor.php:1222
 msgid "上传 IPv4 库"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1255
+#: Site-Behavior-Auditor.php:1223 Site-Behavior-Auditor.php:1233
 msgid "取消上传"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1262
+#: Site-Behavior-Auditor.php:1230
 msgid "IPv6 库"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1264
+#: Site-Behavior-Auditor.php:1232
 msgid "上传 IPv6 库"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1265
-msgid "取消上传"
-msgstr ""
-
-#: Site-Behavior-Auditor.php:1277
+#: Site-Behavior-Auditor.php:1245
 msgid "无权限"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1278
+#: Site-Behavior-Auditor.php:1246
 msgid "无效请求"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1283
+#: Site-Behavior-Auditor.php:1251
 msgid "无效类型"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1284
+#: Site-Behavior-Auditor.php:1252
 msgid "参数错误"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1286
+#: Site-Behavior-Auditor.php:1254
 msgid "分片上传错误"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1293
+#: Site-Behavior-Auditor.php:1261
 msgid "保存分片失败"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1311
+#: Site-Behavior-Auditor.php:1279
 msgid "无法创建最终文件，请检查目录权限"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1320
+#: Site-Behavior-Auditor.php:1288
 msgid "分片文件丢失，合并失败"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1329
+#: Site-Behavior-Auditor.php:1297
 msgid "上传并合并完成"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1331
+#: Site-Behavior-Auditor.php:1299
 msgid "分片接收成功"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1361
+#: Site-Behavior-Auditor.php:1329
 msgid "已中断并清理临时文件"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1452
+#: Site-Behavior-Auditor.php:1420
 msgid "设置已保存。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1459
+#: Site-Behavior-Auditor.php:1427
 msgid "测试邮件已发送到 %s，请检查收件箱。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1461
+#: Site-Behavior-Auditor.php:1429
 msgid "测试邮件发送失败：%s"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1464
+#: Site-Behavior-Auditor.php:1432
 msgid "请输入有效的测试邮箱地址。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1472
-msgid "SMTP 邮件设置"
-msgstr ""
-
-#: Site-Behavior-Auditor.php:1475
+#: Site-Behavior-Auditor.php:1443
 msgid "SMTP 主机"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1475
+#: Site-Behavior-Auditor.php:1443
 msgid "例如：smtp.gmail.com"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1476
+#: Site-Behavior-Auditor.php:1444
 msgid "端口"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1477
+#: Site-Behavior-Auditor.php:1444
+msgid "常用：587 (TLS) 或 465 (SSL)"
+msgstr ""
+
+#: Site-Behavior-Auditor.php:1445
 msgid "加密方式"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1477
+#: Site-Behavior-Auditor.php:1445
 msgid "无"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1477
+#: Site-Behavior-Auditor.php:1445
 msgid "TLS"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1477
+#: Site-Behavior-Auditor.php:1445
 msgid "SSL"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1478
+#: Site-Behavior-Auditor.php:1446
 msgid "启用认证"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1479
+#: Site-Behavior-Auditor.php:1446
+msgid "通常需要勾选"
+msgstr ""
+
+#: Site-Behavior-Auditor.php:1447
 msgid "用户名"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1480
+#: Site-Behavior-Auditor.php:1448
 msgid "密码"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1481
+#: Site-Behavior-Auditor.php:1449
 msgid "发件人邮箱"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1482
+#: Site-Behavior-Auditor.php:1449
+msgid "留空则使用 WordPress 默认"
+msgstr ""
+
+#: Site-Behavior-Auditor.php:1450
 msgid "发件人名称"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1484
+#: Site-Behavior-Auditor.php:1450
+msgid "例如：网站名称"
+msgstr ""
+
+#: Site-Behavior-Auditor.php:1452
 msgid "保存设置"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1487
+#: Site-Behavior-Auditor.php:1455
 msgid "测试邮件发送"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1489
+#: Site-Behavior-Auditor.php:1457
 msgid "接收测试邮箱"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1490
+#: Site-Behavior-Auditor.php:1458
 msgid "发送测试邮件"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1500
+#: Site-Behavior-Auditor.php:1468
 msgid "SMTP 测试邮件 - %s"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1501
+#: Site-Behavior-Auditor.php:1469
 msgid "这是一封测试邮件，确认您的 SMTP 配置正确。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1510
+#: Site-Behavior-Auditor.php:1478
 msgid "未知错误，请检查日志。"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1551
+#: Site-Behavior-Auditor.php:1519
 msgid "当前在线"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1552
+#: Site-Behavior-Auditor.php:1520
 msgid "今日访客"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:1553
+#: Site-Behavior-Auditor.php:1521
 msgid "累积浏览"
 msgstr ""
 
-#: Site-Behavior-Auditor.php:707
-msgid "登录中..."
-msgstr ""
-
-msgid "注册中..."
-msgstr ""
-
-msgid "发送中..."
-msgstr ""
-
-msgid "两次输入的密码不一致。"
-msgstr ""
-
-msgid "请先填写验证码。"
-msgstr ""
-
-msgid "网络错误，请稍后重试。"
-msgstr ""
-
-msgid "验证码："
-msgstr ""
-
-msgid "登录"
-msgstr ""
-
-msgid "注册"
-msgstr ""
-
-msgid "忘记密码"
-msgstr ""
-
-msgid "用户名或邮箱"
-msgstr ""
-
-msgid "记住我"
-msgstr ""
-
-msgid "验证码"
-msgstr ""
-
-msgid "发送重置链接"
+msgid "SMTP 邮件"
 msgstr ""
