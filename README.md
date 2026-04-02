@@ -1,4 +1,4 @@
-# SBA 综合安全运维引擎 (v2.1.7) 🛡️
+# SBA 综合安全运维引擎 (v2.1.6) 🛡️
 
 [简体中文](#-简体中文) | [English](#-english)
 
@@ -6,9 +6,9 @@
 
 ## 🇨🇳 简体中文
 
-**SBA (Site Behavior Auditor)** 是一款专为 WordPress 深度定制的高性能综合安全套件。不同于传统的安全插件，它采用银行级架构思维，将 **全行为审计、三层爬虫防御、iOS 风格登录交互、SMTP 发信** 四大模块通过全内存架构完美融合。
+**SBA (Site Behavior Auditor)** 是一款专为 WordPress 深度定制的高性能综合安全套件。不同于传统的安全插件，它将 **全行为审计、三层爬虫防御、iOS 风格登录交互、SMTP 发信** 四大模块通过全内存架构完美融合。
 
-> ⚡ **核心突破**：2.1.7 版本引入了 **原子化增量记账 (Atomic Counting)** 和 **三级 UV 验证** 逻辑。即使面对日均千万级的访问量，看板加载依然实现“秒开”，且对服务器数据库压力降至最低。
+> ⚡ **核心突破**：2.1.7 版本引入了 **原子化增量记账 (Atomic Counting)** 和 **三级 UV 验证** 逻辑。即使面对日均百万级的访问量，看板加载依然实现“秒开”，且对服务器数据库压力降至最低。
 
 ### ✨ 核心特性
 *   **🚀 微秒级 IP 解析**：集成 `ip2region xdb` 内存版，单次解析仅需 0.0x 毫秒，完全脱离数据库依赖。
@@ -35,11 +35,11 @@
 
 ## 🇺🇸 English
 
-**SBA (Site Behavior Auditor)** is a high-performance, all-in-one security suite custom-built for WordPress. Designed with a bank-grade architectural mindset, it integrates **Real-time Auditing, Three-layer Anti-Scraper Defense, iOS-style Login UI, and SMTP** into a single, memory-optimized engine.
+**SBA (Site Behavior Auditor)** is a high-performance, all-in-one security suite custom-built for WordPress. It integrates **Real-time Auditing, Three-layer Anti-Scraper Defense, iOS-style Login UI, and SMTP** into a single, memory-optimized engine.
 
 ### ✨ Key Features
 - **🚀 Microsecond IP Resolution**: Powered by `ip2region xdb` in-memory lookup, resolving locations in 0.0x ms with zero database overhead.
-- **📊 Atomic Counting Architecture**: Uses native MySQL atomic operations to handle millions of daily PV/UV counts without row-lock contention or data loss.
+- **📊 Atomic Counting Architecture**: Uses native MySQL atomic operations to handle billions of daily PV/UV counts without row-lock contention or data loss.
 - **🛡️ Layered Anti-Scraper Shield**: 
     - **Tiered Rate Limiting**: Intelligent frequency control for sensitive paths (RSS, REST API).
     - **Cookie Validation**: Differentiates human browsers from stateless scraping scripts.
