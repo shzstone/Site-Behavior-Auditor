@@ -2,7 +2,7 @@
 /**
  * Plugin Name: 综合安全套件 (Site Behavior Auditor + Login Box + SMTP)
  * Description: 集成站点全行为审计、iOS风格登录/注册/忘记密码面板（简码: sba_login_box）和SMTP邮件配置。IP归属地使用 ip2region xdb 内存查询（支持 IPv4/IPv6），分片上传库文件，并提供高级爬虫防御（阶梯限制、Cookie校验、诱饵陷阱）。
- * Version: 2.1.6
+ * Version: 2.1.7
  * Author: Stone
  * Author URI: https://blog.cacca.cc
  * Text Domain: site-behavior-auditor
@@ -124,7 +124,10 @@ function sba_combined_activate() {
         'ip_whitelist'          => '',
         'scraper_paths'         => 'feed=|rest_route=|[\?&]m=|\?p=',
         'enable_cookie_check'   => 1,
-    ];
+		'ssrf_prevent_dns_rebind' => 1,
+		'outbound_whitelist'      => '',
+		'ssrf_blacklist'          => '',
+	];
     $current = get_option( 'sba_settings' );
     if ( empty( $current ) ) {
         update_option( 'sba_settings', $defaults );
@@ -506,12 +509,20 @@ add_action( 'init', function() {
         sba_audit_execute_block( __('作者枚举探测 (?author=X)', SBA_TEXT_DOMAIN) );
     }
 
-    $fixed_evil = [ '/.env', '/.git', '/.sql', '/.ssh', '/wp-config.php.bak', '/phpinfo.php', '/config.php.swp', '/.vscode', '/xmlrpc.php' ];
+    $fixed_evil = [ '/.env', '/.git', '/.sql', '/.ssh', '/wp-config.php.bak', '/phpinfo.php', '/config.php.swp', '/.vscode' ];
     $custom_evil = array_filter( array_map( 'trim', explode( ',', sba_audit_get_opt( 'evil_paths', '' ) ) ) );
     $all_evil = array_unique( array_merge( $fixed_evil, $custom_evil ) );
     foreach ( $all_evil as $path ) {
         if ( ! empty( $path ) && strpos( $uri, $path ) !== false ) sba_audit_execute_block( sprintf( __('非法路径探测: %s', SBA_TEXT_DOMAIN), $path ) );
     }
+
+	// 精细拦截 XML-RPC Pingback（仅阻止 SSRF 方法，保留其他）
+	if ( strpos( $_SERVER['REQUEST_URI'], 'xmlrpc.php' ) !== false && $_SERVER['REQUEST_METHOD'] === 'POST' ) {
+		$raw_post = file_get_contents( 'php://input' );
+		if ( stripos( $raw_post, '<methodName>pingback.ping</methodName>' ) !== false ) {
+			sba_audit_execute_block( __('XML-RPC Pingback 调用（SSRF 高风险）', SBA_TEXT_DOMAIN) );
+		}
+	}
 
     $stored_slug = sba_audit_get_opt( 'login_slug', '' );
     $internal_params = ['interim-login', 'auth-check', 'wp_scrape_key', 'wp_scrape_nonce'];
@@ -672,20 +683,22 @@ function sba_audit_ajax_tracks() {
     $p = intval( $_POST['page'] ?? 1 );
     $per = 50;
     $off = ( $p - 1 ) * $per;
+
+    $searcher = SBA_IP_Searcher::get_instance();
+
     $latest_date = $wpdb->get_var( "SELECT MAX(visit_date) FROM {$wpdb->prefix}dis_stats" );
-    if ( ! $latest_date ) $latest_date = current_time( 'Y-m-d' );
-    
-    $total = sba_get_pv_counter($latest_date);
-    
-    if ($total == 0) {
-        $total = $wpdb->get_var( $wpdb->prepare( 
-            "SELECT COUNT(*) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s", 
-            $latest_date 
+    if ( ! $latest_date ) {
+        $latest_date = current_time( 'Y-m-d' );
+    }
+
+    $total = sba_get_pv_counter( $latest_date );
+    if ( $total == 0 ) {
+        $total = $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s",
+            $latest_date
         ) );
     }
-    
-    $pages = ceil( $total / $per );
-    
+
     $rows = $wpdb->get_results( $wpdb->prepare(
         "SELECT ip, url, pv, last_visit
          FROM {$wpdb->prefix}dis_stats
@@ -694,27 +707,28 @@ function sba_audit_ajax_tracks() {
          LIMIT %d, %d",
         $latest_date, $off, $per
     ) );
-    
-    $html = "";
+
+    $html = '';
     if ( $rows ) {
         foreach ( $rows as $r ) {
+            $geo = $searcher->search( $r->ip );
             $html .= "<tr>
                 <td>" . date( 'H:i', strtotime( $r->last_visit ) ) . "</td>
-                <td><code>{$r->ip}</code></td>
-                <td><small class='geo-tag' data-ip='{$r->ip}'>" . __('解析中...', SBA_TEXT_DOMAIN) . "</small></td>
+                <td><code>" . esc_html( $r->ip ) . "</code></td>
+                <td><small>" . esc_html( $geo ) . "</small></td>
                 <td><div class='sba-cell-wrap'><small>" . esc_html( $r->url ) . "</small></div></td>
                 <td><b>{$r->pv}</b></td>
             </tr>";
         }
     } else {
-        $html = '<tr><td colspan="5">' . __('暂无更多记录', SBA_TEXT_DOMAIN) . '</td></tr>';
+        $html = '<tr><td colspan="5">' . __( '暂无更多记录', SBA_TEXT_DOMAIN ) . '</td></tr>';
     }
-    
-    wp_send_json_success( [ 
-        'html' => $html, 
-        'pages' => $pages, 
-        'total' => $total, 
-        'date' => $latest_date 
+
+    wp_send_json_success( [
+        'html'   => $html,
+        'pages'  => ceil( $total / $per ),
+        'total'  => $total,
+        'date'   => $latest_date,
     ] );
 }
 
@@ -1628,7 +1642,7 @@ function sba_audit_render_dashboard() {
 				</span>
 			</div>
 		</div>
-        
+
         <!-- 图表和审计详表区域 -->
         <div class="sba-grid">
             <!-- 30天访问趋势图表 -->
@@ -1638,7 +1652,7 @@ function sba_audit_render_dashboard() {
                     <canvas id="sbaChart10"></canvas>
                 </div>
             </div>
-            
+
             <!-- 50天审计详表 -->
             <div class="sba-card">
                 <h3><?php _e('📊 50天审计详表', SBA_TEXT_DOMAIN); ?></h3>
@@ -1653,9 +1667,9 @@ function sba_audit_render_dashboard() {
                             </tr>
                         </thead>
                         <tbody>
-                        <?php for ( $j = 0; $j < 50; $j++ ): 
-                            $d = date( 'Y-m-d', $latest_ts - ( $j * 86400 ) ); 
-                            $u = isset( $history_50[ $d ] ) ? $history_50[ $d ]->uv : 0; 
+                        <?php for ( $j = 0; $j < 50; $j++ ):
+                            $d = date( 'Y-m-d', $latest_ts - ( $j * 86400 ) );
+                            $u = isset( $history_50[ $d ] ) ? $history_50[ $d ]->uv : 0;
                             $p = isset( $history_50[ $d ] ) ? $history_50[ $d ]->pv : 0; ?>
                             <tr>
                                 <td><b><?php echo $d; ?></b></td>
@@ -1669,7 +1683,7 @@ function sba_audit_render_dashboard() {
                 </div>
             </div>
         </div>
-        
+
         <!-- 访客轨迹区域 -->
         <div class="sba-card">
             <h3><?php echo sprintf( __('👣 访客轨迹 (%s)', SBA_TEXT_DOMAIN), $latest_date ); ?></h3>
@@ -1690,13 +1704,13 @@ function sba_audit_render_dashboard() {
             <div style="margin-top:15px; display:flex; justify-content: space-between;">
                 <div><?php _e('总记录:', SBA_TEXT_DOMAIN); ?> <b id="total-rows">0</b></div>
                 <div>
-                    <button id="prev-page" class="button"><?php _e('◀ 上页', SBA_TEXT_DOMAIN); ?></button> 
-                    <?php _e('第', SBA_TEXT_DOMAIN); ?> <b id="current-page">1</b> / <b id="total-pages">1</b> <?php _e('页', SBA_TEXT_DOMAIN); ?> 
+                    <button id="prev-page" class="button"><?php _e('◀ 上页', SBA_TEXT_DOMAIN); ?></button>
+                    <?php _e('第', SBA_TEXT_DOMAIN); ?> <b id="current-page">1</b> / <b id="total-pages">1</b> <?php _e('页', SBA_TEXT_DOMAIN); ?>
                     <button id="next-page" class="button"><?php _e('下页 ▶', SBA_TEXT_DOMAIN); ?></button>
                 </div>
             </div>
         </div>
-        
+
         <!-- 拦截日志区域 -->
         <div class="sba-card" style="border-top:3px solid #d63638;">
             <h3><?php echo sprintf( __('🚫 拦截日志 (%s)', SBA_TEXT_DOMAIN), $latest_date ); ?></h3>
@@ -1715,24 +1729,24 @@ function sba_audit_render_dashboard() {
             <div style="margin-top:15px; display:flex; justify-content: space-between;">
                 <div><?php _e('总记录:', SBA_TEXT_DOMAIN); ?> <b id="blocked-total-rows">0</b></div>
                 <div>
-                    <button id="blocked-prev-page" class="button"><?php _e('◀ 上页', SBA_TEXT_DOMAIN); ?></button> 
-                    <?php _e('第', SBA_TEXT_DOMAIN); ?> <b id="blocked-current-page">1</b> / <b id="blocked-total-pages">1</b> <?php _e('页', SBA_TEXT_DOMAIN); ?> 
+                    <button id="blocked-prev-page" class="button"><?php _e('◀ 上页', SBA_TEXT_DOMAIN); ?></button>
+                    <?php _e('第', SBA_TEXT_DOMAIN); ?> <b id="blocked-current-page">1</b> / <b id="blocked-total-pages">1</b> <?php _e('页', SBA_TEXT_DOMAIN); ?>
                     <button id="blocked-next-page" class="button"><?php _e('下页 ▶', SBA_TEXT_DOMAIN); ?></button>
                 </div>
             </div>
         </div>
-        
+
         <!-- 环境检测面板 -->
         <?php sba_environment_panel(); ?>
     </div>
-    
+
     <!-- Chart.js 图表库 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <!-- 页面交互脚本 -->
     <script>
     new Chart(document.getElementById('sbaChart10'), {
-        type: 'line', 
+        type: 'line',
         data: {
             labels: <?php echo json_encode( $chart_labels ); ?>,
             datasets: [
@@ -1753,7 +1767,7 @@ function sba_audit_render_dashboard() {
                     fill: true
                 }
             ]
-        }, 
+        },
         options: {
             maintainAspectRatio: false,
             interaction: {
@@ -1762,72 +1776,69 @@ function sba_audit_render_dashboard() {
             }
         }
     });
-    
-    let curP = 1, maxP = 1;
-    const loadTracks = (p) => {
-        fetch(ajaxurl, { 
-            method: 'POST', 
-            body: new URLSearchParams({action:'sba_load_tracks', page:p}) 
-        })
-        .then(r => r.json())
-        .then(res => {
-            if(res.success) { 
-                document.getElementById('track-body').innerHTML = res.data.html; 
-                curP = p; 
-                maxP = res.data.pages; 
-                
-                const prevBtn = document.getElementById('prev-page');
-                const nextBtn = document.getElementById('next-page');
-                
-                prevBtn.disabled = (curP <= 1);
-                nextBtn.disabled = (curP >= maxP);
-                
-                prevBtn.textContent = prevBtn.disabled ? '◀' : '◀ <?php _e("上页", SBA_TEXT_DOMAIN); ?>';
-                nextBtn.textContent = nextBtn.disabled ? '▶' : '<?php _e("下页", SBA_TEXT_DOMAIN); ?> ▶';
-                
-                document.getElementById('current-page').innerText = p; 
-                document.getElementById('total-pages').innerText = maxP; 
-                document.getElementById('total-rows').innerText = res.data.total; 
-                processGeos(); 
-            }
-        })
-        .catch(error => {
-            console.error('<?php _e("加载数据失败:", SBA_TEXT_DOMAIN); ?>', error);
-            document.getElementById('track-body').innerHTML = 
-                '<tr><td colspan="5" style="color:#d63638;"><?php _e("加载失败，请刷新页面重试", SBA_TEXT_DOMAIN); ?></td></tr>';
-        });
-    };
-    
+
+	let curP = 1, maxP = 1;
+	const loadTracks = (p) => {
+		fetch(ajaxurl, {
+			method: 'POST',
+			body: new URLSearchParams({action:'sba_load_tracks', page:p})
+		})
+		.then(r => r.json())
+		.then(res => {
+			if(res.success) {
+				document.getElementById('track-body').innerHTML = res.data.html;
+				curP = p;
+				maxP = res.data.pages;
+
+				const prevBtn = document.getElementById('prev-page');
+				const nextBtn = document.getElementById('next-page');
+				prevBtn.disabled = (curP <= 1);
+				nextBtn.disabled = (curP >= maxP);
+				prevBtn.textContent = prevBtn.disabled ? '◀' : '◀ 上页';
+				nextBtn.textContent = nextBtn.disabled ? '▶' : '下页 ▶';
+
+				document.getElementById('current-page').innerText = p;
+				document.getElementById('total-pages').innerText = maxP;
+				document.getElementById('total-rows').innerText = res.data.total;
+			}
+		})
+		.catch(error => {
+			console.error('加载数据失败:', error);
+			document.getElementById('track-body').innerHTML =
+				'<tr><td colspan="5" style="color:#d63638;">加载失败，请刷新页面重试</td></tr>';
+		});
+	};
+
     async function processGeos() {
         const badges = Array.from(document.querySelectorAll('.geo-tag')).filter(b => b.innerText === '<?php _e("解析中...", SBA_TEXT_DOMAIN); ?>');
         for (let i = 0; i < badges.length; i += 5) {
             const chunk = badges.slice(i, i + 5);
-            const fd = new FormData(); 
-            fd.append('action', 'sba_get_geo'); 
+            const fd = new FormData();
+            fd.append('action', 'sba_get_geo');
             chunk.forEach(b => fd.append('ips[]', b.dataset.ip));
-            
+
             fetch(ajaxurl, { method: 'POST', body: fd })
                 .then(r => r.json())
-                .then(j => { 
-                    if(j.success) chunk.forEach(b => b.innerText = j.data[b.dataset.ip]); 
+                .then(j => {
+                    if(j.success) chunk.forEach(b => b.innerText = j.data[b.dataset.ip]);
                 });
         }
     }
-    
-    document.getElementById('prev-page').onclick = () => { 
-        if(curP > 1) loadTracks(curP - 1); 
+
+    document.getElementById('prev-page').onclick = () => {
+        if(curP > 1) loadTracks(curP - 1);
     };
-    document.getElementById('next-page').onclick = () => { 
-        if(curP < maxP) loadTracks(curP + 1); 
+    document.getElementById('next-page').onclick = () => {
+        if(curP < maxP) loadTracks(curP + 1);
     };
-    
+
     loadTracks(1);
-    
+
     let blockedCurPage = 1, blockedMaxPages = 1;
     function loadBlockedLogs(page) {
-        fetch(ajaxurl, { 
-            method: 'POST', 
-            body: new URLSearchParams({action:'sba_load_blocked_logs', page:page}) 
+        fetch(ajaxurl, {
+            method: 'POST',
+            body: new URLSearchParams({action:'sba_load_blocked_logs', page:page})
         })
         .then(r => r.json())
         .then(res => {
@@ -1835,16 +1846,16 @@ function sba_audit_render_dashboard() {
                 document.getElementById('blocked-log-body').innerHTML = res.data.html;
                 blockedCurPage = page;
                 blockedMaxPages = res.data.pages;
-                
+
                 const prevBtn = document.getElementById('blocked-prev-page');
                 const nextBtn = document.getElementById('blocked-next-page');
-                
+
                 prevBtn.disabled = (blockedCurPage <= 1);
                 nextBtn.disabled = (blockedCurPage >= blockedMaxPages);
-                
+
                 prevBtn.textContent = prevBtn.disabled ? '◀' : '◀ <?php _e("上页", SBA_TEXT_DOMAIN); ?>';
                 nextBtn.textContent = nextBtn.disabled ? '▶' : '<?php _e("下页", SBA_TEXT_DOMAIN); ?> ▶';
-                
+
                 document.getElementById('blocked-current-page').innerText = page;
                 document.getElementById('blocked-total-pages').innerText = res.data.pages;
                 document.getElementById('blocked-total-rows').innerText = res.data.total;
@@ -1852,18 +1863,18 @@ function sba_audit_render_dashboard() {
         })
         .catch(error => {
             console.error('<?php _e("加载拦截日志失败:", SBA_TEXT_DOMAIN); ?>', error);
-            document.getElementById('blocked-log-body').innerHTML = 
+            document.getElementById('blocked-log-body').innerHTML =
                 '<tr><td colspan="3" style="color:#d63638;"><?php _e("加载失败，请刷新页面重试", SBA_TEXT_DOMAIN); ?></td></tr>';
         });
     }
-    
-    document.getElementById('blocked-prev-page').onclick = () => { 
-        if(blockedCurPage > 1) loadBlockedLogs(blockedCurPage - 1); 
+
+    document.getElementById('blocked-prev-page').onclick = () => {
+        if(blockedCurPage > 1) loadBlockedLogs(blockedCurPage - 1);
     };
-    document.getElementById('blocked-next-page').onclick = () => { 
-        if(blockedCurPage < blockedMaxPages) loadBlockedLogs(blockedCurPage + 1); 
+    document.getElementById('blocked-next-page').onclick = () => {
+        if(blockedCurPage < blockedMaxPages) loadBlockedLogs(blockedCurPage + 1);
     };
-    
+
     loadBlockedLogs(1);
     </script>
     <?php
@@ -1903,6 +1914,38 @@ function sba_audit_render_settings() {
                          <tr><th><?php _e('Cookie 校验', SBA_TEXT_DOMAIN); ?></th><td><label><input type="checkbox" name="sba_settings[enable_cookie_check]" value="1" <?php checked( $opts['enable_cookie_check'] ?? 1, 1 ); ?> /> <?php _e('启用 Cookie 校验（无有效 Cookie 且非浏览器的请求将受到更严格限制）', SBA_TEXT_DOMAIN); ?></label></td></tr>
                          <tr><th><?php _e('拦截重定向 URL', SBA_TEXT_DOMAIN); ?></th><td><input type="text" name="sba_settings[block_target_url]" value="<?php echo esc_attr( $opts['block_target_url'] ?? '' ); ?>" style="width:100%" placeholder="https://127.0.0.1" /><br><small><?php _e('拦截后将对方跳转至此页面（留空则显示默认 403 页面）。', SBA_TEXT_DOMAIN); ?></small></td></tr>
                     </table>
+
+					<!-- 出站安全（SSRF 防御）卡片 -->
+					<div class="sba-card" style="margin-top:20px;">
+						<h3><?php _e('🔒 出站安全（SSRF 防御）', SBA_TEXT_DOMAIN); ?></h3>
+						<table class="form-table">
+							<tr>
+								<th><label for="ssrf_prevent_dns_rebind"><?php _e('DNS Rebinding 防御', SBA_TEXT_DOMAIN); ?></label></th>
+								<td>
+									<label>
+										<input type="checkbox" name="sba_settings[ssrf_prevent_dns_rebind]" value="1" <?php checked( $opts['ssrf_prevent_dns_rebind'] ?? 1, 1 ); ?> />
+										<?php _e('启用强制 IP 直连 + Host 头校验', SBA_TEXT_DOMAIN); ?>
+									</label>
+									<br><small><?php _e('防止攻击者利用短 TTL DNS 绕过 IP 黑名单。', SBA_TEXT_DOMAIN); ?></small>
+								</td>
+							</tr>
+							<tr>
+								<th><label for="outbound_whitelist"><?php _e('出站 IP 白名单', SBA_TEXT_DOMAIN); ?></label></th>
+								<td>
+									<textarea name="sba_settings[outbound_whitelist]" rows="4" style="width:100%;" placeholder="每行一个 IP 或 CIDR，例如：&#10;192.168.1.100&#10;10.0.0.0/8"><?php echo esc_textarea( $opts['outbound_whitelist'] ?? '' ); ?></textarea>
+									<br><small><?php _e('白名单内的 IP 即使属于内网也允许访问（适用于 NAS 访问家庭内网服务）。', SBA_TEXT_DOMAIN); ?></small>
+								</td>
+							</tr>
+							<tr>
+								<th><label for="ssrf_blacklist"><?php _e('额外黑名单（CIDR）', SBA_TEXT_DOMAIN); ?></label></th>
+								<td>
+									<input type="text" name="sba_settings[ssrf_blacklist]" value="<?php echo esc_attr( $opts['ssrf_blacklist'] ?? '' ); ?>" style="width:100%;" placeholder="例如：192.0.2.0/24,203.0.113.0/24" />
+									<br><small><?php _e('逗号分隔，追加到默认内网黑名单之后。', SBA_TEXT_DOMAIN); ?></small>
+								</td>
+							</tr>
+						</table>
+					</div>
+
                     <?php submit_button( __('保存核心配置', SBA_TEXT_DOMAIN) ); ?>
                 </div>
             </div>
@@ -2193,7 +2236,7 @@ function sba_upload_script() {
                     $('#' + progressDivId).show();
                     $('#' + barId).css('width', initialPercent + '%').text(initialPercent + '%');
                     $('#' + statusId).html(`<?php _e('准备上传，动态分片大小', SBA_TEXT_DOMAIN); ?> ${(chunkSize/1024/1024).toFixed(1)}MB，<?php _e('剩余', SBA_TEXT_DOMAIN); ?> ${remainingIntervals.length} <?php _e('个区间', SBA_TEXT_DOMAIN); ?>`);
-                    
+
                     for (let interval of remainingIntervals) {
                         if (!isUploading) break;
                         let start = interval.start;
@@ -2229,7 +2272,7 @@ function sba_upload_script() {
                             }
                         }
                     }
-                    
+
                     if (isUploading) {
                         const finalParts = await getUploadedParts(file.name, file.size);
                         if (finalParts.length === 0) {
@@ -2392,10 +2435,10 @@ add_shortcode( 'sba_stats', function() {
     $online = $wpdb->get_var( "SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE last_visit > DATE_SUB(NOW(), INTERVAL 5 MINUTE)" );
     $latest_date = $wpdb->get_var( "SELECT MAX(visit_date) FROM {$wpdb->prefix}dis_stats" );
     if ( ! $latest_date ) $latest_date = current_time( 'Y-m-d' );
-    
+
     $uv_count = sba_get_uv_counter($latest_date);
     $pv_count = sba_get_pv_counter($latest_date);
-    
+
     $online_count = $online ?: 0;
     $uv_count = $uv_count ?: 0;
     $pv_count = $pv_count ?: 0;
@@ -2424,4 +2467,155 @@ function sba_reset_daily_counters() {
         delete_option(SBA_COUNTER_UV_TODAY . '_' . $old_date);
         delete_option(SBA_COUNTER_BLOCKED_TODAY . '_' . $old_date);
     }
+}
+
+/**
+ * ========================================
+ * SBA 出站安全网关（防止 SSRF）
+ * ========================================
+ */
+
+add_filter( 'pre_http_request', 'sba_outbound_ssrf_filter', 10, 3 );
+function sba_outbound_ssrf_filter( $preempt, $args, $url ) {
+    // 1. 解析 URL
+    $parts = parse_url( $url );
+    if ( empty( $parts['host'] ) ) {
+        return $preempt;
+    }
+    $host = $parts['host'];
+    $scheme = strtolower( $parts['scheme'] ?? 'http' );
+
+    // 2. 协议白名单（仅 http/https）
+    if ( ! in_array( $scheme, [ 'http', 'https' ], true ) ) {
+        sba_ssrf_log_and_block( "禁止的协议: $scheme", $url );
+        return new WP_Error( 'sba_ssrf_blocked', '🛡️ SBA 安全策略：仅允许 http/https 出站请求。' );
+    }
+
+    // 3. 获取目标 IP（支持 IPv4/IPv6）
+    $ips = sba_get_dns_records( $host );
+    if ( empty( $ips ) ) {
+        return $preempt; // DNS 解析失败，放行
+    }
+
+    // 4. 检查黑名单
+    $blacklist = sba_get_ssrf_blacklist();
+    foreach ( $ips as $ip ) {
+        // 先检查白名单
+        if ( sba_is_ip_whitelisted_for_outbound( $ip ) ) {
+            continue;
+        }
+        if ( sba_ip_in_blacklist( $ip, $blacklist ) ) {
+            sba_ssrf_log_and_block( "禁止访问内网/敏感 IP: $ip", $url );
+            return new WP_Error( 'sba_ssrf_blocked', '🛡️ SBA 系统安全限制：禁止访问内部网络资源。' );
+        }
+    }
+
+    // 5. DNS Rebinding 防御（可选）
+    if ( sba_audit_get_opt( 'ssrf_prevent_dns_rebind', 1 ) ) {
+        static $depth = 0;
+        if ( $depth < 2 ) {
+            $depth++;
+            $original_host = $host;
+            $first_ip = $ips[0];
+            $new_url = str_replace( "//$original_host", "//$first_ip", $url );
+            $args['headers']['Host'] = $original_host;
+            $result = wp_remote_request( $new_url, $args );
+            $depth--;
+            return $result;
+        }
+    }
+
+    return $preempt;
+}
+
+function sba_get_dns_records( $host ) {
+    static $cache = [];
+    if ( isset( $cache[ $host ] ) ) {
+        return $cache[ $host ];
+    }
+    $ips = [];
+    $records = @dns_get_record( $host, DNS_A | DNS_AAAA );
+    if ( is_array( $records ) ) {
+        foreach ( $records as $rec ) {
+            if ( $rec['type'] === 'A' && isset( $rec['ip'] ) ) {
+                $ips[] = $rec['ip'];
+            } elseif ( $rec['type'] === 'AAAA' && isset( $rec['ipv6'] ) ) {
+                $ips[] = $rec['ipv6'];
+            }
+        }
+    }
+    if ( empty( $ips ) ) {
+        $ip = gethostbyname( $host );
+        if ( $ip !== $host && filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+            $ips[] = $ip;
+        }
+    }
+    $cache[ $host ] = array_unique( $ips );
+    return $cache[ $host ];
+}
+
+function sba_get_ssrf_blacklist() {
+    $default = [
+        '127.0.0.0/8', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16',
+        '169.254.169.254', '::1', 'fc00::/7', 'fe80::/10', '0.0.0.0',
+    ];
+    $custom = sba_audit_get_opt( 'ssrf_blacklist', '' );
+    $custom = array_filter( array_map( 'trim', explode( ',', $custom ) ) );
+    return array_merge( $default, $custom );
+}
+
+function sba_ip_in_blacklist( $ip, $blacklist ) {
+    foreach ( $blacklist as $range ) {
+        if ( sba_ip_in_cidr( $ip, $range ) ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function sba_is_ip_whitelisted_for_outbound( $ip ) {
+    $whitelist_str = sba_audit_get_opt( 'outbound_whitelist', '' );
+    $whitelist = array_filter( array_map( 'trim', explode( "\n", $whitelist_str ) ) );
+    foreach ( $whitelist as $range ) {
+        if ( sba_ip_in_cidr( $ip, $range ) ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function sba_ip_in_cidr( $ip, $cidr ) {
+    if ( strpos( $cidr, '/' ) === false ) {
+        return $ip === $cidr;
+    }
+    list( $subnet, $mask ) = explode( '/', $cidr );
+    $ip_bin = inet_pton( $ip );
+    $subnet_bin = inet_pton( $subnet );
+    if ( $ip_bin === false || $subnet_bin === false ) {
+        return false;
+    }
+    $mask_bits = (int) $mask;
+    if ( strpos( $ip, ':' ) !== false ) { // IPv6
+        $mask_str = str_repeat( 'f', ceil( $mask_bits / 4 ) );
+        $mask_hex = str_pad( $mask_str, 32, '0' );
+        $mask_bin = hex2bin( $mask_hex );
+        return ( ( $ip_bin & $mask_bin ) === ( $subnet_bin & $mask_bin ) );
+    } else { // IPv4
+        $mask_long = -1 << ( 32 - $mask_bits );
+        $ip_long = ip2long( $ip );
+        $subnet_long = ip2long( $subnet );
+        return ( $ip_long & $mask_long ) === ( $subnet_long & $mask_long );
+    }
+}
+
+function sba_ssrf_log_and_block( $reason, $url ) {
+    global $wpdb;
+    $ip = sba_combined_get_ip();
+    $wpdb->insert( $wpdb->prefix . 'sba_blocked_log', [
+        'ip'         => $ip,
+        'reason'     => 'SSRF: ' . $reason,
+        'target_url' => $url,
+    ] );
+    sba_increment_blocked_counter();
+    error_log( "[SBA SSRF Blocked] $reason | URL: $url | Requester IP: $ip" );
 }
