@@ -60,26 +60,29 @@ High-performance IP resolution is powered by [ip2region](https://github.com/lion
 
 ---
 
-## 📄 License
-GPL v2 or later
-
----
-**Developed by Stone** | *Architect-grade stability for WordPress systems.*
-
 <div style="text-align: left;">
   <img src="https://github.com/user-attachments/assets/2ec59019-108d-4f61-a2a0-e1f0abf61cb8" alt="Site Behavior Auditor" width="45%">
 </div>
 
+---
+
 <div style="text-align: left;">
   <img src="https://github.com/user-attachments/assets/b773d840-b64a-4e1e-807d-05e3707dec51" alt="访客轨迹" width="35%">
 </div>
+
+---
+
 <div style="text-align: left;">
   <img src="https://github.com/user-attachments/assets/171bc999-e8d6-4978-870a-9760000478b1" alt="拦截日志" width="35%">
 </div>
 
+---
+
 <div style="text-align: left;">
   <img src="https://github.com/user-attachments/assets/f15a3ed2-5896-4910-b98e-05bc863a0978" alt="防御设置" width="35%">
 </div>
+
+---
 
 <table border="0" cellpadding="0" cellspacing="0" align="left">
   <tr>
@@ -96,7 +99,16 @@ GPL v2 or later
 </table>
 <br clear="all">
 
+---
+
 <div style="text-align: left;">
   <img src="https://github.com/user-attachments/assets/efcdb931-0517-459c-8e7b-d60099e09f15" alt="Site Behavior Auditor" width="35%">
 </div>
 
+---
+
+## 📄 License
+GPL v2 or later
+
+---
+**Developed by Stone** | *Architect-grade stability for WordPress systems.*
