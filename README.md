@@ -92,7 +92,7 @@ High-performance IP resolution is powered by [ip2region](https://github.com/lion
 #### 防御设置与环境检测 (Settings & Env Check)
 
 <div style="text-align: left;">
-  <img src="https://github.com/user-attachments/assets/f15a3ed2-5896-4910-b98e-05bc863a0978" alt="Settings" width="60%">
+  <img src="https://github.com/user-attachments/assets/4b1daf8e-3223-41eb-bbde-9cce9f390a80" alt="Settings" width="60%">
 </div>
 
 #### iOS 风格登录交互 (iOS Style Login)
