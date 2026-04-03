@@ -79,9 +79,8 @@ High-performance IP resolution is powered by [ip2region](https://github.com/lion
 #### 可视化审计面板 (Audit Dashboard)
 
 <div style="text-align: left;">
-  <img src="https://github.com/user-attachments/assets/a7160c62-a738-4b96-9187-8104fb5acdaf" alt="Audit Dashboard" width="60%">
+  <img src="https://github.com/user-attachments/assets/bea56093-224b-4124-aa43-a15a06032091" alt="Audit Dashboard" width="60%">
 </div>
-
 
 #### 实时轨迹与日志 (Real-time Trace & Logs)
 
