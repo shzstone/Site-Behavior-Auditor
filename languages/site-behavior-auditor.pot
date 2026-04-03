@@ -218,6 +218,9 @@ msgstr ""
 msgid "今日 (%s) PV:"
 msgstr ""
 
+msgid "今日 (%s) 拦截:"
+msgstr ""
+
 #: Site-Behavior-Auditor.php:1084
 msgid "📈 30天访问趋势"
 msgstr ""
@@ -607,4 +610,46 @@ msgid "累积浏览"
 msgstr ""
 
 msgid "SMTP 邮件"
+msgstr ""
+
+msgid "登录"
+msgstr ""
+
+msgid "注册"
+msgstr ""
+
+msgid "忘记密码"
+msgstr ""
+
+msgid "记住我"
+msgstr ""
+
+msgid "邮箱"
+msgstr ""
+
+msgid "确认密码"
+msgstr ""
+
+msgid "验证码"
+msgstr ""
+
+msgid "登录中..."
+msgstr ""
+
+msgid "注册中..."
+msgstr ""
+
+msgid "发送中..."
+msgstr ""
+
+msgid "两次输入的密码不一致。"
+msgstr ""
+
+msgid "请先填写验证码。"
+msgstr ""
+
+msgid "网络错误，请稍后重试。"
+msgstr ""
+
+msgid "验证码："
 msgstr ""

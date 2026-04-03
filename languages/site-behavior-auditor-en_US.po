@@ -609,3 +609,45 @@ msgstr "Total Views"
 
 msgid "SMTP 邮件"
 msgstr "SMTP Mail"
+
+msgid "登录"
+msgstr "Login"
+
+msgid "注册"
+msgstr "Register"
+
+msgid "忘记密码"
+msgstr "Forgot Password"
+
+msgid "记住我"
+msgstr "Remember Me"
+
+msgid "邮箱"
+msgstr "Email"
+
+msgid "确认密码"
+msgstr "Confirm Password"
+
+msgid "验证码"
+msgstr "Captcha"
+
+msgid "登录中..."
+msgstr "Logging in..."
+
+msgid "注册中..."
+msgstr "Registering..."
+
+msgid "发送中..."
+msgstr "Sending..."
+
+msgid "两次输入的密码不一致。"
+msgstr "Passwords mismatch."
+
+msgid "请先填写验证码。"
+msgstr "Fill captcha first."
+
+msgid "网络错误，请稍后重试。"
+msgstr "Network error."
+
+msgid "验证码："
+msgstr "Captcha:"
