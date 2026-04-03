@@ -79,14 +79,15 @@ High-performance IP resolution is powered by [ip2region](https://github.com/lion
 #### 可视化审计面板 (Audit Dashboard)
 
 <div style="text-align: left;">
-  <img src="https://github.com/user-attachments/assets/2ec59019-108d-4f61-a2a0-e1f0abf61cb8" alt="Audit Dashboard" width="60%">
+  <img src="https://github.com/user-attachments/assets/a7160c62-a738-4b96-9187-8104fb5acdaf" alt="Audit Dashboard" width="60%">
 </div>
+
 
 #### 实时轨迹与日志 (Real-time Trace & Logs)
 
 <div style="display: flex; gap: 10px;">
-  <img src="https://github.com/user-attachments/assets/b773d840-b64a-4e1e-807d-05e3707dec51" alt="Trace" width="45%">
-  <img src="https://github.com/user-attachments/assets/171bc999-e8d6-4978-870a-9760000478b1" alt="Blocked Logs" width="45%">
+  <img src="https://github.com/user-attachments/assets/1a323212-bdf8-46ae-b079-9563f80a4eac" alt="Trace" width="45%">
+  <img src="https://github.com/user-attachments/assets/d1595991-1dde-455e-91b7-4eccbf805230" alt="Blocked Logs" width="45%">
 </div>
 
 #### 防御设置与环境检测 (Settings & Env Check)
@@ -111,6 +112,12 @@ High-performance IP resolution is powered by [ip2region](https://github.com/lion
   </tr>
 </table>
 <br clear="all">
+
+#### SMTP邮件设置 (SMTP Mail Settings)
+
+<div style="text-align: left;">
+  <img src="https://github.com/user-attachments/assets/4550941c-f32f-4626-98ec-c7d6a3ed7620" alt="Settings" width="60%">
+</div>
 
 ---
 
