@@ -653,3 +653,48 @@ msgstr ""
 
 msgid "验证码："
 msgstr ""
+
+msgid "启用强制 IP 直连 + Host 头校验"
+msgstr ""
+
+msgid "逗号分隔，追加到默认内网黑名单之后。"
+msgstr ""
+
+msgid "白名单内的 IP 即使属于内网也允许访问（适用于 NAS 访问家庭内网服务）。"
+msgstr ""
+
+msgid "防止攻击者利用短 TTL DNS 绕过 IP 黑名单。"
+msgstr ""
+
+msgid "🔒 出站安全（SSRF 防御）"
+msgstr ""
+
+msgid "出站 IP 白名单"
+msgstr ""
+
+msgid "DNS Rebinding 防御"
+msgstr ""
+
+msgid "额外黑名单（CIDR）"
+msgstr ""
+
+msgid "启用强制 IP 直连 + Host 头校验"
+msgstr ""
+
+msgid "防止攻击者利用短 TTL DNS 绕过 IP 黑名单。"
+msgstr ""
+
+msgid "逗号分隔，追加到默认内网黑名单之后。"
+msgstr ""
+
+msgid "白名单内的 IP 即使属于内网也允许访问（适用于 NAS 访问家庭内网服务）。"
+msgstr ""
+
+msgid "例如："
+msgstr ""
+
+msgid "每行一个 IP 或 CIDR，例如：%s"
+msgstr ""
+
+msgid "例如：%s"
+msgstr ""

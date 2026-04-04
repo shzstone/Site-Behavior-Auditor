@@ -1458,7 +1458,9 @@ function sba_environment_panel() {
             <tr><th>post_max_size</th><td><?php echo esc_html( $post_max ); ?></td></tr>
             <tr><th>memory_limit</th><td><?php echo esc_html( $memory_limit ); ?></td></tr>
             <tr><th>max_execution_time</th><td><?php echo esc_html( $max_execution ); ?> <?php _e('秒', SBA_TEXT_DOMAIN); ?></td></tr>
-            <tr><th>cURL 扩展</th><td><?php echo $curl_enabled; ?></td></tr>
+            <tr>
+                <th><?php _e( 'cURL 扩展', SBA_TEXT_DOMAIN); ?></th>
+                <td><?php echo $curl_enabled; ?></td> </tr>
         </table>
         <p class="description"><?php _e('若需上传大文件（超过 10MB），建议将 <code>upload_max_filesize</code> 和 <code>post_max_size</code> 调至至少 64M。', SBA_TEXT_DOMAIN); ?></p>
     </div>
@@ -1932,14 +1934,27 @@ function sba_audit_render_settings() {
 							<tr>
 								<th><label for="outbound_whitelist"><?php _e('出站 IP 白名单', SBA_TEXT_DOMAIN); ?></label></th>
 								<td>
-									<textarea name="sba_settings[outbound_whitelist]" rows="4" style="width:100%;" placeholder="每行一个 IP 或 CIDR，例如：&#10;192.168.1.100&#10;10.0.0.0/8"><?php echo esc_textarea( $opts['outbound_whitelist'] ?? '' ); ?></textarea>
+                                    <textarea name="sba_settings[outbound_whitelist]" rows="4" style="width:100%;" placeholder="<?php echo esc_attr( sprintf( __( '每行一个 IP 或 CIDR，例如：%s', SBA_TEXT_DOMAIN ), "\n192.168.1.100\n10.0.0.0/8" ) ); ?>"><?php echo esc_textarea( $opts['outbound_whitelist'] ?? '' ); ?></textarea>
 									<br><small><?php _e('白名单内的 IP 即使属于内网也允许访问（适用于 NAS 访问家庭内网服务）。', SBA_TEXT_DOMAIN); ?></small>
 								</td>
 							</tr>
 							<tr>
 								<th><label for="ssrf_blacklist"><?php _e('额外黑名单（CIDR）', SBA_TEXT_DOMAIN); ?></label></th>
 								<td>
-									<input type="text" name="sba_settings[ssrf_blacklist]" value="<?php echo esc_attr( $opts['ssrf_blacklist'] ?? '' ); ?>" style="width:100%;" placeholder="例如：192.0.2.0/24,203.0.113.0/24" />
+                                    <input
+                                        type="text"
+                                        name="sba_settings[ssrf_blacklist]"
+                                        value="<?php echo esc_attr( $opts['ssrf_blacklist'] ?? '' ); ?>"
+                                        style="width:100%;"
+                                        placeholder="<?php
+                                            echo esc_attr(
+                                                sprintf(
+                                                    __( '例如：%s', SBA_TEXT_DOMAIN ),
+                                                    '192.0.2.0/24,203.0.113.0/24'
+                                                )
+                                            );
+                                        ?>"
+                                    />
 									<br><small><?php _e('逗号分隔，追加到默认内网黑名单之后。', SBA_TEXT_DOMAIN); ?></small>
 								</td>
 							</tr>

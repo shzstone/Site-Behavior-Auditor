@@ -219,6 +219,9 @@ msgstr "Today (%s) UV:"
 msgid "今日 (%s) PV:"
 msgstr "Today (%s) PV:"
 
+msgid "今日 (%s) 拦截:"
+msgstr "Today (%s) Blocked:"
+
 #: Site-Behavior-Auditor.php:1084
 msgid "📈 30天访问趋势"
 msgstr "📈 30-Day Trend"
@@ -617,7 +620,7 @@ msgid "注册"
 msgstr "Register"
 
 msgid "忘记密码"
-msgstr "Forgot Password"
+msgstr "Forgot"
 
 msgid "记住我"
 msgstr "Remember Me"
@@ -651,3 +654,36 @@ msgstr "Network error."
 
 msgid "验证码："
 msgstr "Captcha:"
+
+msgid "启用强制 IP 直连 + Host 头校验"
+msgstr "Enable Forced Direct IP Connection + Host Header Validation"
+
+msgid "逗号分隔，追加到默认内网黑名单之后。"
+msgstr "Comma-separated, appended to the default intranet blacklist."
+
+msgid "白名单内的 IP 即使属于内网也允许访问（适用于 NAS 访问家庭内网服务）。"
+msgstr "IPs in the whitelist are allowed to be accessed even if they belong to the intranet (applicable for NAS accessing home network services)."
+
+msgid "防止攻击者利用短 TTL DNS 绕过 IP 黑名单。"
+msgstr "Prevents attackers from bypassing the IP blacklist by leveraging short TTL DNS."
+
+msgid "🔒 出站安全（SSRF 防御）"
+msgstr "Outbound Security (SSRF Protection)"
+
+msgid "出站 IP 白名单"
+msgstr "Outbound IP Whitelist"
+
+msgid "DNS Rebinding 防御"
+msgstr "DNS Rebinding Protection"
+
+msgid "额外黑名单（CIDR）"
+msgstr "Additional Blacklist (CIDR)"
+
+msgid "例如："
+msgstr "Example:"
+
+msgid "每行一个 IP 或 CIDR，例如：%s"
+msgstr "One IP or CIDR per line, for example:%s"
+
+msgid "例如：%s"
+msgstr "For example: %s"
