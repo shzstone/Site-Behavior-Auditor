@@ -106,7 +106,7 @@ High-performance IP resolution is powered by [ip2region](https://github.com/lion
       <img src="https://github.com/user-attachments/assets/9de3d9ed-8f44-4c4a-9080-1b6133ddf884" width="130">
     </td>
     <td valign="top" width="140">
-      <img src="https://github.com/user-attachments/assets/bad9fbbf-758c-47f9-a782-ad8d0582e4cd" width="130">
+      <img src="https://github.com/user-attachments/assets/c28151e0-fd64-43a7-bc18-40463c9b4fa1" width="130">
     </td>
   </tr>
 </table>
