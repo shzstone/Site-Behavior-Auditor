@@ -687,3 +687,9 @@ msgstr "One IP or CIDR per line, for example:%s"
 
 msgid "例如：%s"
 msgstr "For example: %s"
+
+msgid "发送重置链接"
+msgstr "Send reset link"
+
+msgid "用户名或邮箱"
+msgstr "Username or Email"

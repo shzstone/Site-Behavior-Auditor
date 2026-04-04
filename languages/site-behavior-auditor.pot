@@ -698,3 +698,9 @@ msgstr ""
 
 msgid "例如：%s"
 msgstr ""
+
+msgid "发送重置链接"
+msgstr ""
+
+msgid "用户名或邮箱"
+msgstr ""
