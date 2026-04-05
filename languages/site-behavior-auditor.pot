@@ -704,3 +704,33 @@ msgstr ""
 
 msgid "用户名或邮箱"
 msgstr ""
+
+msgid "Legacy filter 参数绕过探测"
+msgstr ""
+
+msgid "非认证用户尝试使用 edit 上下文"
+msgstr ""
+
+msgid "分页参数 per_page 超出限制"
+msgstr ""
+
+msgid "尝试遍历文章偏移量 (offset)"
+msgstr ""
+
+msgid "OEmbed 代理请求 (SSRF 风险)"
+msgstr ""
+
+msgid "扫描路径探测: %s"
+msgstr ""
+
+msgid "XML-RPC POST 请求 (已封禁)"
+msgstr ""
+
+msgid "非法的 XML-RPC 请求方法"
+msgstr ""
+
+msgid "登录失败次数过多 (暴力破解)"
+msgstr ""
+
+msgid "尝试次数太多，请稍后再试。"
+msgstr ""

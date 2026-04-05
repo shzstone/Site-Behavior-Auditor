@@ -693,3 +693,33 @@ msgstr "Send reset link"
 
 msgid "用户名或邮箱"
 msgstr "Username or Email"
+
+msgid "Legacy filter 参数绕过探测"
+msgstr "Legacy filter parameter bypass detected"
+
+msgid "非认证用户尝试使用 edit 上下文"
+msgstr "Unauthenticated user attempted to use edit context"
+
+msgid "分页参数 per_page 超出限制"
+msgstr "Pagination parameter per_page exceeds limit"
+
+msgid "尝试遍历文章偏移量 (offset)"
+msgstr "Attempt to traverse posts using offset"
+
+msgid "OEmbed 代理请求 (SSRF 风险)"
+msgstr "OEmbed proxy request (SSRF risk)"
+
+msgid "扫描路径探测: %s"
+msgstr "Scan path probe: %s"
+
+msgid "XML-RPC POST 请求 (已封禁)"
+msgstr "XML-RPC POST request (blocked)"
+
+msgid "非法的 XML-RPC 请求方法"
+msgstr "Illegal XML-RPC request method"
+
+msgid "登录失败次数过多 (暴力破解)"
+msgstr "Too many login failures (brute force)"
+
+msgid "尝试次数太多，请稍后再试。"
+msgstr "Too many failed attempts. Please try again later."
