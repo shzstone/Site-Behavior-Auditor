@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Site Behavior Auditor 2.1.8\n"
+"Project-Id-Version: Site Behavior Auditor 2.2.1\n"
 "POT-Creation-Date: 2025-03-15 12:00+0000\n"
 "PO-Revision-Date: 2025-03-15 14:00+0000\n"
 "Last-Translator: Translator <email@example.com>\n"
@@ -723,3 +723,9 @@ msgstr "Too many login failures (brute force)"
 
 msgid "尝试次数太多，请稍后再试。"
 msgstr "Too many failed attempts. Please try again later."
+
+msgid "遗留 filter[author] 参数探测"
+msgstr "Legacy filter[author] parameter detection"
+
+msgid "遗留 filter[orderby]=author 参数探测"
+msgstr "Legacy filter[orderby]=author parameter detection"

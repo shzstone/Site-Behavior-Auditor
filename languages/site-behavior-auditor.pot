@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Site Behavior Auditor 2.1.8\n"
+"Project-Id-Version: Site Behavior Auditor 2.2.1\n"
 "POT-Creation-Date: 2025-03-15 12:00+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
@@ -733,4 +733,10 @@ msgid "登录失败次数过多 (暴力破解)"
 msgstr ""
 
 msgid "尝试次数太多，请稍后再试。"
+msgstr ""
+
+msgid "遗留 filter[author] 参数探测"
+msgstr ""
+
+msgid "遗留 filter[orderby]=author 参数探测"
 msgstr ""

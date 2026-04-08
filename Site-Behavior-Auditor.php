@@ -2,7 +2,7 @@
 /**
  * Plugin Name: 综合安全套件 (Site Behavior Auditor + Login Box + SMTP)
  * Description: 集成站点全行为审计、iOS风格登录/注册/忘记密码面板（简码: sba_login_box）和SMTP邮件配置。IP归属地使用 ip2region xdb 内存查询（支持 IPv4/IPv6），分片上传库文件，并提供高级爬虫防御（阶梯限制、Cookie校验、诱饵陷阱）。
- * Version: 2.2.0
+ * Version: 2.2.1
  * Author: Stone
  * Author URI: https://blog.cacca.cc
  * Text Domain: site-behavior-auditor
@@ -10,7 +10,7 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
-define( 'SBA_VERSION', '2.2.0' );
+define( 'SBA_VERSION', '2.2.1' );
 define( 'SBA_TEXT_DOMAIN', 'site-behavior-auditor' );
 define( 'SBA_IP_DATA_DIR', WP_CONTENT_DIR . '/uploads/sba_ip_data/' );
 define( 'SBA_IP_V4_FILE', SBA_IP_DATA_DIR . 'ip2region_v4.xdb' );
@@ -228,27 +228,51 @@ function sba_get_counter($counter_key) {
 }
 
 function sba_get_pv_counter($date = null) {
-    if ($date === null) {
-        $date = current_time('Y-m-d');
-    }
+    if ($date === null) $date = current_time('Y-m-d');
     $counter_key = SBA_COUNTER_PV_TODAY . '_' . $date;
-    return sba_get_counter($counter_key);
+    $val = (int)get_option($counter_key, 0);
+
+    if ($val === 0) {
+        global $wpdb;
+        $val = (int)$wpdb->get_var($wpdb->prepare(
+            "SELECT SUM(pv) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s",
+            $date
+        ));
+        if ($val > 0) update_option($counter_key, $val); // 补偿缓存
+    }
+    return $val;
 }
 
 function sba_get_uv_counter($date = null) {
-    if ($date === null) {
-        $date = current_time('Y-m-d');
-    }
+    if ($date === null) $date = current_time('Y-m-d');
     $counter_key = SBA_COUNTER_UV_TODAY . '_' . $date;
-    return sba_get_counter($counter_key);
+    $val = (int)get_option($counter_key, 0);
+
+    if ($val === 0) {
+        global $wpdb;
+        $val = (int)$wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s",
+            $date
+        ));
+        if ($val > 0) update_option($counter_key, $val);
+    }
+    return $val;
 }
 
 function sba_get_blocked_counter($date = null) {
-    if ($date === null) {
-        $date = current_time('Y-m-d');
-    }
+    if ($date === null) $date = current_time('Y-m-d');
     $counter_key = SBA_COUNTER_BLOCKED_TODAY . '_' . $date;
-    return sba_get_counter($counter_key);
+    $val = (int)get_option($counter_key, 0);
+
+    if ($val === 0) {
+        global $wpdb;
+        $val = (int)$wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}sba_blocked_log WHERE DATE(block_time) = %s",
+            $date
+        ));
+        if ($val > 0) update_option($counter_key, $val);
+    }
+    return $val;
 }
 
 if ( ! class_exists( 'SBA_Fallback_XdbSearcher' ) ) {
@@ -475,25 +499,28 @@ add_action( 'init', function() {
         return;
     }
 
-    // 蜜罐陷阱 (Honeypot)
-    foreach ( $_GET as $key => $val ) {
-        if ( strpos( $key, 'sba_trap_' ) === 0 ) {
-            $trap_key = $key;
-            if ( get_transient( 'sba_trap_' . $trap_key ) ) {
-                $ip = sba_combined_get_ip();
-                for ( $i = 0; $i < 6; $i++ ) {
-                    sba_ios_record_failure( $ip, false );
-                }
-                sba_audit_execute_block( __('蜜罐陷阱触发', SBA_TEXT_DOMAIN) );
-            }
-            delete_transient( 'sba_trap_' . $trap_key );
-            break;
-        }
-    }
-
     $ip = sba_combined_get_ip();
     $uri = strtolower( $_SERVER['REQUEST_URI'] );
     $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+    $is_search_bot = sba_is_search_engine();
+
+    foreach ( $_GET as $key => $val ) {
+        if ( strpos( $key, 'sba_trap_' ) === 0 ) {
+            if ( ! $is_search_bot ) {
+                $trap_key = $key;
+                if ( get_transient( 'sba_trap_' . $trap_key ) ) {
+                    $ip = sba_combined_get_ip();
+                    for ( $i = 0; $i < 6; $i++ ) {
+                        sba_ios_record_failure( $ip, false );
+                    }
+                    sba_audit_execute_block( __('蜜罐陷阱触发', SBA_TEXT_DOMAIN) );
+                }
+                delete_transient( 'sba_trap_' . $trap_key );
+            }
+            break;
+        }
+    }
 
     $current_action = $_REQUEST['action'] ?? '';
     $is_login_page = ( strpos( $uri, 'wp-login.php' ) !== false );
@@ -504,61 +531,58 @@ add_action( 'init', function() {
         return;
     }
 
-    // 自动化扫描器过滤
-    $scan_tools = [ 'sqlmap', 'nmap', 'dirbuster', 'nikto', 'zgrab', 'python-requests', 'go-http-client', 'java/', 'curl/', 'wget', 'masscan' ];
-    foreach ( $scan_tools as $tool ) {
-        if ( stripos( $ua, $tool ) !== false ) sba_audit_execute_block( sprintf( __('自动化扫描器: %s', SBA_TEXT_DOMAIN), $tool ) );
+    if ( ! $is_search_bot ) {
+        $scan_tools = [ 'sqlmap', 'nmap', 'dirbuster', 'nikto', 'zgrab', 'python-requests', 'go-http-client', 'java/', 'curl/', 'wget', 'masscan' ];
+        foreach ( $scan_tools as $tool ) {
+            if ( stripos( $ua, $tool ) !== false ) sba_audit_execute_block( sprintf( __('自动化扫描器: %s', SBA_TEXT_DOMAIN), $tool ) );
+        }
     }
 
-    // 作者/敏感数据枚举探测
     $is_user_enum_detected = false;
     if ( isset( $_GET['author'] ) || strpos( $uri, 'author=' ) !== false ) {
         $is_user_enum_detected = true;
     }
 
-    // 检测 REST API 绕过
-    if ( ! is_user_logged_in() ) {
+    if ( ! is_user_logged_in() && ! $is_search_bot ) {
         $rest_route = $_GET['rest_route'] ?? '';
         $query_string_all = $_SERVER['QUERY_STRING'] ?? '';
 
-        // 拦截特定的敏感端点枚举
         if ( preg_match( '/wp\/v2\/(users|comments|media)/i', $uri ) || preg_match( '/wp\/v2\/(users|comments|media)/i', $rest_route ) ) {
             $is_user_enum_detected = true;
         }
 
-        // filter[author] 和 orderby=author 绕过
         if ( stripos( $query_string_all, 'filter[author]' ) !== false || stripos( $query_string_all, 'orderby=author' ) !== false ) {
             $is_user_enum_detected = true;
         }
 
-        // ========== 拦截 legacy filter 参数绕过 (批量获取文章) ==========
+        if ( preg_match( '/filter\[author\]\s*=\s*[\d\w]+/i', $query_string_all ) ) {
+            sba_audit_execute_block( __('遗留 filter[author] 参数探测', SBA_TEXT_DOMAIN) );
+        }
+        if ( preg_match( '/filter\[orderby\]\s*=\s*author/i', $query_string_all ) ) {
+            sba_audit_execute_block( __('遗留 filter[orderby]=author 参数探测', SBA_TEXT_DOMAIN) );
+        }
+
         if ( strpos( $uri, '/wp/v2/posts' ) !== false || strpos( $rest_route, '/wp/v2/posts' ) !== false ) {
             if ( preg_match( '/filter\[[^\]]+\]/i', $query_string_all ) ) {
                 sba_audit_execute_block( __('Legacy filter 参数绕过探测', SBA_TEXT_DOMAIN) );
             }
         }
 
-        // ========== 拦截 REST API context=edit 参数 (非登录用户) ==========
         if ( isset( $_GET['context'] ) && $_GET['context'] === 'edit' ) {
             sba_audit_execute_block( __('非认证用户尝试使用 edit 上下文', SBA_TEXT_DOMAIN) );
         }
 
-        // ========== 拦截 per_page 过大 (防止批量爬取) ==========
-        if ( isset( $_GET['per_page'] ) && (int)$_GET['per_page'] > 100 ) {
+        if ( isset( $_GET['per_page'] ) && (int)$_GET['per_page'] > 50 ) {
             sba_audit_execute_block( __('分页参数 per_page 超出限制', SBA_TEXT_DOMAIN) );
         }
 
-        // ========== 拦截 offset 遍历 (文章数量探测) ==========
         if ( isset( $_GET['offset'] ) && (int)$_GET['offset'] > 200 ) {
             sba_audit_execute_block( __('尝试遍历文章偏移量 (offset)', SBA_TEXT_DOMAIN) );
         }
-
-        // ========== 拦截 /wp-json/oembed/1.0/proxy 等敏感代理端点 ==========
         if ( strpos( $uri, '/oembed/1.0/proxy' ) !== false || strpos( $rest_route, '/oembed/1.0/proxy' ) !== false ) {
             sba_audit_execute_block( __('OEmbed 代理请求 (SSRF 风险)', SBA_TEXT_DOMAIN) );
         }
 
-        // ========== 拦截常见扫描路径 ==========
         $scan_paths = [ '/.well-known', '/wp-json/yoast', '/wp-json/acf', '/wp-json/tribe', '/wp-json/woocommerce' ];
         foreach ( $scan_paths as $path ) {
             if ( strpos( $uri, $path ) !== false ) {
@@ -567,23 +591,23 @@ add_action( 'init', function() {
         }
     }
 
-    if ( $is_user_enum_detected ) {
+    if ( $is_user_enum_detected && ! $is_search_bot ) {
         sba_audit_execute_block( __('敏感数据枚举探测 (User/Comment/Bypass)', SBA_TEXT_DOMAIN) );
     }
 
-    // 非法路径探测
-    $fixed_evil = [
-        '/.env', '/.git', '/.sql', '/.ssh', '/wp-config.php.bak', '/phpinfo.php', '/config.php.swp', '/.vscode',
-        '/readme.html', '/license.txt', '/wp-links-opml.php', '/wp-admin/install.php'
-    ];
-    $custom_evil = array_filter( array_map( 'trim', explode( ',', sba_audit_get_opt( 'evil_paths', '' ) ) ) );
-    $all_evil = array_unique( array_merge( $fixed_evil, $custom_evil ) );
-    foreach ( $all_evil as $path ) {
-        if ( ! empty( $path ) && strpos( $uri, $path ) !== false ) sba_audit_execute_block( sprintf( __('非法路径探测: %s', SBA_TEXT_DOMAIN), $path ) );
+    if ( ! $is_search_bot ) {
+        $fixed_evil = [
+            '/.env', '/.git', '/.sql', '/.ssh', '/wp-config.php.bak', '/phpinfo.php', '/config.php.swp', '/.vscode',
+            '/readme.html', '/license.txt', '/wp-links-opml.php', '/wp-admin/install.php'
+        ];
+        $custom_evil = array_filter( array_map( 'trim', explode( ',', sba_audit_get_opt( 'evil_paths', '' ) ) ) );
+        $all_evil = array_unique( array_merge( $fixed_evil, $custom_evil ) );
+        foreach ( $all_evil as $path ) {
+            if ( ! empty( $path ) && strpos( $uri, $path ) !== false ) sba_audit_execute_block( sprintf( __('非法路径探测: %s', SBA_TEXT_DOMAIN), $path ) );
+        }
     }
 
-    // 轻量级 WAF (针对 SQLi/XSS 内容扫描)
-    if ( ! is_user_logged_in() ) {
+    if ( ! is_user_logged_in() && ! $is_search_bot ) {
         $raw_post_data = file_get_contents( 'php://input' );
         $query_data = $_SERVER['QUERY_STRING'] ?? '';
         $waf_patterns = [ 'union.*select', 'insert.*into', 'update.*set', 'delete.*from', '<script', 'javascript:', 'onerror=', 'onload=' ];
@@ -594,23 +618,19 @@ add_action( 'init', function() {
         }
     }
 
-    // 精细拦截 XML-RPC Pingback + 完全封禁非必要 POST 方法
-    if ( strpos( $_SERVER['REQUEST_URI'], 'xmlrpc.php' ) !== false ) {
+    if ( ! $is_search_bot && strpos( $_SERVER['REQUEST_URI'], 'xmlrpc.php' ) !== false ) {
         if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
             $raw_post = file_get_contents( 'php://input' );
             if ( stripos( $raw_post, '<methodName>pingback.ping</methodName>' ) !== false ) {
                 sba_audit_execute_block( __('XML-RPC Pingback 调用（SSRF 高风险）', SBA_TEXT_DOMAIN) );
             }
-            // 除了 pingback 之外的任何 POST 请求都拦截（如果网站需要 Jetpack 等，可放开）
             sba_audit_execute_block( __('XML-RPC POST 请求 (已封禁)', SBA_TEXT_DOMAIN) );
         }
-        // 如果不是 GET 请求（如 HEAD, PUT 等）也封禁
         if ( $_SERVER['REQUEST_METHOD'] !== 'GET' ) {
             sba_audit_execute_block( __('非法的 XML-RPC 请求方法', SBA_TEXT_DOMAIN) );
         }
     }
 
-    // Gate 钥匙逻辑
     $stored_slug = sba_audit_get_opt( 'login_slug', '' );
     $internal_params = ['interim-login', 'auth-check', 'wp_scrape_key', 'wp_scrape_nonce'];
     foreach ($internal_params as $param) {
@@ -652,13 +672,11 @@ add_action( 'init', function() {
         }
     }
 
-    // CC 阶梯限制与爬虫路径识别
     $limit = (int) sba_audit_get_opt( 'auto_block_limit', 0 );
-    if ( $limit > 0 && ! is_user_logged_in() ) {
+    if ( $limit > 0 && ! is_user_logged_in() && ! $is_search_bot ) {
         if ( ! ( $ip === '127.0.0.1' || $ip === '::1' ) ) {
             $is_browser = preg_match( '/Mozilla\/|Chrome\/|Firefox\/|Safari\/|Edge\/|Opera\/|MSIE/', $ua );
 
-            // 爬虫路径正则
             $default_scraper_paths = 'feed=|rest_route=|[\?&]m=|\?p=|wp/v2/users|wp/v2/comments|wp/v2/media';
             $scraper_paths = sba_audit_get_opt( 'scraper_paths', $default_scraper_paths );
 
@@ -681,7 +699,6 @@ add_action( 'init', function() {
         }
     }
 
-    // 访客轨迹统计与 PV/UV 记录
     global $wpdb;
     $local_time = current_time( 'mysql' );
     $local_date = substr( $local_time, 0, 10 );
@@ -726,11 +743,9 @@ add_action( 'init', function() {
 // ============================================================================
 add_action( 'rest_api_init', function() {
 
-    // 针对文章/页面：清洗 GUID 和抹除作者 ID
     add_filter( 'rest_prepare_post', 'sba_clean_rest_data_output', 10, 3 );
     add_filter( 'rest_prepare_page', 'sba_clean_rest_data_output', 10, 3 );
 
-    // 针对评论：抹除作者名泄露
     add_filter( 'rest_prepare_comment', function( $response, $comment, $request ) {
         if ( ! is_user_logged_in() ) {
             $data = $response->get_data();
@@ -744,7 +759,6 @@ add_action( 'rest_api_init', function() {
         return $response;
     }, 10, 3 );
 
-    // ========== 针对用户端点完全禁用 (非登录) ==========
     add_filter( 'rest_endpoints', function( $endpoints ) {
         if ( ! is_user_logged_in() ) {
             if ( isset( $endpoints['/wp/v2/users'] ) ) {
@@ -757,7 +771,6 @@ add_action( 'rest_api_init', function() {
         return $endpoints;
     } );
 
-    // ========== 拦截密码保护文章的探测（403 转 404） ==========
     add_filter( 'rest_post_dispatch', function( $response, $rest_server, $request ) {
         if ( ! is_user_logged_in() && $response->get_status() === 403 ) {
             $route = $request->get_route();
@@ -772,26 +785,19 @@ add_action( 'rest_api_init', function() {
 // ============================================================================
 // 3. 辅助函数
 // ============================================================================
-
-/**
- * 清洗 REST 数据输出
- */
 function sba_clean_rest_data_output( $response, $post, $request ) {
     if ( ! is_user_logged_in() ) {
         $data = $response->get_data();
         $data['author'] = 0;
 
-        // 清洗 GUID (核心加固：解决内网 IP 泄露)
         if ( isset( $data['guid']['rendered'] ) ) {
             $data['guid']['rendered'] = sba_mask_internal_ips_logic( $data['guid']['rendered'] );
         }
 
-        // 清洗文章正文中的内网链接
         if ( isset( $data['content']['rendered'] ) ) {
             $data['content']['rendered'] = sba_mask_internal_ips_logic( $data['content']['rendered'] );
         }
 
-        // 清洗标题、摘要
         if ( isset( $data['title']['rendered'] ) ) {
             $data['title']['rendered'] = sba_mask_internal_ips_logic( $data['title']['rendered'] );
         }
@@ -804,20 +810,28 @@ function sba_clean_rest_data_output( $response, $post, $request ) {
     return $response;
 }
 
-/**
- * 内网 IP 清洗函数
- * 覆盖 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 支持 https 和无协议
- */
+function sba_is_search_engine() {
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+    if ( empty( $ua ) ) return false;
+
+    $bots = [
+        'Googlebot', 'Baiduspider', 'bingbot', 'Sogou', 'YisouSpiderman',
+        '360Spider', 'YandexBot', 'Applebot', 'DuckDuckBot'
+    ];
+
+    foreach ( $bots as $bot ) {
+        if ( stripos( $ua, $bot ) !== false ) return true;
+    }
+    return false;
+}
+
 function sba_mask_internal_ips_logic( $text ) {
     $public_url = home_url();
-    // 私有 IP 正则 (IPv4)
     $pattern = '#https?://((127\.\d+\.\d+\.\d+)|(10\.\d+\.\d+\.\d+)|(172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+)|(192\.168\.\d+\.\d+))(:\d+)?(/|$)#i';
     $text = preg_replace( $pattern, $public_url . '/', $text );
 
-    // 处理 localhost
     $text = preg_replace( '#https?://localhost(:\d+)?(/|$)#i', $public_url . '/', $text );
 
-    // 处理无协议的内网 IP (如 //192.168.x.x)
     $text = preg_replace( '#//(127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?(/|$)#i', '//' . parse_url( $public_url, PHP_URL_HOST ) . '/', $text );
 
     return $text;
@@ -1736,19 +1750,22 @@ function sba_environment_panel() {
 function sba_audit_render_dashboard() {
     global $wpdb;
 
-    $online = $wpdb->get_var( "SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE last_visit > DATE_SUB(NOW(), INTERVAL 5 MINUTE)" );
-
     $latest_date = $wpdb->get_var( "SELECT MAX(visit_date) FROM {$wpdb->prefix}dis_stats" );
     if ( ! $latest_date ) $latest_date = current_time( 'Y-m-d' );
 
-    $uv_today = sba_get_uv_counter($latest_date);
     $pv_today = sba_get_pv_counter($latest_date);
+    $uv_today = sba_get_uv_counter($latest_date);
+    $blocked_today = sba_get_blocked_counter($latest_date);
+    $online = $wpdb->get_var( "SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE last_visit > DATE_SUB(NOW(), INTERVAL 5 MINUTE)" );
 
     $history_50 = $wpdb->get_results( "SELECT visit_date, COUNT(DISTINCT ip) as uv, SUM(pv) as pv FROM {$wpdb->prefix}dis_stats GROUP BY visit_date ORDER BY visit_date DESC LIMIT 50", OBJECT_K );
+
+    $history_blocked = $wpdb->get_results( "SELECT DATE(block_time) as d, COUNT(*) as c FROM {$wpdb->prefix}sba_blocked_log GROUP BY d ORDER BY d DESC LIMIT 50", OBJECT_K );
 
     $chart_labels = [];
     $chart_uv = [];
     $chart_pv = [];
+    $chart_blocked = [];
     $latest_ts = strtotime( $latest_date );
 
     for ( $i = 29; $i >= 0; $i-- ) {
@@ -1756,96 +1773,117 @@ function sba_audit_render_dashboard() {
         $chart_labels[] = $target_date;
         $chart_uv[] = isset( $history_50[ $target_date ] ) ? (int) $history_50[ $target_date ]->uv : 0;
         $chart_pv[] = isset( $history_50[ $target_date ] ) ? (int) $history_50[ $target_date ]->pv : 0;
+        $chart_blocked[] = isset( $history_blocked[ $target_date ] ) ? (int) $history_blocked[ $target_date ]->c : 0;
     }
 
     ?>
     <style>
-        .sba-wrap { max-width: 1400px; margin-top: 15px; }
-        .sba-card { background:#fff; padding:20px; border-radius:12px; margin-bottom:20px; box-shadow:0 4px 15px rgba(0,0,0,0.05); }
-        .sba-grid { display:grid; grid-template-columns: 1fr 1fr; gap:20px; }
-        @media (max-width: 1000px) { .sba-grid { grid-template-columns: 1fr; } }
-        .sba-scroll-x { width: 100%; overflow-x: auto; border: 1px solid #eee; border-radius:8px; }
-        .sba-table { width: 100%; min-width: 850px; border-collapse: collapse; table-layout: fixed; }
-        .sba-table th, .sba-table td { text-align: left; padding: 12px 10px; border-bottom: 1px solid #f9f9f9; font-size: 13px; background-color: #fff; color: #333; vertical-align: middle; }
-        .sba-table td code { font-size: inherit; background: none; padding: 0; color: inherit; }
-        .col-time { width: 80px; }
-        .col-ip { width: 240px; min-width: 200px; max-width: 280px; word-break: keep-all; }
-        .col-geo { width: 180px; }
-        .col-pv { width: 70px; }
-        .sba-table tbody tr td:first-child, .sba-table thead tr th:first-child { width: 100px; }
-        .sba-table tbody tr td:nth-child(2), .sba-table thead tr th:nth-child(2) { width: 240px; word-break: keep-all; }
-        .sba-cell-wrap { white-space: normal; word-break: break-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; font-size: 12px; }
-        .stat-val { font-size: 26px; font-weight: bold; display: block; margin-top: 5px; }
+        /* 全局重置 */
+        .sba-wrap {
+            max-width: 1400px;
+            width: 100%;
+            margin-top: 15px;
+            box-sizing: border-box;
+            padding: 0 15px;
+        }
+        .sba-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+            width: 100%;
+            overflow-x: hidden;
+        }
+        .sba-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        /* 滚动容器 */
+        .sba-scroll-x {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+        /* 公用表格 */
+        .sba-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
+        }
+        .sba-table th,
+        .sba-table td {
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 1px solid #f9f9f9;
+            font-size: 13px;
+            background-color: #fff;
+            color: #333;
+            vertical-align: middle;
+        }
+        /* 50天审计详表 – 固定比例列宽，滚动容器内滚动 */
+        .sba-audit-table {
+            table-layout: fixed;
+            min-width: 480px;
+        }
+        .sba-audit-table th:nth-child(1) { width: 22%; }
+        .sba-audit-table th:nth-child(2) { width: 16%; }
+        .sba-audit-table th:nth-child(3) { width: 16%; }
+        .sba-audit-table th:nth-child(4) { width: 18%; }
+        .sba-audit-table th:nth-child(5) { width: 18%; }
 
-        @media (max-width: 768px) {
-            .sba-card .sba-table {
-                min-width: 680px;
-                table-layout: auto;
-            }
-            .sba-card .sba-table th,
-            .sba-card .sba-table td {
-                font-size: 12px;
-                padding: 8px 6px;
-                white-space: normal;
-                word-break: break-word;
-            }
-            .sba-grid .sba-card:first-child .sba-table {
-                table-layout: fixed;
-                min-width: 500px;
-            }
-            .sba-grid .sba-card:first-child .sba-table th,
-            .sba-grid .sba-card:first-child .sba-table td {
-                width: 25%;
-                padding-left: 4px;
-                padding-right: 4px;
-            }
-            .sba-card:not(.sba-blocked-card) .sba-table {
-                table-layout: auto;
-            }
-            .sba-card:not(.sba-blocked-card) .sba-table th:first-child,
-            .sba-card:not(.sba-blocked-card) .sba-table td:first-child {
-                width: auto;
-                min-width: 70px;
-            }
-            .sba-card:not(.sba-blocked-card) .sba-table th:nth-child(2),
-            .sba-card:not(.sba-blocked-card) .sba-table td:nth-child(2) {
-                width: auto;
-                min-width: 60px;
-            }
-            .sba-card:not(.sba-blocked-card) .sba-table th:nth-child(3),
-            .sba-card:not(.sba-blocked-card) .sba-table td:nth-child(3) {
-                width: auto;
-                min-width: 60px;
-            }
-            .sba-card:not(.sba-blocked-card) .sba-table th:nth-child(4),
-            .sba-card:not(.sba-blocked-card) .sba-table td:nth-child(4) {
-                width: auto;
-                min-width: 90px;
-                white-space: normal;
-            }
-            .sba-blocked-card .sba-table th:first-child,
-            .sba-blocked-card .sba-table td:first-child {
-                width: 90px;
-            }
-            .sba-blocked-card .sba-table th:nth-child(2),
-            .sba-blocked-card .sba-table td:nth-child(2) {
-                width: 180px;
-            }
-            .sba-blocked-card .sba-table th:nth-child(3),
-            .sba-blocked-card .sba-table td:nth-child(3) {
-                width: auto;
-                min-width: 150px;
-            }
-            .sba-blocked-card .sba-cell-wrap {
-                -webkit-line-clamp: unset !important;
-                display: block !important;
-                overflow: visible !important;
-                white-space: normal !important;
-                word-break: break-word !important;
-                line-height: 1.4;
-            }
+        /* 访客轨迹表格 – 固定最小宽度，允许横向滚动 */
+        .sba-track-table {
+            min-width: 700px; /* 保证手机端可以横向滚动查看完整信息 */
+        }
+        .col-time { width: 80px; }
+        .col-ip { width: 200px; }
+        .col-geo { width: 160px; }
+        .col-pv { width: 60px; }
+
+        /* 拦截日志表格列宽 */
+        .sba-blocked-table {
+            min-width: 500px;
+        }
+        .sba-blocked-table th:first-child,
+        .sba-blocked-table td:first-child { width: 100px; }
+        .sba-blocked-table th:nth-child(2),
+        .sba-blocked-table td:nth-child(2) { width: 150px; }
+
+        .sba-cell-wrap {
+            white-space: normal;
+            word-break: break-all;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+            font-size: 12px;
+        }
+        .stat-val {
+            font-size: 26px;
+            font-weight: bold;
+            display: block;
+            margin-top: 5px;
         }
 
+		/* PC端统计卡片一行均分 */
+		.stats-row {
+			display: flex;
+			flex-wrap: nowrap;
+			gap: 15px;
+			margin-bottom: 20px;
+		}
+		.stats-row .sba-card {
+			flex: 1;
+			min-width: 0;
+		}
+
+        /* 分页按钮 */
         #prev-page, #next-page,
         #blocked-prev-page, #blocked-next-page {
             padding: 8px 16px;
@@ -1857,7 +1895,6 @@ function sba_audit_render_dashboard() {
             transition: all 0.2s;
             min-width: 80px;
         }
-
         #prev-page:hover:not(:disabled),
         #next-page:hover:not(:disabled),
         #blocked-prev-page:hover:not(:disabled),
@@ -1865,7 +1902,6 @@ function sba_audit_render_dashboard() {
             background: #e5e5e5;
             border-color: #999;
         }
-
         #prev-page:disabled,
         #next-page:disabled,
         #blocked-prev-page:disabled,
@@ -1875,7 +1911,6 @@ function sba_audit_render_dashboard() {
             background: #f0f0f0;
             color: #888;
         }
-
         #current-page, #total-pages,
         #blocked-current-page, #blocked-total-pages {
             display: inline-block;
@@ -1883,54 +1918,115 @@ function sba_audit_render_dashboard() {
             font-weight: bold;
             color: #2271b1;
         }
+
+        /* 图表容器：Canvas 自适应 */
+        .chart-container {
+            width: 100%;
+            height: 250px;
+            position: relative;
+        }
+        .chart-container canvas {
+            max-width: 100%;
+            width: 100% !important;
+            height: 250px !important;
+        }
+
+        /* PC 端自适应：浏览器缩小时 grid 折行 */
+        @media (max-width: 1000px) {
+            .sba-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 移动端 */
+        @media (max-width: 768px) {
+            .sba-wrap {
+                padding: 0 10px;
+            }
+            .sba-card {
+                padding: 12px;
+            }
+            /* 统计卡片：每行一个，宽度 100% */
+            .stats-row {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+            .stats-row .sba-card {
+                width: 100%;
+                padding: 10px 12px;
+				text-align: center;
+            }
+            .stat-val {
+                font-size: 20px;
+            }
+            /* 表格通用字体 */
+            .sba-table th,
+            .sba-table td {
+                font-size: 11px;
+                padding: 8px 5px;
+            }
+            /* 访客轨迹表格：通过滚动条查看，不挤压 */
+            .sba-track-table {
+                min-width: 700px;
+            }
+            /* 拦截日志表格移动端最小宽度 */
+            .sba-blocked-table {
+                min-width: 500px;
+            }
+            /* 多行文本移动端完整显示 */
+            .sba-cell-wrap {
+                -webkit-line-clamp: unset;
+                display: block;
+                overflow: visible;
+            }
+        }
     </style>
 
     <div class="wrap sba-wrap">
         <h2><?php echo sprintf( __('🚀 SBA 站点行为监控 v%s', SBA_TEXT_DOMAIN), SBA_VERSION ); ?></h2>
 
-        <!-- 统计卡片区域 -->
-		<div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap;">
-			<div class="sba-card" style="flex:1; border-left:4px solid #46b450;">
-				<?php _e('当前在线:', SBA_TEXT_DOMAIN); ?>
-				<span class="stat-val" style="color:#46b450;"><?php echo $online ?: 0; ?></span>
-			</div>
-			<div class="sba-card" style="flex:1; border-left:4px solid #2271b1;">
-				<?php echo sprintf( __('今日 (%s) UV:', SBA_TEXT_DOMAIN), $latest_date ); ?>
-				<span class="stat-val" style="color:#2271b1;"><?php echo $uv_today ?: 0; ?></span>
-			</div>
-			<div class="sba-card" style="flex:1; border-left:4px solid #4fc3f7;">
-				<?php echo sprintf( __('今日 (%s) PV:', SBA_TEXT_DOMAIN), $latest_date ); ?>
-				<span class="stat-val" style="color:#4fc3f7;"><?php echo $pv_today ?: 0; ?></span>
-			</div>
-			<!-- 新增拦截数卡片 -->
-			<div class="sba-card" style="flex:1; border-left:4px solid #d63638;">
-				<?php echo sprintf( __('今日 (%s) 拦截:', SBA_TEXT_DOMAIN), $latest_date ); ?>
-				<span class="stat-val" style="color:#d63638;">
-					<?php echo sba_get_blocked_counter($latest_date); ?>
-				</span>
-			</div>
-		</div>
+        <!-- 统计卡片区域：PC端一行均分，手机端每行一个 -->
+        <div class="stats-row">
+            <div class="sba-card" style="border-left:4px solid #46b450;">
+                <?php _e('当前在线:', SBA_TEXT_DOMAIN); ?>
+                <span class="stat-val" style="color:#46b450;"><?php echo $online ?: 0; ?></span>
+            </div>
+            <div class="sba-card" style="border-left:4px solid #2271b1;">
+                <?php echo sprintf( __('今日 (%s) UV:', SBA_TEXT_DOMAIN), $latest_date ); ?>
+                <span class="stat-val" style="color:#2271b1;"><?php echo $uv_today ?: 0; ?></span>
+            </div>
+            <div class="sba-card" style="border-left:4px solid #4fc3f7;">
+                <?php echo sprintf( __('今日 (%s) PV:', SBA_TEXT_DOMAIN), $latest_date ); ?>
+                <span class="stat-val" style="color:#4fc3f7;"><?php echo $pv_today ?: 0; ?></span>
+            </div>
+            <div class="sba-card" style="border-left:4px solid #d63638;">
+                <?php echo sprintf( __('今日 (%s) 拦截:', SBA_TEXT_DOMAIN), $latest_date ); ?>
+                <span class="stat-val" style="color:#d63638;">
+                    <?php echo sba_get_blocked_counter($latest_date); ?>
+                </span>
+            </div>
+        </div>
 
         <!-- 图表和审计详表区域 -->
         <div class="sba-grid">
-            <!-- 30天访问趋势图表 -->
             <div class="sba-card">
                 <h3><?php _e('📈 30天访问趋势', SBA_TEXT_DOMAIN); ?></h3>
-                <div style="height:250px;">
+                <div class="chart-container">
                     <canvas id="sbaChart10"></canvas>
                 </div>
             </div>
-
-            <!-- 50天审计详表 -->
             <div class="sba-card">
                 <h3><?php _e('📊 50天审计详表', SBA_TEXT_DOMAIN); ?></h3>
                 <div class="sba-scroll-x" style="height:250px;">
-                    <table class="sba-table" style="min-width:400px;">
+                    <table class="sba-table sba-audit-table">
                         <thead>
                             <tr>
                                 <th><?php _e('日期', SBA_TEXT_DOMAIN); ?></th>
                                 <th><?php _e('UV (人)', SBA_TEXT_DOMAIN); ?></th>
                                 <th><?php _e('PV (次)', SBA_TEXT_DOMAIN); ?></th>
+                                <th><?php _e('拦截 (次)', SBA_TEXT_DOMAIN); ?></th>
                                 <th><?php _e('深度', SBA_TEXT_DOMAIN); ?></th>
                             </tr>
                         </thead>
@@ -1938,11 +2034,13 @@ function sba_audit_render_dashboard() {
                         <?php for ( $j = 0; $j < 50; $j++ ):
                             $d = date( 'Y-m-d', $latest_ts - ( $j * 86400 ) );
                             $u = isset( $history_50[ $d ] ) ? $history_50[ $d ]->uv : 0;
-                            $p = isset( $history_50[ $d ] ) ? $history_50[ $d ]->pv : 0; ?>
+                            $p = isset( $history_50[ $d ] ) ? $history_50[ $d ]->pv : 0;
+                            $b = isset( $history_blocked[ $d ] ) ? $history_blocked[ $d ]->c : 0; ?>
                             <tr>
                                 <td><b><?php echo $d; ?></b></td>
                                 <td><?php echo $u; ?></td>
                                 <td><?php echo $p; ?></td>
+                                <td style="color:#d63638;"><?php echo $b; ?></td>
                                 <td><code><?php echo round( $p / max( 1, $u ), 1 ); ?></code></td>
                             </tr>
                         <?php endfor; ?>
@@ -1952,11 +2050,11 @@ function sba_audit_render_dashboard() {
             </div>
         </div>
 
-        <!-- 访客轨迹区域 -->
+        <!-- 访客轨迹区域 – 手机端通过横拉条查看 -->
         <div class="sba-card">
             <h3><?php echo sprintf( __('👣 访客轨迹 (%s)', SBA_TEXT_DOMAIN), $latest_date ); ?></h3>
             <div class="sba-scroll-x">
-                <table class="sba-table">
+                <table class="sba-table sba-track-table">
                     <thead>
                         <tr>
                             <th class="col-time"><?php _e('时间', SBA_TEXT_DOMAIN); ?></th>
@@ -1983,11 +2081,11 @@ function sba_audit_render_dashboard() {
         <div class="sba-card" style="border-top:3px solid #d63638;">
             <h3><?php echo sprintf( __('🚫 拦截日志 (%s)', SBA_TEXT_DOMAIN), $latest_date ); ?></h3>
             <div class="sba-scroll-x">
-                <table class="sba-table">
+                <table class="sba-table sba-blocked-table">
                     <thead>
                         <tr>
-                            <th width="100"><?php _e('时间', SBA_TEXT_DOMAIN); ?></th>
-                            <th width="150"><?php _e('拦截 IP', SBA_TEXT_DOMAIN); ?></th>
+                            <th><?php _e('时间', SBA_TEXT_DOMAIN); ?></th>
+                            <th><?php _e('拦截 IP', SBA_TEXT_DOMAIN); ?></th>
                             <th><?php _e('原因与目标', SBA_TEXT_DOMAIN); ?></th>
                         </tr>
                     </thead>
@@ -2011,9 +2109,9 @@ function sba_audit_render_dashboard() {
     <!-- Chart.js 图表库 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- 页面交互脚本 -->
     <script>
-    new Chart(document.getElementById('sbaChart10'), {
+    const ctx = document.getElementById('sbaChart10').getContext('2d');
+    new Chart(ctx, {
         type: 'line',
         data: {
             labels: <?php echo json_encode( $chart_labels ); ?>,
@@ -2033,49 +2131,64 @@ function sba_audit_render_dashboard() {
                     backgroundColor: 'rgba(79,195,247,0.1)',
                     tension: 0.1,
                     fill: true
+                },
+                {
+                    label: '<?php _e("拦截 (Blocked)", SBA_TEXT_DOMAIN); ?>',
+                    data: <?php echo json_encode( $chart_blocked ); ?>,
+                    borderColor: '#d63638',
+                    backgroundColor: 'rgba(214,54,56,0.1)',
+                    borderDash: [5, 5],
+                    tension: 0.1,
+                    fill: true
                 }
             ]
         },
         options: {
             maintainAspectRatio: false,
+            responsive: true,
             interaction: {
                 intersect: false,
                 mode: 'index'
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
             }
         }
     });
 
-	let curP = 1, maxP = 1;
-	const loadTracks = (p) => {
-		fetch(ajaxurl, {
-			method: 'POST',
-			body: new URLSearchParams({action:'sba_load_tracks', page:p})
-		})
-		.then(r => r.json())
-		.then(res => {
-			if(res.success) {
-				document.getElementById('track-body').innerHTML = res.data.html;
-				curP = p;
-				maxP = res.data.pages;
+    let curP = 1, maxP = 1;
+    const loadTracks = (p) => {
+        fetch(ajaxurl, {
+            method: 'POST',
+            body: new URLSearchParams({action:'sba_load_tracks', page:p})
+        })
+        .then(r => r.json())
+        .then(res => {
+            if(res.success) {
+                document.getElementById('track-body').innerHTML = res.data.html;
+                curP = p;
+                maxP = res.data.pages;
 
-				const prevBtn = document.getElementById('prev-page');
-				const nextBtn = document.getElementById('next-page');
-				prevBtn.disabled = (curP <= 1);
-				nextBtn.disabled = (curP >= maxP);
-				prevBtn.textContent = prevBtn.disabled ? '◀' : '◀ 上页';
-				nextBtn.textContent = nextBtn.disabled ? '▶' : '下页 ▶';
+                const prevBtn = document.getElementById('prev-page');
+                const nextBtn = document.getElementById('next-page');
+                prevBtn.disabled = (curP <= 1);
+                nextBtn.disabled = (curP >= maxP);
+                prevBtn.textContent = prevBtn.disabled ? '◀' : '◀ 上页';
+                nextBtn.textContent = nextBtn.disabled ? '▶' : '下页 ▶';
 
-				document.getElementById('current-page').innerText = p;
-				document.getElementById('total-pages').innerText = maxP;
-				document.getElementById('total-rows').innerText = res.data.total;
-			}
-		})
-		.catch(error => {
-			console.error('加载数据失败:', error);
-			document.getElementById('track-body').innerHTML =
-				'<tr><td colspan="5" style="color:#d63638;">加载失败，请刷新页面重试</td></tr>';
-		});
-	};
+                document.getElementById('current-page').innerText = p;
+                document.getElementById('total-pages').innerText = maxP;
+                document.getElementById('total-rows').innerText = res.data.total;
+            }
+        })
+        .catch(error => {
+            console.error('加载数据失败:', error);
+            document.getElementById('track-body').innerHTML =
+                '<tr><td colspan="5" style="color:#d63638;">加载失败，请刷新页面重试</td></tr>';
+        });
+    };
 
     async function processGeos() {
         const badges = Array.from(document.querySelectorAll('.geo-tag')).filter(b => b.innerText === '<?php _e("解析中...", SBA_TEXT_DOMAIN); ?>');
@@ -2758,7 +2871,6 @@ function sba_reset_daily_counters() {
 
 add_filter( 'pre_http_request', 'sba_outbound_ssrf_filter', 10, 3 );
 function sba_outbound_ssrf_filter( $preempt, $args, $url ) {
-    // 1. 解析 URL
     $parts = parse_url( $url );
     if ( empty( $parts['host'] ) ) {
         return $preempt;
@@ -2766,22 +2878,18 @@ function sba_outbound_ssrf_filter( $preempt, $args, $url ) {
     $host = $parts['host'];
     $scheme = strtolower( $parts['scheme'] ?? 'http' );
 
-    // 2. 协议白名单（仅 http/https）
     if ( ! in_array( $scheme, [ 'http', 'https' ], true ) ) {
         sba_ssrf_log_and_block( "禁止的协议: $scheme", $url );
         return new WP_Error( 'sba_ssrf_blocked', '🛡️ SBA 安全策略：仅允许 http/https 出站请求。' );
     }
 
-    // 3. 获取目标 IP（支持 IPv4/IPv6）
     $ips = sba_get_dns_records( $host );
     if ( empty( $ips ) ) {
-        return $preempt; // DNS 解析失败，放行
+        return $preempt;
     }
 
-    // 4. 检查黑名单
     $blacklist = sba_get_ssrf_blacklist();
     foreach ( $ips as $ip ) {
-        // 先检查白名单
         if ( sba_is_ip_whitelisted_for_outbound( $ip ) ) {
             continue;
         }
@@ -2791,7 +2899,6 @@ function sba_outbound_ssrf_filter( $preempt, $args, $url ) {
         }
     }
 
-    // 5. DNS Rebinding 防御（可选）
     if ( sba_audit_get_opt( 'ssrf_prevent_dns_rebind', 1 ) ) {
         static $depth = 0;
         if ( $depth < 2 ) {
