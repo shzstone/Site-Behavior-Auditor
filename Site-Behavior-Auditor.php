@@ -2133,7 +2133,7 @@ function sba_audit_render_dashboard() {
                     fill: true
                 },
                 {
-                    label: '<?php _e("拦截 (Blocked)", SBA_TEXT_DOMAIN); ?>',
+                    label: '<?php _e("拦截", SBA_TEXT_DOMAIN); ?>',
                     data: <?php echo json_encode( $chart_blocked ); ?>,
                     borderColor: '#d63638',
                     backgroundColor: 'rgba(214,54,56,0.1)',

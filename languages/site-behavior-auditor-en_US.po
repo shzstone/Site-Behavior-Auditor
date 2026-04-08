@@ -729,3 +729,9 @@ msgstr "Legacy filter[author] parameter detection"
 
 msgid "遗留 filter[orderby]=author 参数探测"
 msgstr "Legacy filter[orderby]=author parameter detection"
+
+msgid "拦截 (次)"
+msgstr "Blocked"
+
+msgid "拦截"
+msgstr "Blocked"

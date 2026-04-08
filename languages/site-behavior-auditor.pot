@@ -740,3 +740,9 @@ msgstr ""
 
 msgid "遗留 filter[orderby]=author 参数探测"
 msgstr ""
+
+msgid "拦截 (次)"
+msgstr ""
+
+msgid "拦截"
+msgstr ""
