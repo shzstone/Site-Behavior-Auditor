@@ -488,255 +488,305 @@ function sba_audit_execute_block( $reason ) {
 // ============================================================================
 // 1. 核心 INIT 钩子
 // ============================================================================
-add_action( 'init', function() {
-    if ( is_admin() ) return;
+add_action('init', function() {
+    if (is_admin()) return;
+    if (isset($_GET['action']) && $_GET['action'] === 'logout') return;
+    if (defined('DOING_AJAX') && DOING_AJAX && isset($_POST['action']) && strpos($_POST['action'], 'sba_ios_') === 0) return;
 
-    if ( isset( $_GET['action'] ) && $_GET['action'] === 'logout' ) {
-        return;
-    }
+    $raw_post_data = file_get_contents('php://input');
 
-    if ( defined( 'DOING_AJAX' ) && DOING_AJAX && isset( $_POST['action'] ) && strpos( $_POST['action'], 'sba_ios_' ) === 0 ) {
-        return;
-    }
-
-    $ip = sba_combined_get_ip();
-    $uri = strtolower( $_SERVER['REQUEST_URI'] );
-    $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-
+    $ip   = sba_combined_get_ip();
+    $uri  = strtolower($_SERVER['REQUEST_URI']);
+    $ua   = $_SERVER['HTTP_USER_AGENT'] ?? '';
     $is_search_bot = sba_is_search_engine();
 
-    foreach ( $_GET as $key => $val ) {
-        if ( strpos( $key, 'sba_trap_' ) === 0 ) {
-            if ( ! $is_search_bot ) {
-                $trap_key = $key;
-                if ( get_transient( 'sba_trap_' . $trap_key ) ) {
-                    $ip = sba_combined_get_ip();
-                    for ( $i = 0; $i < 6; $i++ ) {
-                        sba_ios_record_failure( $ip, false );
+    if ($is_search_bot) {
+        foreach ($_GET as $key => $val) {
+            if (strpos($key, 'sba_trap_') === 0) {
+                status_header(404);
+                die();
+            }
+        }
+    }
+
+    foreach ($_GET as $key => $val) {
+        if (strpos($key, 'sba_trap_') === 0) {
+            if (!$is_search_bot) {
+                if (get_transient($key)) {  // transient 名就是参数名
+                    for ($i = 0; $i < 6; $i++) {
+                        if (function_exists('sba_ios_record_failure')) {
+                            sba_ios_record_failure($ip, false);
+                        }
                     }
-                    sba_audit_execute_block( __('蜜罐陷阱触发', SBA_TEXT_DOMAIN) );
+                    if (function_exists('sba_audit_execute_block')) {
+                        sba_audit_execute_block(__('蜜罐陷阱触发', 'sba-text-domain'));
+                    }
                 }
-                delete_transient( 'sba_trap_' . $trap_key );
             }
             break;
         }
     }
 
     $current_action = $_REQUEST['action'] ?? '';
-    $is_login_page = ( strpos( $uri, 'wp-login.php' ) !== false );
-    $is_signup_page = ( strpos( $uri, 'wp-signup.php' ) !== false );
-    $allowed_actions = [ 'register', 'lostpassword', 'retrievepassword', 'rp', 'resetpass', 'postpass', 'checkemail' ];
-
-    if ( ( $is_login_page || $is_signup_page ) && in_array( $current_action, $allowed_actions ) ) {
+    $is_login_page   = (strpos($uri, 'wp-login.php') !== false);
+    $is_signup_page  = (strpos($uri, 'wp-signup.php') !== false);
+    $allowed_actions = ['register', 'lostpassword', 'retrievepassword', 'rp', 'resetpass', 'postpass', 'checkemail'];
+    if (($is_login_page || $is_signup_page) && in_array($current_action, $allowed_actions)) {
         return;
     }
 
-    if ( ! $is_search_bot ) {
-        $scan_tools = [ 'sqlmap', 'nmap', 'dirbuster', 'nikto', 'zgrab', 'python-requests', 'go-http-client', 'java/', 'curl/', 'wget', 'masscan' ];
-        foreach ( $scan_tools as $tool ) {
-            if ( stripos( $ua, $tool ) !== false ) sba_audit_execute_block( sprintf( __('自动化扫描器: %s', SBA_TEXT_DOMAIN), $tool ) );
+    if (!$is_search_bot) {
+        $scan_tools = ['sqlmap', 'nmap', 'dirbuster', 'nikto', 'zgrab', 'python-requests', 'go-http-client', 'java/', 'curl/', 'wget', 'masscan'];
+        foreach ($scan_tools as $tool) {
+            if (stripos($ua, $tool) !== false) {
+                if (function_exists('sba_audit_execute_block')) {
+                    sba_audit_execute_block(sprintf(__('自动化扫描器: %s', 'sba-text-domain'), $tool));
+                }
+            }
         }
     }
 
     $is_user_enum_detected = false;
-    if ( isset( $_GET['author'] ) || strpos( $uri, 'author=' ) !== false ) {
+    if (isset($_GET['author']) || strpos($uri, 'author=') !== false) {
         $is_user_enum_detected = true;
     }
 
-    if ( ! is_user_logged_in() && ! $is_search_bot ) {
-        $rest_route = $_GET['rest_route'] ?? '';
-        $query_string_all = $_SERVER['QUERY_STRING'] ?? '';
+    if (!is_user_logged_in() && !$is_search_bot) {
+        $rest_route        = $_GET['rest_route'] ?? '';
+        $query_string_all  = $_SERVER['QUERY_STRING'] ?? '';
 
-        if ( preg_match( '/wp\/v2\/(users|comments|media)/i', $uri ) || preg_match( '/wp\/v2\/(users|comments|media)/i', $rest_route ) ) {
+        if (preg_match('/wp\/v2\/(users|comments|media)/i', $uri) || preg_match('/wp\/v2\/(users|comments|media)/i', $rest_route)) {
             $is_user_enum_detected = true;
         }
-
-        if ( stripos( $query_string_all, 'filter[author]' ) !== false || stripos( $query_string_all, 'orderby=author' ) !== false ) {
+        if (stripos($query_string_all, 'filter[author]') !== false || stripos($query_string_all, 'orderby=author') !== false) {
             $is_user_enum_detected = true;
         }
-
-        if ( preg_match( '/filter\[author\]\s*=\s*[\d\w]+/i', $query_string_all ) ) {
-            sba_audit_execute_block( __('遗留 filter[author] 参数探测', SBA_TEXT_DOMAIN) );
+        if (preg_match('/filter\[author\]\s*=\s*[\d\w]+/i', $query_string_all)) {
+            if (function_exists('sba_audit_execute_block')) {
+                sba_audit_execute_block(__('遗留 filter[author] 参数探测', 'sba-text-domain'));
+            }
         }
-        if ( preg_match( '/filter\[orderby\]\s*=\s*author/i', $query_string_all ) ) {
-            sba_audit_execute_block( __('遗留 filter[orderby]=author 参数探测', SBA_TEXT_DOMAIN) );
+        if (preg_match('/filter\[orderby\]\s*=\s*author/i', $query_string_all)) {
+            if (function_exists('sba_audit_execute_block')) {
+                sba_audit_execute_block(__('遗留 filter[orderby]=author 参数探测', 'sba-text-domain'));
+            }
         }
-
-        if ( strpos( $uri, '/wp/v2/posts' ) !== false || strpos( $rest_route, '/wp/v2/posts' ) !== false ) {
-            if ( preg_match( '/filter\[[^\]]+\]/i', $query_string_all ) ) {
-                sba_audit_execute_block( __('Legacy filter 参数绕过探测', SBA_TEXT_DOMAIN) );
+        if ((strpos($uri, '/wp/v2/posts') !== false || strpos($rest_route, '/wp/v2/posts') !== false) &&
+            preg_match('/filter\[[^\]]+\]/i', $query_string_all)) {
+            if (function_exists('sba_audit_execute_block')) {
+                sba_audit_execute_block(__('Legacy filter 参数绕过探测', 'sba-text-domain'));
+            }
+        }
+        if (isset($_GET['context']) && $_GET['context'] === 'edit') {
+            if (function_exists('sba_audit_execute_block')) {
+                sba_audit_execute_block(__('非认证用户尝试使用 edit 上下文', 'sba-text-domain'));
+            }
+        }
+        if (isset($_GET['per_page']) && (int)$_GET['per_page'] > 50) {
+            if (function_exists('sba_audit_execute_block')) {
+                sba_audit_execute_block(__('分页参数 per_page 超出限制', 'sba-text-domain'));
+            }
+        }
+        if (isset($_GET['offset']) && (int)$_GET['offset'] > 200) {
+            if (function_exists('sba_audit_execute_block')) {
+                sba_audit_execute_block(__('尝试遍历文章偏移量 (offset)', 'sba-text-domain'));
+            }
+        }
+        if (strpos($uri, '/oembed/1.0/proxy') !== false || strpos($rest_route, '/oembed/1.0/proxy') !== false) {
+            if (function_exists('sba_audit_execute_block')) {
+                sba_audit_execute_block(__('OEmbed 代理请求 (SSRF 风险)', 'sba-text-domain'));
             }
         }
 
-        if ( isset( $_GET['context'] ) && $_GET['context'] === 'edit' ) {
-            sba_audit_execute_block( __('非认证用户尝试使用 edit 上下文', SBA_TEXT_DOMAIN) );
-        }
-
-        if ( isset( $_GET['per_page'] ) && (int)$_GET['per_page'] > 50 ) {
-            sba_audit_execute_block( __('分页参数 per_page 超出限制', SBA_TEXT_DOMAIN) );
-        }
-
-        if ( isset( $_GET['offset'] ) && (int)$_GET['offset'] > 200 ) {
-            sba_audit_execute_block( __('尝试遍历文章偏移量 (offset)', SBA_TEXT_DOMAIN) );
-        }
-        if ( strpos( $uri, '/oembed/1.0/proxy' ) !== false || strpos( $rest_route, '/oembed/1.0/proxy' ) !== false ) {
-            sba_audit_execute_block( __('OEmbed 代理请求 (SSRF 风险)', SBA_TEXT_DOMAIN) );
-        }
-
-        $scan_paths = [ '/.well-known', '/wp-json/yoast', '/wp-json/acf', '/wp-json/tribe', '/wp-json/woocommerce' ];
-        foreach ( $scan_paths as $path ) {
-            if ( strpos( $uri, $path ) !== false ) {
-                sba_audit_execute_block( sprintf( __('扫描路径探测: %s', SBA_TEXT_DOMAIN), $path ) );
+        $scan_paths = ['/.well-known', '/wp-json/yoast', '/wp-json/acf', '/wp-json/tribe', '/wp-json/woocommerce'];
+        foreach ($scan_paths as $path) {
+            if (strpos($uri, $path) !== false) {
+                if (function_exists('sba_audit_execute_block')) {
+                    sba_audit_execute_block(sprintf(__('扫描路径探测: %s', 'sba-text-domain'), $path));
+                }
             }
         }
     }
 
-    if ( $is_user_enum_detected && ! $is_search_bot ) {
-        sba_audit_execute_block( __('敏感数据枚举探测 (User/Comment/Bypass)', SBA_TEXT_DOMAIN) );
+    if ($is_user_enum_detected && !$is_search_bot) {
+        if (function_exists('sba_audit_execute_block')) {
+            sba_audit_execute_block(__('敏感数据枚举探测 (User/Comment/Bypass)', 'sba-text-domain'));
+        }
     }
 
-    if ( ! $is_search_bot ) {
+    if (!$is_search_bot) {
         $fixed_evil = [
             '/.env', '/.git', '/.sql', '/.ssh', '/wp-config.php.bak', '/phpinfo.php', '/config.php.swp', '/.vscode',
             '/readme.html', '/license.txt', '/wp-links-opml.php', '/wp-admin/install.php'
         ];
-        $custom_evil = array_filter( array_map( 'trim', explode( ',', sba_audit_get_opt( 'evil_paths', '' ) ) ) );
-        $all_evil = array_unique( array_merge( $fixed_evil, $custom_evil ) );
-        foreach ( $all_evil as $path ) {
-            if ( ! empty( $path ) && strpos( $uri, $path ) !== false ) sba_audit_execute_block( sprintf( __('非法路径探测: %s', SBA_TEXT_DOMAIN), $path ) );
+        $custom_evil = [];
+        if (function_exists('sba_audit_get_opt')) {
+            $custom_evil = array_filter(array_map('trim', explode(',', sba_audit_get_opt('evil_paths', ''))));
+        }
+        $all_evil = array_unique(array_merge($fixed_evil, $custom_evil));
+        foreach ($all_evil as $path) {
+            if (!empty($path) && strpos($uri, $path) !== false) {
+                if (function_exists('sba_audit_execute_block')) {
+                    sba_audit_execute_block(sprintf(__('非法路径探测: %s', 'sba-text-domain'), $path));
+                }
+            }
         }
     }
 
-    if ( ! is_user_logged_in() && ! $is_search_bot ) {
-        $raw_post_data = file_get_contents( 'php://input' );
+    if (!is_user_logged_in() && !$is_search_bot && in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT'])) {
         $query_data = $_SERVER['QUERY_STRING'] ?? '';
-        $waf_patterns = [ 'union.*select', 'insert.*into', 'update.*set', 'delete.*from', '<script', 'javascript:', 'onerror=', 'onload=' ];
-        foreach ( $waf_patterns as $waf_p ) {
-            if ( preg_match( '/' . $waf_p . '/i', $query_data ) || preg_match( '/' . $waf_p . '/i', $raw_post_data ) ) {
-                sba_audit_execute_block( __('检测到恶意攻击载荷 (WAF)', SBA_TEXT_DOMAIN) );
+        $waf_patterns = [
+            '/(union\s+select|select\s+.*\s+from)/i',
+            '/(insert\s+into|update\s+set|delete\s+from)/i',
+            '/<script[^>]*>.*?<\/script>/is',
+            '/javascript\s*:/i',
+            '/(onabort|onerror|onload|onclick|onfocus|onmouseover|onmouseout|onchange|onsubmit)\s*=/i'
+        ];
+        foreach ($waf_patterns as $waf_p) {
+            if (preg_match($waf_p, $query_data) || preg_match($waf_p, $raw_post_data)) {
+                if (function_exists('sba_audit_execute_block')) {
+                    sba_audit_execute_block(__('检测到恶意攻击载荷 (WAF)', 'sba-text-domain'));
+                }
+                break;
             }
         }
     }
 
-    if ( ! $is_search_bot && strpos( $_SERVER['REQUEST_URI'], 'xmlrpc.php' ) !== false ) {
-        if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
-            $raw_post = file_get_contents( 'php://input' );
-            if ( stripos( $raw_post, '<methodName>pingback.ping</methodName>' ) !== false ) {
-                sba_audit_execute_block( __('XML-RPC Pingback 调用（SSRF 高风险）', SBA_TEXT_DOMAIN) );
+    if (!$is_search_bot && strpos($_SERVER['REQUEST_URI'], 'xmlrpc.php') !== false) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (stripos($raw_post_data, '<methodName>pingback.ping</methodName>') !== false ||
+                stripos($raw_post_data, '<methodName>system.multicall</methodName>') !== false) {
+                if (function_exists('sba_audit_execute_block')) {
+                    sba_audit_execute_block(__('XML-RPC 高危方法调用 (SSRF)', 'sba-text-domain'));
+                }
             }
-            sba_audit_execute_block( __('XML-RPC POST 请求 (已封禁)', SBA_TEXT_DOMAIN) );
-        }
-        if ( $_SERVER['REQUEST_METHOD'] !== 'GET' ) {
-            sba_audit_execute_block( __('非法的 XML-RPC 请求方法', SBA_TEXT_DOMAIN) );
+        } elseif ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            if (function_exists('sba_audit_execute_block')) {
+                sba_audit_execute_block(__('非法的 XML-RPC 请求方法', 'sba-text-domain'));
+            }
         }
     }
 
-    $stored_slug = sba_audit_get_opt( 'login_slug', '' );
+    $stored_slug = function_exists('sba_audit_get_opt') ? sba_audit_get_opt('login_slug', '') : '';
     $internal_params = ['interim-login', 'auth-check', 'wp_scrape_key', 'wp_scrape_nonce'];
     foreach ($internal_params as $param) {
-        if (isset($_GET[$param])) {
-            return;
-        }
+        if (isset($_GET[$param])) return;
     }
-    if ( ! empty( $stored_slug ) && $is_login_page && empty( $current_action ) ) {
-        if ( isset( $_GET['gate'] ) && ! empty( $_GET['gate'] ) ) {
+    if (!empty($stored_slug) && $is_login_page && empty($current_action)) {
+        if (isset($_GET['gate']) && !empty($_GET['gate'])) {
             $provided_gate = $_GET['gate'];
-            $salt_fixed = defined( 'NONCE_SALT' ) ? NONCE_SALT : 'sba_fallback_salt';
-            $expected_token_fixed = hash_hmac( 'sha256', $stored_slug, $salt_fixed );
-            $provided_token_fixed = hash_hmac( 'sha256', $provided_gate, $salt_fixed );
-            if ( hash_equals( $expected_token_fixed, $provided_token_fixed ) ) {
-                $token = wp_generate_password( 20, false );
-                set_transient( 'sba_gate_token_' . $ip, $token, 1800 );
-                $redirect_url = remove_query_arg( 'gate' );
-                wp_redirect( $redirect_url );
+            $salt_fixed = defined('NONCE_SALT') ? NONCE_SALT : 'sba_fallback_salt';
+            $expected_token_fixed = hash_hmac('sha256', $stored_slug, $salt_fixed);
+            $provided_token_fixed = hash_hmac('sha256', $provided_gate, $salt_fixed);
+            if (hash_equals($expected_token_fixed, $provided_token_fixed)) {
+                $token = wp_generate_password(20, false);
+                set_transient('sba_gate_token_' . $ip, $token, 1800);
+                wp_redirect(remove_query_arg('gate'));
                 exit;
             } else {
-                sba_audit_execute_block( __('Gate 钥匙错误或已失效', SBA_TEXT_DOMAIN) );
+                if (function_exists('sba_audit_execute_block')) {
+                    sba_audit_execute_block(__('Gate 钥匙错误或已失效', 'sba-text-domain'));
+                }
             }
         }
-        if ( $_SERVER['REQUEST_METHOD'] !== 'POST' ) {
-            if ( ! get_transient( 'sba_gate_token_' . $ip ) ) {
-                sba_audit_execute_block( __('Gate 钥匙错误或已失效', SBA_TEXT_DOMAIN) );
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            if (!get_transient('sba_gate_token_' . $ip)) {
+                if (function_exists('sba_audit_execute_block')) {
+                    sba_audit_execute_block(__('Gate 钥匙错误或已失效', 'sba-text-domain'));
+                }
             }
             return;
         }
-        $stored_token = get_transient( 'sba_gate_token_' . $ip );
-        if ( ! $stored_token ) {
-            $stored_token = wp_generate_password( 20, false );
-            set_transient( 'sba_gate_token_' . $ip, $stored_token, 1800 );
+        $stored_token = get_transient('sba_gate_token_' . $ip);
+        if (!$stored_token) {
+            $stored_token = wp_generate_password(20, false);
+            set_transient('sba_gate_token_' . $ip, $stored_token, 1800);
         }
-        $expected_token = hash_hmac( 'sha256', $stored_slug, $stored_token );
+        $expected_token = hash_hmac('sha256', $stored_slug, $stored_token);
         $provided_token = $_POST['sba_gate_token'] ?? '';
-        if ( ! hash_equals( $expected_token, $provided_token ) ) {
-            sba_audit_execute_block( __('Gate 钥匙错误或已失效', SBA_TEXT_DOMAIN) );
+        if (!hash_equals($expected_token, $provided_token)) {
+            if (function_exists('sba_audit_execute_block')) {
+                sba_audit_execute_block(__('Gate 钥匙错误或已失效', 'sba-text-domain'));
+            }
         }
     }
 
-    $limit = (int) sba_audit_get_opt( 'auto_block_limit', 0 );
-    if ( $limit > 0 && ! is_user_logged_in() && ! $is_search_bot ) {
-        if ( ! ( $ip === '127.0.0.1' || $ip === '::1' ) ) {
-            $is_browser = preg_match( '/Mozilla\/|Chrome\/|Firefox\/|Safari\/|Edge\/|Opera\/|MSIE/', $ua );
-
-            $default_scraper_paths = 'feed=|rest_route=|[\?&]m=|\?p=|wp/v2/users|wp/v2/comments|wp/v2/media';
-            $scraper_paths = sba_audit_get_opt( 'scraper_paths', $default_scraper_paths );
-
-            $is_scraper_path = preg_match( '/' . str_replace( '/', '\/', $scraper_paths ) . '/i', $_SERVER['REQUEST_URI'] );
-            $current_limit = $is_scraper_path ? max( 5, floor( $limit / 3 ) ) : $limit;
-
-            $cookie_check_enabled = (bool) sba_audit_get_opt( 'enable_cookie_check', 1 );
-            if ( $cookie_check_enabled && ! sba_has_valid_cookie( $ip ) && ! $is_browser ) {
-                $current_limit = max( 5, floor( $current_limit / 2 ) );
-            }
-
-            if ( sba_check_cc_limit( $ip, $current_limit ) ) {
-                $reason = $is_scraper_path ? __("采集器高频抓取 (Sensitive API)", SBA_TEXT_DOMAIN) : __("频率超限 (CC风险)", SBA_TEXT_DOMAIN);
-                sba_audit_execute_block( $reason );
-            }
-
-            if ( $cookie_check_enabled && ! sba_has_valid_cookie( $ip ) && $_SERVER['REQUEST_METHOD'] === 'GET' ) {
-                sba_set_human_cookie( $ip );
+    $limit = function_exists('sba_audit_get_opt') ? (int) sba_audit_get_opt('auto_block_limit', 0) : 0;
+    if ($limit > 0 && !is_user_logged_in() && !$is_search_bot && !in_array($ip, ['127.0.0.1', '::1'])) {
+        $is_browser = preg_match('/Mozilla\/|Chrome\/|Firefox\/|Safari\/|Edge\/|Opera\/|MSIE/', $ua);
+        $default_scraper_paths = 'feed=|rest_route=|[\?&]m=|\?p=|wp/v2/users|wp/v2/comments|wp/v2/media';
+        $scraper_paths = function_exists('sba_audit_get_opt') ? sba_audit_get_opt('scraper_paths', $default_scraper_paths) : $default_scraper_paths;
+        $is_scraper_path = preg_match('/' . str_replace('/', '\/', $scraper_paths) . '/i', $_SERVER['REQUEST_URI']);
+        $current_limit = $is_scraper_path ? max(5, floor($limit / 3)) : $limit;
+        $cookie_check_enabled = function_exists('sba_audit_get_opt') ? (bool) sba_audit_get_opt('enable_cookie_check', 1) : true;
+        if ($cookie_check_enabled && (!function_exists('sba_has_valid_cookie') || !sba_has_valid_cookie($ip)) && !$is_browser) {
+            $current_limit = max(5, floor($current_limit / 2));
+        }
+        if (function_exists('sba_check_cc_limit') && sba_check_cc_limit($ip, $current_limit)) {
+            $reason = $is_scraper_path ? __("采集器高频抓取 (Sensitive API)", 'sba-text-domain') : __("频率超限 (CC风险)", 'sba-text-domain');
+            if (function_exists('sba_audit_execute_block')) {
+                sba_audit_execute_block($reason);
             }
         }
+        if ($cookie_check_enabled && function_exists('sba_has_valid_cookie') && !sba_has_valid_cookie($ip) && $_SERVER['REQUEST_METHOD'] === 'GET') {
+            if (function_exists('sba_set_human_cookie')) {
+                sba_set_human_cookie($ip);
+            }
+        }
+    }
+
+    $local_time = current_time('mysql');
+    $local_date = substr($local_time, 0, 10);
+    $local_hour = (int) substr($local_time, 11, 2);
+    if (function_exists('sba_increment_pv_counter')) {
+        sba_increment_pv_counter();
     }
 
     global $wpdb;
-    $local_time = current_time( 'mysql' );
-    $local_date = substr( $local_time, 0, 10 );
-    $local_hour = (int) substr( $local_time, 11, 2 );
-
-    sba_increment_pv_counter();
-
-    $uv_cookie_name = 'sba_v_t_' . str_replace('-', '', $local_date);
-    $is_new_uv = false;
-
-    if ( ! isset( $_COOKIE[$uv_cookie_name] ) ) {
-        $transient_key = 'sba_uv_' . md5($ip . '_' . $local_date);
-        if ( ! get_transient( $transient_key ) ) {
-            $exists = $wpdb->get_var( $wpdb->prepare(
-                "SELECT id FROM {$wpdb->prefix}dis_stats WHERE ip = %s AND visit_date = %s LIMIT 1",
-                $ip, $local_date
-            ) );
-
-            if ( ! $exists ) {
-                $is_new_uv = true;
-                sba_increment_uv_counter();
-            }
-            $wp_timestamp = current_time('timestamp');
-            $transient_expire = strtotime('tomorrow', $wp_timestamp) - $wp_timestamp;
-            set_transient($transient_key, '1', $transient_expire);
-        }
-        $wp_timestamp = current_time('timestamp');
-        $cookie_expire = strtotime('tomorrow', $wp_timestamp);
-        setcookie($uv_cookie_name, '1', $cookie_expire, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
-    }
-
-    $wpdb->query( $wpdb->prepare(
+    $wpdb->query($wpdb->prepare(
         "INSERT INTO {$wpdb->prefix}dis_stats (ip, url, visit_date, visit_hour, pv, last_visit)
          VALUES (%s, %s, %s, %d, 1, %s)
          ON DUPLICATE KEY UPDATE pv = pv + 1, last_visit = %s",
         $ip, $_SERVER['REQUEST_URI'], $local_date, $local_hour, $local_time, $local_time
-    ) );
-} );
+    ));
+
+    $uv_cookie_name = 'sba_v_t_' . str_replace('-', '', $local_date);
+    if (!isset($_COOKIE[$uv_cookie_name])) {
+        $transient_key = 'sba_uv_' . md5($ip . '_' . $local_date);
+        if (!get_transient($transient_key)) {
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$wpdb->prefix}dis_stats WHERE ip = %s AND visit_date = %s LIMIT 1",
+                $ip, $local_date
+            ));
+            if (!$exists) {
+                if (function_exists('sba_increment_uv_counter')) {
+                    sba_increment_uv_counter();
+                }
+            }
+            $wp_timestamp = current_time('timestamp');
+            set_transient($transient_key, '1', strtotime('tomorrow', $wp_timestamp) - $wp_timestamp);
+        }
+        setcookie($uv_cookie_name, '1', strtotime('tomorrow', current_time('timestamp')), COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true);
+    }
+});
+
+if (!function_exists('sba_safe_output_trap_links')) {
+    function sba_safe_output_trap_links() {
+        if (function_exists('sba_is_search_engine') && sba_is_search_engine()) {
+            return;
+        }
+        $ip = sba_combined_get_ip();
+        $today = date('Y-m-d');
+        $trap_key = 'sba_trap_' . md5($ip . $today . 'sba_salt');
+        if (!get_transient($trap_key)) {
+            set_transient($trap_key, 1, DAY_IN_SECONDS);
+        }
+        echo '<a href="?' . esc_attr($trap_key) . '=1" style="display:none" aria-hidden="true" rel="nofollow"></a>';
+    }
+}
+if (!has_action('wp_footer', 'sba_safe_output_trap_links')) {
+    add_action('wp_footer', 'sba_safe_output_trap_links', 999);
+}
 
 // ============================================================================
 // 2. REST API 输出清洗与用户端点禁用
@@ -810,19 +860,21 @@ function sba_clean_rest_data_output( $response, $post, $request ) {
     return $response;
 }
 
-function sba_is_search_engine() {
-    $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-    if ( empty( $ua ) ) return false;
+if (!function_exists('sba_is_search_engine')) {
+    function sba_is_search_engine() {
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        if (empty($ua)) return false;
 
-    $bots = [
-        'Googlebot', 'Baiduspider', 'bingbot', 'Sogou', 'YisouSpiderman',
-        '360Spider', 'YandexBot', 'Applebot', 'DuckDuckBot'
-    ];
+        $bots = [
+            'Googlebot', 'Baiduspider', 'bingbot', 'Sogou', 'YisouSpiderman',
+            '360Spider', 'YandexBot', 'Applebot', 'DuckDuckBot'
+        ];
 
-    foreach ( $bots as $bot ) {
-        if ( stripos( $ua, $bot ) !== false ) return true;
+        foreach ($bots as $bot) {
+            if (stripos($ua, $bot) !== false) return true;
+        }
+        return false;
     }
-    return false;
 }
 
 function sba_mask_internal_ips_logic( $text ) {
@@ -867,7 +919,7 @@ function sba_check_temp_block() {
 // ============================================================================
 // 5. IP 获取防伪造
 // ============================================================================
-if ( ! function_exists( 'sba_combined_get_ip' ) ) {
+if (!function_exists('sba_combined_get_ip')) {
     function sba_combined_get_ip() {
         $headers = [ 'HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR' ];
         $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
