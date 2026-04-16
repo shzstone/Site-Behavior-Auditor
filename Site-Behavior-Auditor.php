@@ -519,7 +519,7 @@ add_action('init', function() {
                         }
                     }
                     if (function_exists('sba_audit_execute_block')) {
-                        sba_audit_execute_block(__('蜜罐陷阱触发', 'sba-text-domain'));
+                        sba_audit_execute_block(__('蜜罐陷阱触发', 'SBA_TEXT_DOMAIN'));
                     }
                 }
             }
@@ -540,7 +540,7 @@ add_action('init', function() {
         foreach ($scan_tools as $tool) {
             if (stripos($ua, $tool) !== false) {
                 if (function_exists('sba_audit_execute_block')) {
-                    sba_audit_execute_block(sprintf(__('自动化扫描器: %s', 'sba-text-domain'), $tool));
+                    sba_audit_execute_block(sprintf(__('自动化扫描器: %s', 'SBA_TEXT_DOMAIN'), $tool));
                 }
             }
         }
@@ -563,38 +563,38 @@ add_action('init', function() {
         }
         if (preg_match('/filter\[author\]\s*=\s*[\d\w]+/i', $query_string_all)) {
             if (function_exists('sba_audit_execute_block')) {
-                sba_audit_execute_block(__('遗留 filter[author] 参数探测', 'sba-text-domain'));
+                sba_audit_execute_block(__('遗留 filter[author] 参数探测', 'SBA_TEXT_DOMAIN'));
             }
         }
         if (preg_match('/filter\[orderby\]\s*=\s*author/i', $query_string_all)) {
             if (function_exists('sba_audit_execute_block')) {
-                sba_audit_execute_block(__('遗留 filter[orderby]=author 参数探测', 'sba-text-domain'));
+                sba_audit_execute_block(__('遗留 filter[orderby]=author 参数探测', 'SBA_TEXT_DOMAIN'));
             }
         }
         if ((strpos($uri, '/wp/v2/posts') !== false || strpos($rest_route, '/wp/v2/posts') !== false) &&
             preg_match('/filter\[[^\]]+\]/i', $query_string_all)) {
             if (function_exists('sba_audit_execute_block')) {
-                sba_audit_execute_block(__('Legacy filter 参数绕过探测', 'sba-text-domain'));
+                sba_audit_execute_block(__('Legacy filter 参数绕过探测', 'SBA_TEXT_DOMAIN'));
             }
         }
         if (isset($_GET['context']) && $_GET['context'] === 'edit') {
             if (function_exists('sba_audit_execute_block')) {
-                sba_audit_execute_block(__('非认证用户尝试使用 edit 上下文', 'sba-text-domain'));
+                sba_audit_execute_block(__('非认证用户尝试使用 edit 上下文', 'SBA_TEXT_DOMAIN'));
             }
         }
         if (isset($_GET['per_page']) && (int)$_GET['per_page'] > 50) {
             if (function_exists('sba_audit_execute_block')) {
-                sba_audit_execute_block(__('分页参数 per_page 超出限制', 'sba-text-domain'));
+                sba_audit_execute_block(__('分页参数 per_page 超出限制', 'SBA_TEXT_DOMAIN'));
             }
         }
         if (isset($_GET['offset']) && (int)$_GET['offset'] > 200) {
             if (function_exists('sba_audit_execute_block')) {
-                sba_audit_execute_block(__('尝试遍历文章偏移量 (offset)', 'sba-text-domain'));
+                sba_audit_execute_block(__('尝试遍历文章偏移量 (offset)', 'SBA_TEXT_DOMAIN'));
             }
         }
         if (strpos($uri, '/oembed/1.0/proxy') !== false || strpos($rest_route, '/oembed/1.0/proxy') !== false) {
             if (function_exists('sba_audit_execute_block')) {
-                sba_audit_execute_block(__('OEmbed 代理请求 (SSRF 风险)', 'sba-text-domain'));
+                sba_audit_execute_block(__('OEmbed 代理请求 (SSRF 风险)', 'SBA_TEXT_DOMAIN'));
             }
         }
 
@@ -602,7 +602,7 @@ add_action('init', function() {
         foreach ($scan_paths as $path) {
             if (strpos($uri, $path) !== false) {
                 if (function_exists('sba_audit_execute_block')) {
-                    sba_audit_execute_block(sprintf(__('扫描路径探测: %s', 'sba-text-domain'), $path));
+                    sba_audit_execute_block(sprintf(__('扫描路径探测: %s', 'SBA_TEXT_DOMAIN'), $path));
                 }
             }
         }
@@ -610,7 +610,7 @@ add_action('init', function() {
 
     if ($is_user_enum_detected && !$is_search_bot) {
         if (function_exists('sba_audit_execute_block')) {
-            sba_audit_execute_block(__('敏感数据枚举探测 (User/Comment/Bypass)', 'sba-text-domain'));
+            sba_audit_execute_block(__('敏感数据枚举探测 (User/Comment/Bypass)', 'SBA_TEXT_DOMAIN'));
         }
     }
 
@@ -627,7 +627,7 @@ add_action('init', function() {
         foreach ($all_evil as $path) {
             if (!empty($path) && strpos($uri, $path) !== false) {
                 if (function_exists('sba_audit_execute_block')) {
-                    sba_audit_execute_block(sprintf(__('非法路径探测: %s', 'sba-text-domain'), $path));
+                    sba_audit_execute_block(sprintf(__('非法路径探测: %s', 'SBA_TEXT_DOMAIN'), $path));
                 }
             }
         }
@@ -645,7 +645,7 @@ add_action('init', function() {
         foreach ($waf_patterns as $waf_p) {
             if (preg_match($waf_p, $query_data) || preg_match($waf_p, $raw_post_data)) {
                 if (function_exists('sba_audit_execute_block')) {
-                    sba_audit_execute_block(__('检测到恶意攻击载荷 (WAF)', 'sba-text-domain'));
+                    sba_audit_execute_block(__('检测到恶意攻击载荷 (WAF)', 'SBA_TEXT_DOMAIN'));
                 }
                 break;
             }
@@ -657,12 +657,12 @@ add_action('init', function() {
             if (stripos($raw_post_data, '<methodName>pingback.ping</methodName>') !== false ||
                 stripos($raw_post_data, '<methodName>system.multicall</methodName>') !== false) {
                 if (function_exists('sba_audit_execute_block')) {
-                    sba_audit_execute_block(__('XML-RPC 高危方法调用 (SSRF)', 'sba-text-domain'));
+                    sba_audit_execute_block(__('XML-RPC 高危方法调用 (SSRF)', 'SBA_TEXT_DOMAIN'));
                 }
             }
         } elseif ($_SERVER['REQUEST_METHOD'] !== 'GET') {
             if (function_exists('sba_audit_execute_block')) {
-                sba_audit_execute_block(__('非法的 XML-RPC 请求方法', 'sba-text-domain'));
+                sba_audit_execute_block(__('非法的 XML-RPC 请求方法', 'SBA_TEXT_DOMAIN'));
             }
         }
     }
@@ -685,14 +685,14 @@ add_action('init', function() {
                 exit;
             } else {
                 if (function_exists('sba_audit_execute_block')) {
-                    sba_audit_execute_block(__('Gate 钥匙错误或已失效', 'sba-text-domain'));
+                    sba_audit_execute_block(__('Gate 钥匙错误或已失效', 'SBA_TEXT_DOMAIN'));
                 }
             }
         }
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             if (!get_transient('sba_gate_token_' . $ip)) {
                 if (function_exists('sba_audit_execute_block')) {
-                    sba_audit_execute_block(__('Gate 钥匙错误或已失效', 'sba-text-domain'));
+                    sba_audit_execute_block(__('Gate 钥匙错误或已失效', 'SBA_TEXT_DOMAIN'));
                 }
             }
             return;
@@ -706,7 +706,7 @@ add_action('init', function() {
         $provided_token = $_POST['sba_gate_token'] ?? '';
         if (!hash_equals($expected_token, $provided_token)) {
             if (function_exists('sba_audit_execute_block')) {
-                sba_audit_execute_block(__('Gate 钥匙错误或已失效', 'sba-text-domain'));
+                sba_audit_execute_block(__('Gate 钥匙错误或已失效', 'SBA_TEXT_DOMAIN'));
             }
         }
     }
@@ -723,7 +723,7 @@ add_action('init', function() {
             $current_limit = max(5, floor($current_limit / 2));
         }
         if (function_exists('sba_check_cc_limit') && sba_check_cc_limit($ip, $current_limit)) {
-            $reason = $is_scraper_path ? __("采集器高频抓取 (Sensitive API)", 'sba-text-domain') : __("频率超限 (CC风险)", 'sba-text-domain');
+            $reason = $is_scraper_path ? __("采集器高频抓取 (Sensitive API)", 'SBA_TEXT_DOMAIN') : __("频率超限 (CC风险)", 'SBA_TEXT_DOMAIN');
             if (function_exists('sba_audit_execute_block')) {
                 sba_audit_execute_block($reason);
             }
