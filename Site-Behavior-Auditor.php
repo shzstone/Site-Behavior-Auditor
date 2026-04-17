@@ -230,33 +230,13 @@ function sba_get_counter($counter_key) {
 function sba_get_pv_counter($date = null) {
     if ($date === null) $date = current_time('Y-m-d');
     $counter_key = SBA_COUNTER_PV_TODAY . '_' . $date;
-    $val = (int)get_option($counter_key, 0);
-
-    if ($val === 0) {
-        global $wpdb;
-        $val = (int)$wpdb->get_var($wpdb->prepare(
-            "SELECT SUM(pv) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s",
-            $date
-        ));
-        if ($val > 0) update_option($counter_key, $val); // 补偿缓存
-    }
-    return $val;
+    return (int)get_option($counter_key, 0);
 }
 
 function sba_get_uv_counter($date = null) {
     if ($date === null) $date = current_time('Y-m-d');
     $counter_key = SBA_COUNTER_UV_TODAY . '_' . $date;
-    $val = (int)get_option($counter_key, 0);
-
-    if ($val === 0) {
-        global $wpdb;
-        $val = (int)$wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s",
-            $date
-        ));
-        if ($val > 0) update_option($counter_key, $val);
-    }
-    return $val;
+    return (int)get_option($counter_key, 0);
 }
 
 function sba_get_blocked_counter($date = null) {
@@ -511,17 +491,19 @@ add_action('init', function() {
 
     foreach ($_GET as $key => $val) {
         if (strpos($key, 'sba_trap_') === 0) {
-            if (!$is_search_bot) {
-                if (get_transient($key)) {  // transient 名就是参数名
-                    for ($i = 0; $i < 6; $i++) {
-                        if (function_exists('sba_ios_record_failure')) {
-                            sba_ios_record_failure($ip, false);
-                        }
-                    }
-                    if (function_exists('sba_audit_execute_block')) {
-                        sba_audit_execute_block(__('蜜罐陷阱触发', 'SBA_TEXT_DOMAIN'));
+            if (sba_is_search_engine()) {
+                status_header(404);
+                die();
+            }
+
+            if (get_transient($key)) {
+                $ip = sba_combined_get_ip();
+                for ($i = 0; $i < 6; $i++) {
+                    if (function_exists('sba_ios_record_failure')) {
+                        sba_ios_record_failure($ip, false);
                     }
                 }
+                sba_audit_execute_block(__('蜜罐陷阱触发', SBA_TEXT_DOMAIN));
             }
             break;
         }
@@ -772,16 +754,16 @@ add_action('init', function() {
 
 if (!function_exists('sba_safe_output_trap_links')) {
     function sba_safe_output_trap_links() {
-        if (function_exists('sba_is_search_engine') && sba_is_search_engine()) {
+        if (is_user_logged_in() || sba_is_search_engine()) {
             return;
         }
-        $ip = sba_combined_get_ip();
-        $today = date('Y-m-d');
-        $trap_key = 'sba_trap_' . md5($ip . $today . 'sba_salt');
-        if (!get_transient($trap_key)) {
-            set_transient($trap_key, 1, DAY_IN_SECONDS);
-        }
-        echo '<a href="?' . esc_attr($trap_key) . '=1" style="display:none" aria-hidden="true" rel="nofollow"></a>';
+
+        $token = substr(md5(date('Y-m-d-H') . wp_salt()), 0, 8);
+        $trap_param = 'sba_trap_' . $token;
+
+        set_transient($trap_param, 1, HOUR_IN_SECONDS);
+
+        echo '<a href="' . home_url('/?' . $trap_param . '=1') . '" style="display:none" aria-hidden="true" rel="nofollow">.</a>';
     }
 }
 if (!has_action('wp_footer', 'sba_safe_output_trap_links')) {
@@ -866,13 +848,19 @@ if (!function_exists('sba_is_search_engine')) {
         if (empty($ua)) return false;
 
         $bots = [
-            'Googlebot', 'Baiduspider', 'bingbot', 'Sogou', 'YisouSpiderman',
-            '360Spider', 'YandexBot', 'Applebot', 'DuckDuckBot'
+            'Googlebot', 'Baiduspider', 'bingbot', 'msnbot', 'BingPreview',
+            'MicrosoftPreview', 'Sogou', 'YisouSpiderman', '360Spider',
+            'YandexBot', 'Applebot', 'DuckDuckBot', 'DotBot', 'PetalBot'
         ];
 
         foreach ($bots as $bot) {
             if (stripos($ua, $bot) !== false) return true;
         }
+
+        if (preg_match('/(bot|spider|crawler|slurp)/i', $ua)) {
+            return true;
+        }
+
         return false;
     }
 }
@@ -1805,13 +1793,36 @@ function sba_audit_render_dashboard() {
     $latest_date = $wpdb->get_var( "SELECT MAX(visit_date) FROM {$wpdb->prefix}dis_stats" );
     if ( ! $latest_date ) $latest_date = current_time( 'Y-m-d' );
 
-    $pv_today = sba_get_pv_counter($latest_date);
     $uv_today = sba_get_uv_counter($latest_date);
+    $pv_today = sba_get_pv_counter($latest_date);
+
+    $cache_key = 'sba_sync_lock_' . $latest_date;
+
+    if ( false === get_transient( $cache_key ) ) {
+        $real_stats = $wpdb->get_row( $wpdb->prepare(
+            "SELECT COUNT(DISTINCT ip) as real_uv, SUM(pv) as real_pv FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s",
+            $latest_date
+        ) );
+
+        if ( $real_stats ) {
+            $db_uv = (int)$real_stats->real_uv;
+            $db_pv = (int)$real_stats->real_pv;
+
+            if ( $db_uv > $uv_today ) {
+                $uv_today = $db_uv;
+                update_option( SBA_COUNTER_UV_TODAY . '_' . $latest_date, $db_uv );
+            }
+            if ( $db_pv > $pv_today ) {
+                $pv_today = $db_pv;
+                update_option( SBA_COUNTER_PV_TODAY . '_' . $latest_date, $db_pv );
+            }
+        }
+        set_transient( $cache_key, 'locked', 300 );
+    }
+
     $blocked_today = sba_get_blocked_counter($latest_date);
     $online = $wpdb->get_var( "SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE last_visit > DATE_SUB(NOW(), INTERVAL 5 MINUTE)" );
-
     $history_50 = $wpdb->get_results( "SELECT visit_date, COUNT(DISTINCT ip) as uv, SUM(pv) as pv FROM {$wpdb->prefix}dis_stats GROUP BY visit_date ORDER BY visit_date DESC LIMIT 50", OBJECT_K );
-
     $history_blocked = $wpdb->get_results( "SELECT DATE(block_time) as d, COUNT(*) as c FROM {$wpdb->prefix}sba_blocked_log GROUP BY d ORDER BY d DESC LIMIT 50", OBJECT_K );
 
     $chart_labels = [];
