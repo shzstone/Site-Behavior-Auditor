@@ -194,7 +194,9 @@ function sba_atomic_increment_counter($counter_key) {
         $counter_key
     );
 
-    return $wpdb->query($sql);
+    $result = $wpdb->query($sql);
+    wp_cache_delete($counter_key, 'options');
+    return $result;
 }
 
 function sba_increment_pv_counter() {
@@ -229,12 +231,42 @@ function sba_get_counter($counter_key) {
 
 function sba_get_pv_counter($date = null) {
     if ($date === null) $date = current_time('Y-m-d');
+
+    $cache_key = 'sba_sync_lock_' . $date;
+    $is_hard_refresh = (isset($_SERVER['HTTP_CACHE_CONTROL']) && $_SERVER['HTTP_CACHE_CONTROL'] === 'no-cache');
+
+    if ( false === get_transient( $cache_key ) || $is_hard_refresh ) {
+        global $wpdb;
+        $real_pv = (int)$wpdb->get_var( $wpdb->prepare(
+            "SELECT SUM(pv) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s",
+            $date
+        ) );
+        update_option( SBA_COUNTER_PV_TODAY . '_' . $date, $real_pv );
+        set_transient( $cache_key, 'locked', 600 );
+        wp_cache_delete(SBA_COUNTER_PV_TODAY . '_' . $date, 'options');
+    }
+
     $counter_key = SBA_COUNTER_PV_TODAY . '_' . $date;
     return (int)get_option($counter_key, 0);
 }
 
 function sba_get_uv_counter($date = null) {
     if ($date === null) $date = current_time('Y-m-d');
+
+    $cache_key = 'sba_sync_lock_uv_' . $date;
+    $is_hard_refresh = (isset($_SERVER['HTTP_CACHE_CONTROL']) && $_SERVER['HTTP_CACHE_CONTROL'] === 'no-cache');
+
+    if ( false === get_transient( $cache_key ) || $is_hard_refresh ) {
+        global $wpdb;
+        $real_uv = (int)$wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s",
+            $date
+        ) );
+        update_option( SBA_COUNTER_UV_TODAY . '_' . $date, $real_uv );
+        set_transient( $cache_key, 'locked', 600 );
+        wp_cache_delete(SBA_COUNTER_UV_TODAY . '_' . $date, 'options');
+    }
+
     $counter_key = SBA_COUNTER_UV_TODAY . '_' . $date;
     return (int)get_option($counter_key, 0);
 }
