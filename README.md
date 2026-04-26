@@ -1,4 +1,4 @@
-# SBA All-in-One Security & Auditing Engine (v3.0.1) 🛡️
+# SBA All-in-One Security & Auditing Engine (v3.0.2) 🛡️
 
 [简体中文](#-简体中文) | [English](#-english)
 

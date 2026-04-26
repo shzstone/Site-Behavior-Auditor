@@ -2,7 +2,7 @@
 /**
  * Plugin Name: 综合安全套件 (Site Behavior Auditor + Login Box + SMTP)
  * Description: 集成站点全行为审计、iOS风格登录/注册/忘记密码面板。3.0终极性能版：10分钟写入锁+全局读快照+自动对账。
- * Version: 3.0.1
+ * Version: 3.0.2
  * Author: Stone
  * Text Domain: site-behavior-auditor
  */
@@ -156,17 +156,26 @@ function sba_cleanup_old_data() {
 function sba_get_ip() {
     static $ip = null;
     if ( $ip !== null ) return $ip;
-    $headers = [ 'HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR' ];
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-    foreach ( $headers as $h ) {
-        if ( isset( $_SERVER[$h] ) ) {
-            $candidate = trim( explode( ',', $_SERVER[$h] )[0] );
-            if ( filter_var( $candidate, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
-                $ip = $candidate;
-                break;
-            }
-        }
+
+    $source = sba_get_option('ip_source', 'REMOTE_ADDR');
+
+    switch ($source) {
+        case 'HTTP_CF_CONNECTING_IP':
+            $ip = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['REMOTE_ADDR'];
+            break;
+        case 'HTTP_X_REAL_IP':
+            $ip = $_SERVER['HTTP_X_REAL_IP'] ?? $_SERVER['REMOTE_ADDR'];
+            break;
+        case 'HTTP_X_FORWARDED_FOR':
+            $ip = !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0] : $_SERVER['REMOTE_ADDR'];
+            break;
+        default:
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     }
+
+    $ip = trim($ip);
+    if (!filter_var($ip, FILTER_VALIDATE_IP)) $ip = '0.0.0.0';
+
     return $ip;
 }
 
@@ -260,15 +269,17 @@ function sba_atomic_increment( $prefix ) {
 function sba_get_counter( $prefix, $date = null ) {
     $date = $date ?: current_time( 'Y-m-d' );
     $opt_key = $prefix . $date;
+    $snapshot_key = 'sba_read_snapshot_' . $opt_key;
 
-    $is_force = isset( $_SERVER['HTTP_CACHE_CONTROL'] ) && $_SERVER['HTTP_CACHE_CONTROL'] === 'no-cache';
+    $is_force = isset( $_SERVER['HTTP_CACHE_CONTROL'] ) &&
+                $_SERVER['HTTP_CACHE_CONTROL'] === 'no-cache' &&
+                current_user_can('manage_options');
 
     if ( $is_force && $prefix === SBA_PREFIX_PV ) {
         sba_flush_pv_buffer( $date );
     }
 
     if ( ! $is_force ) {
-        $snapshot_key = 'sba_read_snapshot_' . $opt_key;
         $cached = get_transient( $snapshot_key );
         if ( $cached !== false ) return (int) $cached;
     }
@@ -298,16 +309,14 @@ function sba_inc_pv() {
     $buffer_key = 'sba_pv_buffer_' . $today;
     $flush_lock = 'sba_pv_flush_lock_' . $today;
 
+    $flush_interval = wp_using_ext_object_cache() ? 600 : 1200;
+
     $count = get_transient( $buffer_key );
-    if ( $count === false ) {
-        set_transient( $buffer_key, 1, HOUR_IN_SECONDS );
-    } else {
-        set_transient( $buffer_key, (int) $count + 1, HOUR_IN_SECONDS );
-    }
+    set_transient( $buffer_key, ( $count === false ? 1 : (int)$count + 1 ), HOUR_IN_SECONDS );
 
     if ( get_transient( $flush_lock ) === false ) {
         sba_flush_pv_buffer( $today );
-        set_transient( $flush_lock, '1', 600 );
+        set_transient( $flush_lock, '1', $flush_interval );
     }
 }
 
@@ -507,6 +516,7 @@ function sba_early_init() {
 
     // ==================== 核心统计====================
     sba_inc_pv();
+    if (!defined('SBA_TRACKED')) define('SBA_TRACKED', true);
 
     $write_lock_key = 'sba_write_lock_' . $ip . '_' . $date;
     if ( get_transient( $write_lock_key ) === false ) {
@@ -767,6 +777,36 @@ function sba_ajax_load_blocked_logs() {
     }
     wp_send_json_success( [ 'html' => $html, 'pages' => ceil( $total / $per ), 'total' => $total ] );
 }
+
+add_action( 'wp_ajax_sba_heartbeat', 'sba_ajax_heartbeat' );
+add_action( 'wp_ajax_nopriv_sba_heartbeat', 'sba_ajax_heartbeat' );
+
+function sba_ajax_heartbeat() {
+    if ( defined('SBA_TRACKED') && SBA_TRACKED ) {
+        wp_send_json_success();
+    }
+
+    sba_inc_pv(); // 记录 PV
+    wp_send_json_success();
+}
+
+add_action( 'wp_footer', function() {
+    if ( is_admin() ) return;
+    if ( sba_get_option('enable_ajax_patch', 0) != 1 ) return;
+    if ( defined('SBA_TRACKED') && SBA_TRACKED ) return;
+    ?>
+    <script id="sba-ajax-patch">
+    (function() {
+        setTimeout(function() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '<?php echo admin_url('admin-ajax.php'); ?>', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.send('action=sba_heartbeat');
+        }, 2000);
+    })();
+    </script>
+    <?php
+});
 
 // ==================== iOS 登录辅助函数 ====================
 function sba_ios_check_rate_limit( $ip, $limit = 10 ) {
@@ -1317,7 +1357,6 @@ function sba_audit_dashboard() {
         <div style="margin-top:15px;display:flex;justify-content:space-between;"><div><?php _e( '总记录:', SBA_TEXT_DOMAIN ); ?> <b id="total-rows">0</b></div><div><button id="prev-page" class="button"><?php _e( '◀ 上页', SBA_TEXT_DOMAIN ); ?></button> <?php _e( '第', SBA_TEXT_DOMAIN ); ?> <b id="current-page">1</b> / <b id="total-pages">1</b> <?php _e( '页', SBA_TEXT_DOMAIN ); ?> <button id="next-page" class="button"><?php _e( '下页 ▶', SBA_TEXT_DOMAIN ); ?></button></div></div></div>
         <div class="sba-card" style="border-top:3px solid #d63638;"><h3><?php printf( __( '🚫 拦截日志 (%s)', SBA_TEXT_DOMAIN ), $latest_date ); ?></h3><div class="sba-scroll-x"><table class="sba-table sba-blocked-table"><thead><tr><th><?php _e( '时间', SBA_TEXT_DOMAIN ); ?></th><th><?php _e( '拦截 IP', SBA_TEXT_DOMAIN ); ?></th><th><?php _e( '原因与目标', SBA_TEXT_DOMAIN ); ?></th></tr></thead><tbody id="blocked-log-body"></tbody></table></div>
         <div style="margin-top:15px;display:flex;justify-content:space-between;"><div><?php _e( '总记录:', SBA_TEXT_DOMAIN ); ?> <b id="blocked-total-rows">0</b></div><div><button id="blocked-prev-page" class="button"><?php _e( '◀ 上页', SBA_TEXT_DOMAIN ); ?></button> <?php _e( '第', SBA_TEXT_DOMAIN ); ?> <b id="blocked-current-page">1</b> / <b id="blocked-total-pages">1</b> <?php _e( '页', SBA_TEXT_DOMAIN ); ?> <button id="blocked-next-page" class="button"><?php _e( '下页 ▶', SBA_TEXT_DOMAIN ); ?></button></div></div></div>
-        <?php sba_environment_panel(); ?>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -1350,28 +1389,31 @@ function sba_settings_page() {
         <?php settings_errors(); ?>
         <h1><?php _e( '🛠️ SBA 防御设置', SBA_TEXT_DOMAIN ); ?></h1>
         <div class="sba-card" style="background:#fffbe6;border-left:5px solid #faad14;">
-            <h3><?php _e( '📖 使用说明', SBA_TEXT_DOMAIN ); ?></h3>
-            <p><?php _e( '1. <b>防误杀：</b> 填入用户名后，登录时将免疫所有频率拦截和路径检测。', SBA_TEXT_DOMAIN ); ?></p>
-            <p><?php _e( '2. <b>Gate 钥匙：</b> 设置后，访问 <code>wp-login.php?gate=钥匙</code> 可开启登录入口（地址栏自动去除参数）。此后登录表单通过隐藏字段提交令牌，退出后令牌失效。', SBA_TEXT_DOMAIN ); ?></p>
-            <p><?php _e( '3. <b>指纹库：</b> 自动识别 <code>sqlmap, curl, wget, python</code> 等 UA 特征并阻断。', SBA_TEXT_DOMAIN ); ?></p>
-            <p><?php _e( '4. <b>归属地：</b> 使用 ip2region xdb 内存查询。请通过下方按钮上传 IPv4 和 IPv6 的 xdb 文件（支持分片上传、断点续传）。', SBA_TEXT_DOMAIN ); ?></p>
-            <p><?php _e( '5. <b>爬虫防御：</b> 启用阶梯限制和 Cookie 校验可有效识别采集器，蜜罐陷阱触发即封禁。', SBA_TEXT_DOMAIN ); ?></p>
+            <h3><?php _e( '📖 核心功能配置指南', SBA_TEXT_DOMAIN ); ?></h3>
+            <p><?php _e( '1. <b>性能对账：</b>数据每 10 分钟写库。若觉延迟，按 <code>Ctrl + F5</code> 强制对账。白名单用户豁免所有拦截。', SBA_TEXT_DOMAIN ); ?></p>
+            <p><?php _e( '2. <b>入口保护：</b>启用钥匙后，入口变为 <code>wp-login.php?gate=钥匙</code>。未携带参数将返回 403 阻断暴破。', SBA_TEXT_DOMAIN ); ?></p>
+            <p><?php _e( '3. <b>IP 信任：</b>看仪表盘 IP。若为 127.0.0.1 或内网 IP，请根据 CDN/代理环境切换至「Nginx」或「Cloudflare」。', SBA_TEXT_DOMAIN ); ?></p>
+            <p><?php _e( '4. <b>AJAX 补丁：</b>无痕访问首页。若「访客轨迹」未增加记录，说明 PHP 被静态缓存截断，此时必须开启。', SBA_TEXT_DOMAIN ); ?></p>
+            <p><?php _e( '5. <b>爬虫防御：</b>「Cookie 校验」识别无状态脚本。内置「蜜罐陷阱」会自动诱捕并封禁扫描页面的恶意爬虫。', SBA_TEXT_DOMAIN ); ?></p>
         </div>
         <form method="post" action="options.php">
             <?php settings_fields( 'sba_settings_group' ); ?>
             <div class="sba-grid">
                 <div class="sba-card"><h3><?php _e( '✅ 信任通道', SBA_TEXT_DOMAIN ); ?></h3><table class="form-table"><tr><th><?php _e( '用户名白名单', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[user_whitelist]" value="<?php echo esc_attr( $opts['user_whitelist'] ?? '' ); ?>" class="regular-text" /><br><small><?php _e( '登录此用户时，系统自动信任，不执行拦截逻辑。', SBA_TEXT_DOMAIN ); ?></small></td></tr>
-                <tr><th><?php _e( 'IP 白名单', SBA_TEXT_DOMAIN ); ?></th><td><textarea name="sba_settings[ip_whitelist]" rows="3" style="width:100%"><?php echo esc_textarea( $opts['ip_whitelist'] ?? '' ); ?></textarea><br><small><?php _e( '每行一个 IP。', SBA_TEXT_DOMAIN ); ?></small></td></tr></table></div>
+                <tr><th><?php _e( 'IP 白名单', SBA_TEXT_DOMAIN ); ?></th><td><textarea name="sba_settings[ip_whitelist]" rows="3" style="width:100%"><?php echo esc_textarea( $opts['ip_whitelist'] ?? '' ); ?></textarea><br><small><?php _e( '每行一个 IP。支持 IPv4 和 IPv6。', SBA_TEXT_DOMAIN ); ?></small></td></tr></table></div>
                 <div class="sba-card"><h3><?php _e( '🚫 防御配置', SBA_TEXT_DOMAIN ); ?></h3><table class="form-table"><tr><th><?php _e( 'CC 封禁阈值', SBA_TEXT_DOMAIN ); ?></th><td><input type="number" name="sba_settings[auto_block_limit]" value="<?php echo esc_attr( $opts['auto_block_limit'] ?? '60' ); ?>" /> <?php _e( '次/分', SBA_TEXT_DOMAIN ); ?><br><small><?php _e( '单 IP 每分钟请求超过此值自动封禁（0 为关闭）。', SBA_TEXT_DOMAIN ); ?></small></td></tr>
-                <tr><th><?php _e( 'Gate 钥匙', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[login_slug]" value="<?php echo esc_attr( $opts['login_slug'] ?? '' ); ?>" /><br><small><?php _e( '保护登录入口。访问 <code>wp-login.php?gate=钥匙</code> 开启入口，之后自动隐藏。', SBA_TEXT_DOMAIN ); ?></small></td></tr>
-                <tr><th><?php _e( '追加拦截路径', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[evil_paths]" value="<?php echo esc_attr( $opts['evil_paths'] ?? '' ); ?>" style="width:100%" placeholder="/test.php, /backup.zip" /><br><small><?php _e( '逗号分隔。内置已含 .env/.git 等，此处用于扩充。', SBA_TEXT_DOMAIN ); ?></small></td></tr>
-                <tr><th><?php _e( '爬虫特征路径 (正则)', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[scraper_paths]" value="<?php echo esc_attr( $opts['scraper_paths'] ?? 'feed=|rest_route=|[\?&]m=|\?p=' ); ?>" style="width:100%" /><br><small><?php _e( '正则表达式，匹配的 URL 将使用更严格的频率限制（默认阈值的 1/3）。', SBA_TEXT_DOMAIN ); ?></small></td></tr>
-                <tr><th><?php _e( 'Cookie 校验', SBA_TEXT_DOMAIN ); ?></th><td><label><input type="checkbox" name="sba_settings[enable_cookie_check]" value="1" <?php checked( $opts['enable_cookie_check'] ?? 1, 1 ); ?> /> <?php _e( '启用 Cookie 校验（无有效 Cookie 且非浏览器的请求将受到更严格限制）', SBA_TEXT_DOMAIN ); ?></label></td></tr>
-                <tr><th><?php _e( '拦截重定向 URL', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[block_target_url]" value="<?php echo esc_attr( $opts['block_target_url'] ?? '' ); ?>" style="width:100%" placeholder="https://127.0.0.1" /><br><small><?php _e( '拦截后将对方跳转至此页面（留空则显示默认 403 页面）。', SBA_TEXT_DOMAIN ); ?></small></td></tr></table>
-                <div class="sba-card" style="margin-top:20px;"><h3><?php _e( '🔒 出站安全（SSRF 防御）', SBA_TEXT_DOMAIN ); ?></h3><table class="form-table"><tr><th><label for="ssrf_prevent_dns_rebind"><?php _e( 'DNS Rebinding 防御', SBA_TEXT_DOMAIN ); ?></label></th><td><label><input type="checkbox" name="sba_settings[ssrf_prevent_dns_rebind]" value="1" <?php checked( $opts['ssrf_prevent_dns_rebind'] ?? 1, 1 ); ?> /> <?php _e( '启用强制 IP 直连 + Host 头校验', SBA_TEXT_DOMAIN ); ?></label><br><small><?php _e( '防止攻击者利用短 TTL DNS 绕过 IP 黑名单。', SBA_TEXT_DOMAIN ); ?></small></td></tr>
-                <tr><th><label for="outbound_whitelist"><?php _e( '出站 IP 白名单', SBA_TEXT_DOMAIN ); ?></label></th><td><textarea name="sba_settings[outbound_whitelist]" rows="4" style="width:100%;" placeholder="<?php echo esc_attr( sprintf( __( '每行一个 IP 或 CIDR，例如：%s', SBA_TEXT_DOMAIN ), "\n192.168.1.100\n10.0.0.0/8" ) ); ?>"><?php echo esc_textarea( $opts['outbound_whitelist'] ?? '' ); ?></textarea><br><small><?php _e( '白名单内的 IP 即使属于内网也允许访问（适用于 NAS 访问家庭内网服务）。', SBA_TEXT_DOMAIN ); ?></small></td></tr>
-                <tr><th><label for="ssrf_blacklist"><?php _e( '额外黑名单（CIDR）', SBA_TEXT_DOMAIN ); ?></label></th><td><input type="text" name="sba_settings[ssrf_blacklist]" value="<?php echo esc_attr( $opts['ssrf_blacklist'] ?? '' ); ?>" style="width:100%;" placeholder="<?php echo esc_attr( sprintf( __( '例如：%s', SBA_TEXT_DOMAIN ), '192.0.2.0/24,203.0.113.0/24' ) ); ?>" /><br><small><?php _e( '逗号分隔，追加到默认内网黑名单之后。', SBA_TEXT_DOMAIN ); ?></small></td></tr></table></div>
-                <?php submit_button( __( '保存核心配置', SBA_TEXT_DOMAIN ) ); ?></div>
+                <tr><th><?php _e( 'IP 信任来源', SBA_TEXT_DOMAIN ); ?></th><td><select name="sba_settings[ip_source]"><option value="REMOTE_ADDR" <?php selected( $opts['ip_source'] ?? '', 'REMOTE_ADDR' ); ?>><?php _e( 'REMOTE_ADDR (标准直连)', SBA_TEXT_DOMAIN ); ?></option><option value="HTTP_CF_CONNECTING_IP" <?php selected( $opts['ip_source'] ?? '', 'HTTP_CF_CONNECTING_IP' ); ?>><?php _e( 'Cloudflare (CF_IP)', SBA_TEXT_DOMAIN ); ?></option><option value="HTTP_X_REAL_IP" <?php selected( $opts['ip_source'] ?? '', 'HTTP_X_REAL_IP' ); ?>><?php _e( 'Nginx 转发 (REAL_IP)', SBA_TEXT_DOMAIN ); ?></option><option value="HTTP_X_FORWARDED_FOR" <?php selected( $opts['ip_source'] ?? '', 'HTTP_X_FORWARDED_FOR' ); ?>><?php _e( '标准代理 (XFF)', SBA_TEXT_DOMAIN ); ?></option></select><br><small><?php _e( '根据 CDN 环境选择正确的 IP 来源。', SBA_TEXT_DOMAIN ); ?></small></td></tr>
+                <tr><th><?php _e( 'AJAX 异步统计', SBA_TEXT_DOMAIN ); ?></th><td><label><input type="checkbox" name="sba_settings[enable_ajax_patch]" value="1" <?php checked( $opts['enable_ajax_patch'] ?? 0, 1 ); ?> /> <?php _e( '启用异步统计（解决静态 HTML 缓存导致的 PV 丢失）', SBA_TEXT_DOMAIN ); ?></label></td></tr>
+                <tr><th><?php _e( 'Gate 钥匙', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[login_slug]" value="<?php echo esc_attr( $opts['login_slug'] ?? '' ); ?>" /><br><small><?php _e( '<code>wp-login.php?gate=钥匙</code>', SBA_TEXT_DOMAIN ); ?></small></td></tr>
+                <tr><th><?php _e( '追加拦截路径', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[evil_paths]" value="<?php echo esc_attr( $opts['evil_paths'] ?? '' ); ?>" style="width:100%" placeholder="/test.php, /backup.zip" /></td></tr>
+                <tr><th><?php _e( '爬虫特征正则', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[scraper_paths]" value="<?php echo esc_attr( $opts['scraper_paths'] ?? 'feed=|rest_route=|[\?&]m=|\?p=' ); ?>" style="width:100%" /></td></tr>
+                <tr><th><?php _e( '高级策略', SBA_TEXT_DOMAIN ); ?></th><td><label><input type="checkbox" name="sba_settings[enable_cookie_check]" value="1" <?php checked( $opts['enable_cookie_check'] ?? 1, 1 ); ?> /> <?php _e( '启用 Cookie 身份校验', SBA_TEXT_DOMAIN ); ?></label></td></tr>
+                <tr><th><?php _e( '拦截重定向', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[block_target_url]" value="<?php echo esc_attr( $opts['block_target_url'] ?? '' ); ?>" style="width:100%" placeholder="https://127.0.0.1" /></td></tr></table></div>
+            </div>
+            <div class="sba-card" style="margin-top:20px;"><h3><?php _e( '🔒 出站安全（SSRF 防御）', SBA_TEXT_DOMAIN ); ?></h3><table class="form-table"><tr><th><?php _e( 'DNS Rebinding', SBA_TEXT_DOMAIN ); ?></th><td><label><input type="checkbox" name="sba_settings[ssrf_prevent_dns_rebind]" value="1" <?php checked( $opts['ssrf_prevent_dns_rebind'] ?? 1, 1 ); ?> /> <?php _e( '启用强制 IP 直连 + Host 头校验', SBA_TEXT_DOMAIN ); ?></label></td></tr>
+                <tr><th><?php _e( '出站 IP 白名单', SBA_TEXT_DOMAIN ); ?></th><td><textarea name="sba_settings[outbound_whitelist]" rows="2" style="width:100%;" placeholder="192.168.1.100&#10;10.0.0.0/8"><?php echo esc_textarea( $opts['outbound_whitelist'] ?? '' ); ?></textarea></td></tr>
+                <tr><th><?php _e( '额外黑名单 (CIDR)', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[ssrf_blacklist]" value="<?php echo esc_attr( $opts['ssrf_blacklist'] ?? '' ); ?>" style="width:100%;" placeholder="192.0.2.0/24, 203.0.113.0/24" /></td></tr></table></div>
+            <div style="margin-top:20px;"><?php submit_button( __( '保存核心配置', SBA_TEXT_DOMAIN ) ); ?></div>
         </form>
         <div class="sba-card"><h3><?php _e( '📁 IP 归属地库 (ip2region xdb) 分片上传', SBA_TEXT_DOMAIN ); ?></h3>
             <?php foreach ( [ 'v4' => __('IPv4 库', SBA_TEXT_DOMAIN), 'v6' => __('IPv6 库', SBA_TEXT_DOMAIN) ] as $type => $label ): ?>

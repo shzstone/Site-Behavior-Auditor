@@ -1,925 +1,643 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Site Behavior Auditor 3.0.0\n"
+"Project-Id-Version: Site Behavior Auditor 3.0.2\n"
 "Report-Msgid-Bugs-To: https://blog.cacca.cc\n"
-"POT-Creation-Date: 2026-04-24 10:00:00+00:00\n"
+"POT-Creation-Date: 2026-04-26 18:40+0800\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"PO-Revision-Date: 2026-04-24 10:00:00+00:00\n"
-"Last-Translator: Stone\n"
-"Language-Team: \n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "X-Generator: Poedit 3.0\n"
 "X-Domain: site-behavior-auditor\n"
 
-#. Plugin Name
 msgid "综合安全套件 (Site Behavior Auditor + Login Box + SMTP)"
 msgstr ""
 
-#. Plugin Description
-msgid "集成站点全行为审计、iOS风格登录/注册/忘记密码面板（简码: sba_login_box）和SMTP邮件配置。IP归属地使用 ip2region xdb 内存查询，并提供高级爬虫防御（阶梯限制、Cookie校验、诱饵陷阱）。"
+msgid "集成站点全行为审计、iOS风格登录/注册/忘记密码面板。3.0终极性能版：10分钟写入锁+全局读快照+自动对账。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "SBA 安全套件"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "未检测到官方 ip2region 类库，已自动降级为内置简化版（仅支持 IPv4 查询）。如需完整 IPv6 支持，请将官方类库放置于"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "未知"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "IPv6库未上传或官方类库缺失"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "查询失败"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "蜜罐陷阱触发"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "自动化扫描器: %s"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "遗留 filter[author] 参数探测"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "遗留 filter[orderby]=author 参数探测"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "Legacy filter 参数绕过探测"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "非认证用户尝试使用 edit 上下文"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "分页参数 per_page 超出限制"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "尝试遍历文章偏移量 (offset)"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "OEmbed 代理请求 (SSRF 风险)"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "扫描路径探测: %s"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "敏感数据枚举探测 (User/Comment/Bypass)"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "非法路径探测: %s"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "检测到恶意攻击载荷 (WAF)"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "XML-RPC 高危方法调用 (SSRF)"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "非法的 XML-RPC 请求方法"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "Gate 钥匙错误或已失效"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "采集器高频抓取 (Sensitive API)"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "频率超限 (CC风险)"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "Security Block"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "匿名访客"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "登录失败次数过多 (暴力破解)"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "尝试次数太多，请稍后再试。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "无权限"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "无效请求"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "无效类型"
-msgstr ""
-
-#: Site Behavior Auditor
-msgid "参数错误"
-msgstr ""
-
-#: Site Behavior Auditor
-msgid "分片上传错误"
-msgstr ""
-
-#: Site Behavior Auditor
-msgid "保存分片失败"
-msgstr ""
-
-#: Site Behavior Auditor
-msgid "无法创建最终文件，请检查目录权限"
-msgstr ""
-
-#: Site Behavior Auditor
-msgid "分片文件丢失，合并失败"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "上传并合并完成"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "分片接收成功"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "网络良好，分片大小提升至"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "上传失败"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "单片过大，已降低至"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "重试中..."
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "区间"
-msgstr ""
-
-#: Site Behavior Auditor
-msgid "上传失败，"
-msgstr ""
-
-#: Site Behavior Auditor
-msgid "秒后重试"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "网络错误"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "上传超时"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "查询状态失败"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "中断请求失败"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "准备上传，动态分片大小"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "剩余"
-msgstr ""
-
-#: Site Behavior Auditor
-msgid "个区间"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "上传成功，正在刷新页面..."
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "上传成功"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "上传未完全完成"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "上传失败："
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "请选择文件"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "只允许 .xdb 格式的文件"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "确定要中断上传并清理已上传的临时文件吗？"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "正在中断并清理临时文件..."
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "已中断上传，临时文件已清理"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "中断失败："
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "设置已保存。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "测试邮件已发送到 %s，请检查收件箱。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "测试邮件发送失败：%s"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "请输入有效的测试邮箱地址。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "SMTP 邮件设置"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "SMTP 主机"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "例如：smtp.gmail.com"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "端口"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "常用：587 (TLS) 或 465 (SSL)"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "加密方式"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "无"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "TLS"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "SSL"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "启用认证"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "通常需要勾选"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "用户名"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "密码"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "发件人邮箱"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "留空则使用 WordPress 默认"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "发件人名称"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "例如：网站名称"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "保存设置"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "测试邮件发送"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "接收测试邮箱"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "发送测试邮件"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "SMTP 测试邮件 - %s"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "这是一封测试邮件，确认您的 SMTP 配置正确。"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "未知错误，请检查日志。"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "当前在线"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "当前在线:"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "今日访客"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "累积浏览"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "禁止的协议: %s"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "🛡️ SBA 安全策略：仅允许 http/https 出站请求。"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "禁止访问内网/敏感 IP: %s"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "🛡️ SBA 系统安全限制：禁止访问内部网络资源。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "全行为审计"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "防御设置"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "SMTP 邮件"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "🚀 SBA 站点行为监控 v%s"
 msgstr ""
 
-#: Site Behavior Auditor
+msgid "当前在线:"
+msgstr ""
+
 msgid "今日 (%s) UV:"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "今日 (%s) PV:"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "今日 (%s) 拦截:"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "📈 30天访问趋势"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "📊 50天审计详表"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "日期"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "拦截"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "👣 访客轨迹 (%s)"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "时间"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "IP"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "归属地"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "访问路径"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "PV"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "总记录:"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "◀ 上页"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "第"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "页"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "下页 ▶"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "🚫 拦截日志 (%s)"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "拦截 IP"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "原因与目标"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "⚙️ 服务器环境检测"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "PHP 版本"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "秒"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "cURL 扩展"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "若需上传大文件（超过 10MB），建议将 <code>upload_max_filesize</code> 和 <code>post_max_size</code> 调至至少 64M。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "🛠️ SBA 防御设置"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "📖 使用说明"
+msgid "📖 核心功能配置指南"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "1. <b>防误杀：</b> 填入用户名后，登录时将免疫所有频率拦截和路径检测。"
+msgid "1. <b>性能对账：</b>数据每 10 分钟写库。若觉延迟，按 <code>Ctrl + F5</code> 强制对账。白名单用户豁免所有拦截。"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "2. <b>Gate 钥匙：</b> 设置后，访问 <code>wp-login.php?gate=钥匙</code> 可开启登录入口（地址栏自动去除参数）。此后登录表单通过隐藏字段提交令牌，退出后令牌失效。"
+msgid "2. <b>入口保护：</b>启用钥匙后，入口变为 <code>wp-login.php?gate=钥匙</code>。未携带参数将返回 403 阻断暴破。"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "3. <b>指纹库：</b> 自动识别 <code>sqlmap, curl, wget, python</code> 等 UA 特征并阻断。"
+msgid "3. <b>IP 信任：</b>看仪表盘 IP。若为 127.0.0.1 或内网 IP，请根据 CDN/代理环境切换至「Nginx」或「Cloudflare」。"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "4. <b>归属地：</b> 使用 ip2region xdb 内存查询。请通过下方按钮上传 IPv4 和 IPv6 的 xdb 文件（支持分片上传、断点续传）。"
+msgid "4. <b>AJAX 补丁：</b>无痕访问首页。若「访客轨迹」未增加记录，说明 PHP 被静态缓存截断，此时必须开启。"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "5. <b>爬虫防御：</b> 启用阶梯限制和 Cookie 校验可有效识别采集器，蜜罐陷阱触发即封禁。"
+msgid "5. <b>爬虫防御：</b>「Cookie 校验」识别无状态脚本。内置「蜜罐陷阱」会自动诱捕并封禁扫描页面的恶意爬虫。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "✅ 信任通道"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "用户名白名单"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "登录此用户时，系统自动信任，不执行拦截逻辑。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "IP 白名单"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "每行一个 IP。"
+msgid "每行一个 IP。支持 IPv4 和 IPv6。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "🚫 防御配置"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "CC 封禁阈值"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "次/分"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "单 IP 每分钟请求超过此值自动封禁（0 为关闭）。"
 msgstr ""
 
-#: Site Behavior Auditor
+msgid "IP 信任来源"
+msgstr ""
+
+msgid "REMOTE_ADDR (标准直连)"
+msgstr ""
+
+msgid "Cloudflare (CF_IP)"
+msgstr ""
+
+msgid "Nginx 转发 (REAL_IP)"
+msgstr ""
+
+msgid "标准代理 (XFF)"
+msgstr ""
+
+msgid "根据 CDN 环境选择正确的 IP 来源。"
+msgstr ""
+
+msgid "AJAX 异步统计"
+msgstr ""
+
+msgid "启用异步统计（解决静态 HTML 缓存导致的 PV 丢失）"
+msgstr ""
+
 msgid "Gate 钥匙"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "保护登录入口。访问 <code>wp-login.php?gate=钥匙</code> 开启入口，之后自动隐藏。"
+msgid "<code>wp-login.php?gate=钥匙</code>"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "追加拦截路径"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "逗号分隔。内置已含 .env/.git 等，此处用于扩充。"
+msgid "爬虫特征正则"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "爬虫特征路径 (正则)"
+msgid "高级策略"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "正则表达式，匹配的 URL 将使用更严格的频率限制（默认阈值的 1/3）。"
+msgid "启用 Cookie 身份校验"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "Cookie 校验"
+msgid "拦截重定向"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "启用 Cookie 校验（无有效 Cookie 且非浏览器的请求将受到更严格限制）"
-msgstr ""
-
-#: Site Behavior Auditor
-msgid "拦截重定向 URL"
-msgstr ""
-
-#: Site Behavior Auditor
-msgid "拦截后将对方跳转至此页面（留空则显示默认 403 页面）。"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "🔒 出站安全（SSRF 防御）"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "DNS Rebinding 防御"
+msgid "DNS Rebinding"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "启用强制 IP 直连 + Host 头校验"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "防止攻击者利用短 TTL DNS 绕过 IP 黑名单。"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "出站 IP 白名单"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "每行一个 IP 或 CIDR，例如：%s"
+msgid "额外黑名单 (CIDR)"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "白名单内的 IP 即使属于内网也允许访问（适用于 NAS 访问家庭内网服务）。"
-msgstr ""
-
-#: Site Behavior Auditor
-msgid "额外黑名单（CIDR）"
-msgstr ""
-
-#: Site Behavior Auditor
-msgid "例如：%s"
-msgstr ""
-
-#: Site Behavior Auditor
-msgid "逗号分隔，追加到默认内网黑名单之后。"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "保存核心配置"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "📁 IP 归属地库 (ip2region xdb) 分片上传"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "IPv4 库"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "IPv6 库"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "已上传"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "未上传"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "上传"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "取消上传"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "登录中..."
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "注册中..."
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "发送中..."
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "两次输入的密码不一致。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "密码必须至少8位，且包含字母和数字。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "请先填写验证码。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "验证码："
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "登录成功"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "注册成功，请查收激活邮件。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "重置链接已发送至您的邮箱。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "由于多次失败，您的IP已被封禁24小时。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "操作过于频繁，请稍后再试。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "验证码错误"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "所有字段都不能为空。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "用户名已存在。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "邮箱已被注册。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "邮件发送失败，请联系管理员。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "用户名或邮箱未注册。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "无法生成重置链接，请稍后重试。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "账号尚未激活，请查收激活邮件。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "您已被封禁24小时，请稍后再试。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "当前无需验证码"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "登录"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "注册"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "忘记密码"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "用户名或邮箱"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "记住我"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "验证码"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "邮箱"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "确认密码"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "发送重置链接"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "欢迎回来"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "控制台"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "个人资料"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "注销"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "激活链接无效或已使用。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "激活失败"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "激活码不正确。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "请激活您的账号 - %s"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "您好 %s,\n\n请点击以下链接激活您的账号（链接24小时内有效）：\n%s\n\n如果没有注册过，请忽略此邮件。"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "重置密码"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "请点击以下链接重置密码（链接24小时内有效）：\n%s"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "安全提醒"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "IP: %s\n失败次数: %d\n封禁至: %s"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "暂无更多记录"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "暂无拦截记录"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "加载失败，请刷新页面重试"
 msgstr ""
 
-#: Site Behavior Auditor
-msgid "加载拦截日志失败:"
-msgstr ""
-
-#: Site Behavior Auditor
 msgid "上页"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "下页"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "解析中..."
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "深度"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "UV (人)"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "PV (次)"
 msgstr ""
 
-#: Site Behavior Auditor
 msgid "拦截 (次)"
 msgstr ""
