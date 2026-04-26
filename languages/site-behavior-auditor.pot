@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Site Behavior Auditor 2.2.3\n"
+"Project-Id-Version: Site Behavior Auditor 3.0.0\n"
 "Report-Msgid-Bugs-To: https://blog.cacca.cc\n"
 "POT-Creation-Date: 2026-04-24 10:00:00+00:00\n"
 "MIME-Version: 1.0\n"
