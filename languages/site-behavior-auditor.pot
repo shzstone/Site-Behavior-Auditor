@@ -1,21 +1,22 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Site Behavior Auditor 3.0.2\n"
+"Project-Id-Version: Site Behavior Auditor 4.0.1\n"
 "Report-Msgid-Bugs-To: https://blog.cacca.cc\n"
-"POT-Creation-Date: 2026-04-26 18:40+0800\n"
+"POT-Creation-Date: 2026-04-26 20:30+0800\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"Last-Translator: Stone\n"
+"Language-Team: \n"
 "X-Generator: Poedit 3.0\n"
 "X-Domain: site-behavior-auditor\n"
 
+# --- 插件元数据与初始化 ---
 msgid "综合安全套件 (Site Behavior Auditor + Login Box + SMTP)"
 msgstr ""
 
-msgid "集成站点全行为审计、iOS风格登录/注册/忘记密码面板。3.0终极性能版：10分钟写入锁+全局读快照+自动对账。"
+msgid "集成站点全行为审计、iOS风格登录/注册/忘记密码面板。4.0终极版：安全加固+威胁排行榜+百万级性能优化"
 msgstr ""
 
 msgid "SBA 安全套件"
@@ -30,10 +31,17 @@ msgstr ""
 msgid "查询失败"
 msgstr ""
 
+# --- 安全拦截原因 (WAF/SSRF/入站) ---
+msgid "Security Block"
+msgstr ""
+
 msgid "蜜罐陷阱触发"
 msgstr ""
 
 msgid "自动化扫描器: %s"
+msgstr ""
+
+msgid "敏感文件探测: %s"
 msgstr ""
 
 msgid "遗留 filter[author] 参数探测"
@@ -84,184 +92,38 @@ msgstr ""
 msgid "频率超限 (CC风险)"
 msgstr ""
 
-msgid "Security Block"
-msgstr ""
-
-msgid "匿名访客"
-msgstr ""
-
 msgid "登录失败次数过多 (暴力破解)"
 msgstr ""
 
 msgid "尝试次数太多，请稍后再试。"
 msgstr ""
 
-msgid "无权限"
-msgstr ""
-
-msgid "无效请求"
-msgstr ""
-
-msgid "上传并合并完成"
-msgstr ""
-
-msgid "分片接收成功"
-msgstr ""
-
-msgid "网络良好，分片大小提升至"
-msgstr ""
-
-msgid "上传失败"
-msgstr ""
-
-msgid "单片过大，已降低至"
-msgstr ""
-
-msgid "重试中..."
-msgstr ""
-
-msgid "网络错误"
-msgstr ""
-
-msgid "上传超时"
-msgstr ""
-
-msgid "查询状态失败"
-msgstr ""
-
-msgid "中断请求失败"
-msgstr ""
-
-msgid "准备上传，动态分片大小"
-msgstr ""
-
-msgid "上传成功，正在刷新页面..."
-msgstr ""
-
-msgid "上传未完全完成"
-msgstr ""
-
-msgid "上传失败："
-msgstr ""
-
-msgid "请选择文件"
-msgstr ""
-
-msgid "只允许 .xdb 格式的文件"
-msgstr ""
-
-msgid "确定要中断上传并清理已上传的临时文件吗？"
-msgstr ""
-
-msgid "正在中断并清理临时文件..."
-msgstr ""
-
-msgid "已中断上传，临时文件已清理"
-msgstr ""
-
-msgid "中断失败："
-msgstr ""
-
-msgid "设置已保存。"
-msgstr ""
-
-msgid "测试邮件已发送到 %s，请检查收件箱。"
-msgstr ""
-
-msgid "测试邮件发送失败：%s"
-msgstr ""
-
-msgid "请输入有效的测试邮箱地址。"
-msgstr ""
-
-msgid "SMTP 邮件设置"
-msgstr ""
-
-msgid "SMTP 主机"
-msgstr ""
-
-msgid "例如：smtp.gmail.com"
-msgstr ""
-
-msgid "端口"
-msgstr ""
-
-msgid "常用：587 (TLS) 或 465 (SSL)"
-msgstr ""
-
-msgid "加密方式"
-msgstr ""
-
-msgid "无"
-msgstr ""
-
-msgid "TLS"
-msgstr ""
-
-msgid "SSL"
-msgstr ""
-
-msgid "启用认证"
-msgstr ""
-
-msgid "通常需要勾选"
-msgstr ""
-
-msgid "用户名"
-msgstr ""
-
-msgid "密码"
-msgstr ""
-
-msgid "发件人邮箱"
-msgstr ""
-
-msgid "留空则使用 WordPress 默认"
-msgstr ""
-
-msgid "发件人名称"
-msgstr ""
-
-msgid "例如：网站名称"
-msgstr ""
-
-msgid "保存设置"
-msgstr ""
-
-msgid "测试邮件发送"
-msgstr ""
-
-msgid "接收测试邮箱"
-msgstr ""
-
-msgid "发送测试邮件"
-msgstr ""
-
-msgid "SMTP 测试邮件 - %s"
-msgstr ""
-
-msgid "这是一封测试邮件，确认您的 SMTP 配置正确。"
-msgstr ""
-
-msgid "当前在线"
-msgstr ""
-
-msgid "今日访客"
-msgstr ""
-
-msgid "累积浏览"
-msgstr ""
-
-msgid "🛡️ SBA 安全策略：仅允许 http/https 出站请求。"
+msgid "🛡️ SBA 系统安全限制：仅允许 HTTP/HTTPS 协议。"
 msgstr ""
 
 msgid "🛡️ SBA 系统安全限制：禁止访问内部网络资源。"
 msgstr ""
 
+msgid "REST API 访问受限"
+msgstr ""
+
+msgid "无权限访问此 API"
+msgstr ""
+
+msgid "REST API 索引访问受限"
+msgstr ""
+
+msgid "您的 IP 已被永久封禁。如有疑问，请联系管理员。"
+msgstr ""
+
+# --- 审计仪表盘 (Dashboard) ---
 msgid "全行为审计"
 msgstr ""
 
 msgid "防御设置"
+msgstr ""
+
+msgid "威胁排行榜"
 msgstr ""
 
 msgid "SMTP 邮件"
@@ -292,6 +154,18 @@ msgid "日期"
 msgstr ""
 
 msgid "拦截"
+msgstr ""
+
+msgid "深度"
+msgstr ""
+
+msgid "UV (人)"
+msgstr ""
+
+msgid "PV (次)"
+msgstr ""
+
+msgid "拦截 (次)"
 msgstr ""
 
 msgid "👣 访客轨迹 (%s)"
@@ -336,18 +210,110 @@ msgstr ""
 msgid "原因与目标"
 msgstr ""
 
-msgid "⚙️ 服务器环境检测"
+msgid "暂无更多记录"
 msgstr ""
 
-msgid "PHP 版本"
+msgid "暂无拦截记录"
 msgstr ""
 
-msgid "秒"
+msgid "加载失败，请刷新页面重试"
 msgstr ""
 
-msgid "若需上传大文件（超过 10MB），建议将 <code>upload_max_filesize</code> 和 <code>post_max_size</code> 调至至少 64M。"
+# --- 威胁排行榜 (4.0.1 核心新增) ---
+msgid "🔥 高频威胁排行榜"
 msgstr ""
 
+msgid "🔄 同步历史数据"
+msgstr ""
+
+msgid "同步中..."
+msgstr ""
+
+msgid "历史数据对账完成！"
+msgstr ""
+
+msgid "对账失败，请检查数据库。"
+msgstr ""
+
+msgid "实时统计"
+msgstr ""
+
+msgid "排名"
+msgstr ""
+
+msgid "IP 地址"
+msgstr ""
+
+msgid "拦截次数"
+msgstr ""
+
+msgid "最后活动"
+msgstr ""
+
+msgid "操作"
+msgstr ""
+
+msgid "永久封禁"
+msgstr ""
+
+msgid "封禁中..."
+msgstr ""
+
+msgid "确定要永久封禁该 IP 吗？"
+msgstr ""
+
+msgid "确定要解除该 IP 的封禁吗？"
+msgstr ""
+
+msgid "解除封禁"
+msgstr ""
+
+msgid "🚫 永久封禁名单"
+msgstr ""
+
+msgid "暂无手动封禁的 IP。"
+msgstr ""
+
+msgid "永久封禁中"
+msgstr ""
+
+msgid "加载中..."
+msgstr ""
+
+msgid "暂无威胁数据"
+msgstr ""
+
+msgid "◀ 上一页"
+msgstr ""
+
+msgid "下一页 ▶"
+msgstr ""
+
+msgid "IP %s 已被永久封禁"
+msgstr ""
+
+msgid "IP %s 已解除封禁"
+msgstr ""
+
+msgid "管理员手动封禁 IP: %s"
+msgstr ""
+
+msgid "权限不足"
+msgstr ""
+
+msgid "无效的 IP 地址"
+msgstr ""
+
+msgid "此 IP 在白名单中，无法封禁"
+msgstr ""
+
+msgid "未在封禁列表中找到该 IP"
+msgstr ""
+
+msgid "请求失败，请重试"
+msgstr ""
+
+# --- 防御设置页面 (精简语法提取) ---
 msgid "🛠️ SBA 防御设置"
 msgstr ""
 
@@ -459,6 +425,20 @@ msgstr ""
 msgid "保存核心配置"
 msgstr ""
 
+# --- 服务器环境检测 ---
+msgid "⚙️ 服务器环境检测"
+msgstr ""
+
+msgid "PHP 版本"
+msgstr ""
+
+msgid "秒"
+msgstr ""
+
+msgid "若需上传大文件（超过 10MB），建议将 <code>upload_max_filesize</code> 和 <code>post_max_size</code> 调至至少 64M。"
+msgstr ""
+
+# --- 文件分片上传 ---
 msgid "📁 IP 归属地库 (ip2region xdb) 分片上传"
 msgstr ""
 
@@ -480,72 +460,7 @@ msgstr ""
 msgid "取消上传"
 msgstr ""
 
-msgid "登录中..."
-msgstr ""
-
-msgid "注册中..."
-msgstr ""
-
-msgid "发送中..."
-msgstr ""
-
-msgid "两次输入的密码不一致。"
-msgstr ""
-
-msgid "密码必须至少8位，且包含字母和数字。"
-msgstr ""
-
-msgid "请先填写验证码。"
-msgstr ""
-
-msgid "验证码："
-msgstr ""
-
-msgid "登录成功"
-msgstr ""
-
-msgid "注册成功，请查收激活邮件。"
-msgstr ""
-
-msgid "重置链接已发送至您的邮箱。"
-msgstr ""
-
-msgid "由于多次失败，您的IP已被封禁24小时。"
-msgstr ""
-
-msgid "操作过于频繁，请稍后再试。"
-msgstr ""
-
-msgid "验证码错误"
-msgstr ""
-
-msgid "所有字段都不能为空。"
-msgstr ""
-
-msgid "用户名已存在。"
-msgstr ""
-
-msgid "邮箱已被注册。"
-msgstr ""
-
-msgid "邮件发送失败，请联系管理员。"
-msgstr ""
-
-msgid "用户名或邮箱未注册。"
-msgstr ""
-
-msgid "无法生成重置链接，请稍后重试。"
-msgstr ""
-
-msgid "账号尚未激活，请查收激活邮件。"
-msgstr ""
-
-msgid "您已被封禁24小时，请稍后再试。"
-msgstr ""
-
-msgid "当前无需验证码"
-msgstr ""
-
+# --- iOS 风格登录交互 (AJAX/UI) ---
 msgid "登录"
 msgstr ""
 
@@ -585,6 +500,75 @@ msgstr ""
 msgid "注销"
 msgstr ""
 
+msgid "登录中..."
+msgstr ""
+
+msgid "注册中..."
+msgstr ""
+
+msgid "发送中..."
+msgstr ""
+
+msgid "两次输入的密码不一致。"
+msgstr ""
+
+msgid "密码必须至少8位，且包含字母和数字。"
+msgstr ""
+
+msgid "请先填写验证码。"
+msgstr ""
+
+msgid "网络错误，请稍后重试。"
+msgstr ""
+
+msgid "验证码："
+msgstr ""
+
+msgid "登录成功"
+msgstr ""
+
+msgid "注册成功，请查收激活邮件。"
+msgstr ""
+
+msgid "由于多次失败，您的IP已被封禁24小时。"
+msgstr ""
+
+msgid "操作过于频繁，请稍后再试。"
+msgstr ""
+
+msgid "验证码错误"
+msgstr ""
+
+msgid "所有字段都不能为空。"
+msgstr ""
+
+msgid "用户名已存在。"
+msgstr ""
+
+msgid "邮箱已被注册。"
+msgstr ""
+
+msgid "邮件发送失败，请联系管理员。"
+msgstr ""
+
+msgid "用户名或邮箱未注册。"
+msgstr ""
+
+msgid "无法生成重置链接，请稍后重试。"
+msgstr ""
+
+msgid "重置链接已发送至您的邮箱。"
+msgstr ""
+
+msgid "账号尚未激活，请查收激活邮件。"
+msgstr ""
+
+msgid "您已被封禁24小时，请稍后再试。"
+msgstr ""
+
+msgid "当前无需验证码"
+msgstr ""
+
 msgid "激活链接无效或已使用。"
 msgstr ""
 
@@ -612,32 +596,69 @@ msgstr ""
 msgid "IP: %s\n失败次数: %d\n封禁至: %s"
 msgstr ""
 
-msgid "暂无更多记录"
+# --- SMTP 设置 ---
+msgid "SMTP 邮件设置"
 msgstr ""
 
-msgid "暂无拦截记录"
+msgid "设置已保存。"
 msgstr ""
 
-msgid "加载失败，请刷新页面重试"
+msgid "测试邮件已发送到 %s，请检查收件箱。"
 msgstr ""
 
-msgid "上页"
+msgid "测试邮件发送失败：%s"
 msgstr ""
 
-msgid "下页"
+msgid "请输入有效的测试邮箱地址。"
 msgstr ""
 
-msgid "解析中..."
+msgid "SMTP 主机"
 msgstr ""
 
-msgid "深度"
+msgid "例如：smtp.gmail.com"
 msgstr ""
 
-msgid "UV (人)"
+msgid "端口"
 msgstr ""
 
-msgid "PV (次)"
+msgid "常用：587 (TLS) 或 465 (SSL)"
 msgstr ""
 
-msgid "拦截 (次)"
+msgid "加密方式"
+msgstr ""
+
+msgid "启用认证"
+msgstr ""
+
+msgid "通常需要勾选"
+msgstr ""
+
+msgid "发件人邮箱"
+msgstr ""
+
+msgid "留空则使用 WordPress 默认"
+msgstr ""
+
+msgid "发件人名称"
+msgstr ""
+
+msgid "例如：网站名称"
+msgstr ""
+
+msgid "保存设置"
+msgstr ""
+
+msgid "测试邮件发送"
+msgstr ""
+
+msgid "接收测试邮箱"
+msgstr ""
+
+msgid "发送测试邮件"
+msgstr ""
+
+msgid "SMTP 测试邮件 - %s"
+msgstr ""
+
+msgid "这是一封测试邮件，确认您的 SMTP 配置正确。"
 msgstr ""

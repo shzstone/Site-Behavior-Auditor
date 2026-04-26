@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: 综合安全套件 (Site Behavior Auditor + Login Box + SMTP)
- * Description: 集成站点全行为审计、iOS风格登录/注册/忘记密码面板。3.0终极性能版：10分钟写入锁+全局读快照+自动对账。
- * Version: 3.0.2
+ * Description: 集成站点全行为审计、iOS风格登录/注册/忘记密码面板。4.0终极版：安全加固+威胁排行榜+百万级性能优化
+ * Version: 4.0.0
  * Author: Stone
  * Text Domain: site-behavior-auditor
  */
@@ -10,7 +10,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // ==================== 常量定义 ====================
-define( 'SBA_VERSION', '3.0.1' );
+define( 'SBA_VERSION', '4.0.0' );
 define( 'SBA_TEXT_DOMAIN', 'site-behavior-auditor' );
 define( 'SBA_IP_DATA_DIR', WP_CONTENT_DIR . '/uploads/sba_ip_data/' );
 define( 'SBA_IP_V4_FILE', SBA_IP_DATA_DIR . 'ip2region_v4.xdb' );
@@ -24,6 +24,7 @@ define( 'SBA_PREFIX_BLOCKED', 'sba_counter_blocked_today_' );
 define( 'SBA_WRITE_LOCK_TTL', 600 );
 define( 'SBA_READ_CACHE_TTL', 600 );
 define( 'SBA_CALIBRATE_TTL', 3600 );
+define( 'SBA_HEARTBEAT_SALT', 'sba_hb_salt_' );
 
 // ==================== 初始化 ====================
 add_action( 'plugins_loaded', 'sba_load_textdomain' );
@@ -61,7 +62,7 @@ function sba_install() {
             ip VARCHAR(45), url TEXT, visit_date DATE, visit_hour TINYINT,
             pv INT DEFAULT 1, last_visit TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY ip_date_url (ip, visit_date, url(191)),
-            INDEX idx_date_ip (visit_date, ip),
+            INDEX idx_composite (visit_date, visit_hour, last_visit DESC),
             INDEX idx_lookup (visit_date, last_visit DESC)
         ) $charset;",
         "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}sba_blocked_log (
@@ -75,6 +76,12 @@ function sba_install() {
             ip VARCHAR(45) NOT NULL UNIQUE,
             failed_count INT DEFAULT 0, last_failed_time DATETIME,
             banned_until DATETIME, request_count INT DEFAULT 0, last_request_time DATETIME
+        ) $charset;",
+        "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}sba_threat_summary (
+            ip VARCHAR(45) NOT NULL PRIMARY KEY,
+            total_blocks INT DEFAULT 0,
+            last_block_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_total_blocks (total_blocks DESC)
         ) $charset;"
     ];
 
@@ -92,6 +99,7 @@ function sba_install() {
         'scraper_paths' => 'feed=|rest_route=|[\?&]m=|\?p=',
         'enable_cookie_check' => 1, 'ssrf_prevent_dns_rebind' => 1,
         'outbound_whitelist' => '', 'ssrf_blacklist' => '',
+        'enable_ajax_patch' => 0, 'ip_source' => 'REMOTE_ADDR',
     ];
     $cur = get_option( 'sba_settings', [] );
     if ( empty( $cur ) ) update_option( 'sba_settings', $defaults );
@@ -107,8 +115,19 @@ function sba_install() {
         'from_email' => '', 'from_name' => '',
     ] );
 
+    $summary_count = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}sba_threat_summary" );
+    if ( $summary_count == 0 ) {
+        $wpdb->query( "INSERT INTO {$wpdb->prefix}sba_threat_summary (ip, total_blocks, last_block_time)
+            SELECT ip, COUNT(*), MAX(block_time)
+            FROM {$wpdb->prefix}sba_blocked_log
+            WHERE block_time > DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY ip
+            ON DUPLICATE KEY UPDATE total_blocks = VALUES(total_blocks)" );
+    }
+
     update_option( 'sba_version', SBA_VERSION );
     if ( ! wp_next_scheduled( 'sba_daily_cleanup' ) ) wp_schedule_event( time(), 'daily', 'sba_daily_cleanup' );
+    if ( ! wp_next_scheduled( 'sba_weekly_optimize' ) ) wp_schedule_event( strtotime( 'next sunday 3:00' ), 'weekly', 'sba_weekly_optimize' );
 
     $today = current_time('Y-m-d');
     foreach ( [ SBA_PREFIX_UV, SBA_PREFIX_PV, SBA_PREFIX_BLOCKED ] as $p ) {
@@ -121,6 +140,7 @@ function sba_on_deactivation() {
     sba_flush_pv_buffer( $today );
     delete_transient( 'sba_pv_flush_lock_' . $today );
     wp_clear_scheduled_hook( 'sba_daily_cleanup' );
+    wp_clear_scheduled_hook( 'sba_weekly_optimize' );
 }
 
 add_action( 'sba_daily_cleanup', 'sba_cleanup_old_data' );
@@ -130,6 +150,7 @@ function sba_cleanup_old_data() {
     $wpdb->query( "DELETE FROM {$wpdb->prefix}dis_stats WHERE visit_date < DATE_SUB(NOW(), INTERVAL 30 DAY)" );
     $wpdb->query( "DELETE FROM {$wpdb->prefix}sba_blocked_log WHERE block_time < DATE_SUB(NOW(), INTERVAL 7 DAY)" );
     $wpdb->query( "DELETE FROM {$wpdb->prefix}sba_login_failures WHERE last_failed_time < DATE_SUB(NOW(), INTERVAL 30 DAY)" );
+    $wpdb->query( "DELETE FROM {$wpdb->prefix}sba_threat_summary WHERE last_block_time < DATE_SUB(NOW(), INTERVAL 30 DAY)" );
 
     for ( $i = 31; $i <= 60; $i++ ) {
         $old_date = date( 'Y-m-d', strtotime( "-$i days" ) );
@@ -138,18 +159,21 @@ function sba_cleanup_old_data() {
         delete_option( SBA_PREFIX_BLOCKED . $old_date );
     }
 
-    if ( date( 'j' ) == 1 ) {
-        $tables_to_optimize = [
-            "{$wpdb->prefix}dis_stats",
-            "{$wpdb->prefix}sba_blocked_log",
-            "{$wpdb->prefix}sba_login_failures"
-        ];
-        foreach ( $tables_to_optimize as $table ) {
-            $wpdb->query( "OPTIMIZE TABLE $table" );
-        }
-    }
-
     sba_clear_trend_cache();
+}
+
+add_action( 'sba_weekly_optimize', 'sba_weekly_optimize' );
+function sba_weekly_optimize() {
+    global $wpdb;
+    $tables_to_optimize = [
+        "{$wpdb->prefix}dis_stats",
+        "{$wpdb->prefix}sba_blocked_log",
+        "{$wpdb->prefix}sba_login_failures",
+        "{$wpdb->prefix}sba_threat_summary"
+    ];
+    foreach ( $tables_to_optimize as $table ) {
+        $wpdb->query( "OPTIMIZE TABLE $table" );
+    }
 }
 
 // ==================== 工具函数 ====================
@@ -168,6 +192,8 @@ function sba_get_ip() {
             break;
         case 'HTTP_X_FORWARDED_FOR':
             $ip = !empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0] : $_SERVER['REMOTE_ADDR'];
+            $ip = trim($ip);
+            if (!filter_var($ip, FILTER_VALIDATE_IP)) $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
             break;
         default:
             $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
@@ -206,7 +232,91 @@ function sba_is_ip_whitelisted( $ip = null ) {
     return in_array( $ip, $list ) || current_user_can( 'manage_options' );
 }
 
-// ==================== Cookie 验证（初始版本） ====================
+// ==================== 指纹抹除与安全头 ====================
+add_action( 'init', 'sba_remove_version_fingerprints' );
+function sba_remove_version_fingerprints() {
+    remove_action( 'wp_head', 'wp_generator' );
+    add_filter( 'the_generator', '__return_empty_string' );
+    add_filter( 'style_loader_src', 'sba_remove_script_version', 9999 );
+    add_filter( 'script_loader_src', 'sba_remove_script_version', 9999 );
+    header_remove( 'X-Powered-By' );
+}
+
+function sba_remove_script_version( $src ) {
+    if ( strpos( $src, 'ver=' ) ) {
+        $src = remove_query_arg( 'ver', $src );
+    }
+    return $src;
+}
+
+add_action( 'send_headers', 'sba_security_headers' );
+function sba_security_headers() {
+    if ( is_admin() && ! defined( 'DOING_AJAX' ) ) return;
+
+    header( 'X-Frame-Options: SAMEORIGIN' );
+    header( 'X-Content-Type-Options: nosniff' );
+    header( 'Referrer-Policy: strict-origin-when-cross-origin' );
+    header( "Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=()" );
+
+    if ( ! is_admin() && ! isset( $_GET['action'] ) ) {
+        header( 'X-XSS-Protection: 1; mode=block' );
+    }
+
+    if ( is_ssl() ) {
+        header( 'Strict-Transport-Security: max-age=31536000; includeSubDomains' );
+    }
+}
+
+// ==================== REST API 目录锁 ====================
+add_action( 'rest_api_init', function() {
+    if ( ! is_user_logged_in() && ! sba_is_ip_whitelisted() ) {
+        $route = $_SERVER['REQUEST_URI'] ?? '';
+        if ( strpos( $route, '/wp-json/' ) !== false && strpos( $route, '/wp-json/sba_' ) !== 0 ) {
+            wp_die( __( 'REST API 访问受限', SBA_TEXT_DOMAIN ), 403 );
+        }
+    }
+} );
+
+add_filter( 'rest_endpoints', 'sba_disable_user_endpoints' );
+function sba_disable_user_endpoints( $endpoints ) {
+    if ( ! is_user_logged_in() ) {
+        unset( $endpoints['/wp/v2/users'], $endpoints['/wp/v2/users/(?P<id>[\d]+)'] );
+        unset( $endpoints['/wp/v2/posts'], $endpoints['/wp/v2/pages'] );
+        unset( $endpoints['/wp/v2/comments'], $endpoints['/wp/v2/media'] );
+        unset( $endpoints['/wp/v2/types'], $endpoints['/wp/v2/taxonomies'] );
+        unset( $endpoints['/wp/v2/settings'] );
+    }
+    return $endpoints;
+}
+
+add_filter( 'rest_pre_dispatch', 'sba_rest_pre_dispatch', 10, 3 );
+function sba_rest_pre_dispatch( $result, $server, $request ) {
+    if ( ! is_user_logged_in() && ! sba_is_ip_whitelisted() ) {
+        $route = $request->get_route();
+        $blocked_patterns = [ '/wp/v2/users', '/wp/v2/posts', '/wp/v2/pages', '/wp/v2/comments', '/wp/v2/media' ];
+        foreach ( $blocked_patterns as $pattern ) {
+            if ( strpos( $route, $pattern ) === 0 ) {
+                return new WP_Error( 'rest_forbidden', __( '无权限访问此 API', SBA_TEXT_DOMAIN ), [ 'status' => 403 ] );
+            }
+        }
+    }
+    return $result;
+}
+
+add_filter( 'rest_pre_serve_request', 'sba_rest_pre_serve', 10, 4 );
+function sba_rest_pre_serve( $served, $result, $request, $server ) {
+    if ( ! is_user_logged_in() && ! sba_is_ip_whitelisted() ) {
+        $route = $request->get_route();
+        if ( $route === '/' || $route === '/wp/v2' || empty( $route ) ) {
+            status_header( 403 );
+            echo json_encode( [ 'code' => 'rest_forbidden', 'message' => __( 'REST API 索引访问受限', SBA_TEXT_DOMAIN ) ] );
+            return true;
+        }
+    }
+    return $served;
+}
+
+// ==================== Cookie 验证 ====================
 function sba_has_valid_cookie() {
     static $valid = null;
     if ( $valid !== null ) return $valid;
@@ -229,12 +339,24 @@ function sba_check_rate_limit( $ip, $limit ) {
     set_transient( $key, $count + 1, 60 );
     return false;
 }
+
+// ==================== 拦截逻辑增强（含汇总表） ====================
 function sba_execute_block( $reason ) {
     if ( sba_is_user_whitelisted() || sba_is_ip_whitelisted() ) return;
     global $wpdb;
+    $ip = sba_get_ip();
+
     $wpdb->insert( $wpdb->prefix . 'sba_blocked_log', [
-        'ip' => sba_get_ip(), 'reason' => $reason, 'target_url' => $_SERVER['REQUEST_URI']
+        'ip' => $ip, 'reason' => $reason, 'target_url' => $_SERVER['REQUEST_URI']
     ] );
+
+    $wpdb->query( $wpdb->prepare(
+        "INSERT INTO {$wpdb->prefix}sba_threat_summary (ip, total_blocks, last_block_time)
+         VALUES (%s, 1, NOW())
+         ON DUPLICATE KEY UPDATE total_blocks = total_blocks + 1, last_block_time = NOW()",
+        $ip
+    ) );
+
     sba_inc_blocked();
     $url = sba_get_option( 'block_target_url', '' );
     if ( ! empty( $url ) && filter_var( $url, FILTER_VALIDATE_URL ) ) { wp_redirect( $url ); exit; }
@@ -251,7 +373,7 @@ function sba_output_honeypot_links() {
     echo '<a href="' . home_url( '/?' . $param . '=1' ) . '" style="display:none" aria-hidden="true" rel="nofollow">.</a>';
 }
 
-// ==================== 高性能计数器引擎（3.0 核心） ====================
+// ==================== 高性能计数器引擎 ====================
 function sba_atomic_increment( $prefix ) {
     $today = current_time( 'Y-m-d' );
     $key = $prefix . $today;
@@ -321,9 +443,16 @@ function sba_inc_pv() {
 }
 
 function sba_flush_pv_buffer( $date ) {
+    $lock_key = 'sba_flush_pv_lock_process_' . $date;
+    if ( get_transient( $lock_key ) ) {
+        return;
+    }
+    set_transient( $lock_key, '1', 60 );
+
     $buffer_key = 'sba_pv_buffer_' . $date;
     $buffer_value = (int) get_transient( $buffer_key );
     if ( $buffer_value <= 0 ) {
+        delete_transient( $lock_key );
         return;
     }
 
@@ -338,6 +467,7 @@ function sba_flush_pv_buffer( $date ) {
 
     delete_transient( $buffer_key );
     delete_transient( 'sba_read_snapshot_' . $opt_key );
+    delete_transient( $lock_key );
 }
 
 function sba_inc_uv() { return sba_atomic_increment( SBA_PREFIX_UV ); }
@@ -350,7 +480,7 @@ function sba_get_uv_counter( $d=null ) { return sba_get_uv( $d ); }
 function sba_get_blocked_counter( $d=null ) { return sba_get_blocked( $d ); }
 
 function sba_get_trend_data( $days = 30 ) {
-    $cache_key = 'sba_trend_v3_' . $days;
+    $cache_key = 'sba_trend_v4_' . $days;
     $cached = get_transient( $cache_key );
     if ( $cached !== false ) return $cached;
 
@@ -368,7 +498,28 @@ function sba_get_trend_data( $days = 30 ) {
 }
 
 function sba_clear_trend_cache() {
-    foreach ( [7, 14, 30, 50] as $d ) delete_transient( 'sba_trend_v3_' . $d );
+    foreach ( [7, 14, 30, 50] as $d ) delete_transient( 'sba_trend_v4_' . $d );
+}
+
+// ==================== IP 掩码函数（访客轨迹隐私保护） ====================
+function sba_mask_ip( $ip ) {
+    if ( current_user_can( 'manage_options' ) || sba_is_user_whitelisted() ) {
+        return $ip;
+    }
+
+    if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+        $parts = explode( '.', $ip );
+        if ( count( $parts ) === 4 ) {
+            return $parts[0] . '.' . $parts[1] . '.***.***';
+        }
+    } elseif ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
+        $short = inet_ntop( inet_pton( $ip ) );
+        $parts = explode( ':', $short );
+        if ( count( $parts ) >= 3 ) {
+            return $parts[0] . ':' . $parts[1] . ':***:***:***:***:***:***';
+        }
+    }
+    return '***.***.***.***';
 }
 
 // ==================== 核心拦截与统计 ====================
@@ -397,8 +548,20 @@ function sba_early_init() {
         }
     }
 
-    // ----- 登录页面放行 -----
+    // ----- 敏感文件路径虚拟防火墙 -----
     $uri = strtolower( $_SERVER['REQUEST_URI'] );
+    $sensitive_patterns = [
+        '/\.sql$/', '/\.log$/', '/\.bak$/', '/\.env$/', '/\.git/', '/\.svn/',
+        '/readme\.html$/', '/license\.txt$/', '/wp-config\.php/', '/phpinfo\.php/',
+        '/\.htaccess$/', '/\.htpasswd$/', '/\.ini$/'
+    ];
+    foreach ( $sensitive_patterns as $pattern ) {
+        if ( preg_match( $pattern, $uri ) ) {
+            sba_execute_block( sprintf( __( '敏感文件探测: %s', SBA_TEXT_DOMAIN ), basename($uri) ) );
+        }
+    }
+
+    // ----- 登录页面放行 -----
     $allowed_actions = [ 'register', 'lostpassword', 'retrievepassword', 'rp', 'resetpass', 'postpass', 'checkemail' ];
     if ( ( strpos( $uri, 'wp-login.php' ) !== false || strpos( $uri, 'wp-signup.php' ) !== false ) &&
          in_array( $_REQUEST['action'] ?? '', $allowed_actions ) ) return;
@@ -539,12 +702,60 @@ function sba_early_init() {
     }
 }
 
-// ==================== REST API 安全 ====================
+// ==================== AJAX 统计补丁（带 Token 防刷） ====================
+function sba_generate_heartbeat_token( $offset = 0 ) {
+    $ip = sba_get_ip();
+    $hour = date( 'YmdH', strtotime( "$offset hour" ) );
+    return hash_hmac( 'sha256', $ip . $hour, NONCE_KEY . SBA_HEARTBEAT_SALT );
+}
+
+add_action( 'wp_footer', 'sba_heartbeat_script' );
+function sba_heartbeat_script() {
+    if ( is_admin() || sba_get_option('enable_ajax_patch', 0) != 1 ) return;
+    if ( defined('SBA_TRACKED') && SBA_TRACKED ) return;
+    $token = sba_generate_heartbeat_token();
+    ?>
+    <script id="sba-ajax-patch">
+    (function() {
+        setTimeout(function() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '<?php echo admin_url('admin-ajax.php'); ?>', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.send('action=sba_heartbeat&token=<?php echo esc_js($token); ?>');
+        }, 2000);
+    })();
+    </script>
+    <?php
+}
+
+add_action( 'wp_ajax_sba_heartbeat', 'sba_ajax_heartbeat' );
+add_action( 'wp_ajax_nopriv_sba_heartbeat', 'sba_ajax_heartbeat' );
+
+function sba_ajax_heartbeat() {
+    $token = $_POST['token'] ?? '';
+
+    $valid_now = sba_generate_heartbeat_token( 0 );
+    $valid_prev = sba_generate_heartbeat_token( -1 );
+
+    if ( empty( $token ) || ( ! hash_equals( $valid_now, $token ) && ! hash_equals( $valid_prev, $token ) ) ) {
+        wp_send_json_error( 'Invalid token', 403 );
+        return;
+    }
+
+    if ( defined('SBA_TRACKED') && SBA_TRACKED ) {
+        wp_send_json_success();
+        return;
+    }
+
+    sba_inc_pv();
+    wp_send_json_success();
+}
+
+// ==================== REST API 安全（清理输出） ====================
 add_action( 'rest_api_init', function() {
     add_filter( 'rest_prepare_post', 'sba_clean_rest_output', 10, 3 );
     add_filter( 'rest_prepare_page', 'sba_clean_rest_output', 10, 3 );
     add_filter( 'rest_prepare_comment', 'sba_clean_comment_output', 10, 3 );
-    add_filter( 'rest_endpoints', 'sba_disable_user_endpoints' );
     add_filter( 'rest_post_dispatch', 'sba_rest_post_dispatch', 10, 3 );
 } );
 
@@ -573,13 +784,6 @@ function sba_clean_comment_output( $response, $comment, $request ) {
         $response->set_data( $data );
     }
     return $response;
-}
-
-function sba_disable_user_endpoints( $endpoints ) {
-    if ( ! is_user_logged_in() ) {
-        unset( $endpoints['/wp/v2/users'], $endpoints['/wp/v2/users/(?P<id>[\d]+)'] );
-    }
-    return $endpoints;
 }
 
 function sba_rest_post_dispatch( $response, $rest_server, $request ) {
@@ -719,6 +923,7 @@ function sba_ajax_get_geo() {
     foreach ( $ips as $ip ) $results[$ip] = $searcher->search( $ip );
     wp_send_json_success( $results );
 }
+
 add_action( 'wp_ajax_sba_load_tracks', 'sba_ajax_load_tracks' );
 function sba_ajax_load_tracks() {
     global $wpdb;
@@ -737,9 +942,10 @@ function sba_ajax_load_tracks() {
     if ( $rows ) {
         foreach ( $rows as $r ) {
             $geo = $searcher->search( $r->ip );
+            $display_ip = current_user_can('manage_options') ? esc_html( $r->ip ) : sba_mask_ip( $r->ip );
             $html .= "<tr>
                 <td>" . date( 'H:i', strtotime( $r->last_visit ) ) . "</td>
-                <td><code>" . esc_html( $r->ip ) . "</code></td>
+                <td><code>{$display_ip}</code></td>
                 <td><small>" . esc_html( $geo ) . "</small></td>
                 <td><div class='sba-cell-wrap'><small>" . esc_html( $r->url ) . "</small></div></td>
                 <td><b>{$r->pv}</b></td>
@@ -750,6 +956,7 @@ function sba_ajax_load_tracks() {
     }
     wp_send_json_success( [ 'html' => $html, 'pages' => ceil( $total / $per ), 'total' => $total, 'date' => $latest_date ] );
 }
+
 add_action( 'wp_ajax_sba_load_blocked_logs', 'sba_ajax_load_blocked_logs' );
 function sba_ajax_load_blocked_logs() {
     global $wpdb;
@@ -766,9 +973,10 @@ function sba_ajax_load_blocked_logs() {
     $html = '';
     if ( $rows ) {
         foreach ( $rows as $b ) {
+            $display_ip = current_user_can('manage_options') ? esc_html( $b->ip ) : sba_mask_ip( $b->ip );
             $html .= "<tr>
                 <td>" . date( 'm-d H:i', strtotime( $b->block_time ) ) . "</td>
-                <td><code>" . esc_html( $b->ip ) . "</code></td>
+                <td><code>{$display_ip}</code></td>
                 <td class='sba-cell-wrap' style='color:#d63638;'>" . esc_html( $b->reason ) . " ⚡ " . esc_html( $b->target_url ) . "</td>
             </tr>";
         }
@@ -778,35 +986,138 @@ function sba_ajax_load_blocked_logs() {
     wp_send_json_success( [ 'html' => $html, 'pages' => ceil( $total / $per ), 'total' => $total ] );
 }
 
-add_action( 'wp_ajax_sba_heartbeat', 'sba_ajax_heartbeat' );
-add_action( 'wp_ajax_nopriv_sba_heartbeat', 'sba_ajax_heartbeat' );
-
-function sba_ajax_heartbeat() {
-    if ( defined('SBA_TRACKED') && SBA_TRACKED ) {
-        wp_send_json_success();
+add_action( 'wp_ajax_sba_get_threat_ranking', 'sba_ajax_get_threat_ranking' );
+function sba_ajax_get_threat_ranking() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( __( '权限不足', SBA_TEXT_DOMAIN ) );
     }
 
-    sba_inc_pv(); // 记录 PV
-    wp_send_json_success();
+    $page = max( 1, intval( $_POST['page'] ?? 1 ) );
+    $per_page = 30;
+    $offset = ( $page - 1 ) * $per_page;
+
+    global $wpdb;
+    $ranking = $wpdb->get_results( $wpdb->prepare(
+        "SELECT ip, total_blocks, last_block_time
+         FROM {$wpdb->prefix}sba_threat_summary
+         ORDER BY total_blocks DESC
+         LIMIT %d, %d",
+        $offset,
+        $per_page + 1
+    ) );
+
+    $has_next = count( $ranking ) > $per_page;
+    if ( $has_next ) {
+        array_pop( $ranking );
+    }
+
+    $html = '';
+    if ( $ranking ) {
+        $rank = $offset + 1;
+        foreach ( $ranking as $r ) {
+            $html .= "<tr>
+                <td><strong>#{$rank}</strong></td>
+                <td><code>" . esc_html( $r->ip ) . "</code></td>
+                <td style='color:#d63638;'><strong>" . number_format($r->total_blocks) . "</strong></td>
+                <td>" . date( 'm-d H:i', strtotime( $r->last_block_time ) ) . "</td>
+                <td><button class='button sba-ban-ip-btn' data-ip='" . esc_attr( $r->ip ) . "'>" . __( '永久封禁', SBA_TEXT_DOMAIN ) . "</button></td>
+            </tr>";
+            $rank++;
+        }
+    } else if ( $page === 1 ) {
+        $html = '<tr><td colspan="5">' . __( '暂无威胁数据', SBA_TEXT_DOMAIN ) . '</td></tr>';
+    }
+
+    wp_send_json_success( [
+        'html' => $html,
+        'has_next' => $has_next
+    ] );
 }
 
-add_action( 'wp_footer', function() {
-    if ( is_admin() ) return;
-    if ( sba_get_option('enable_ajax_patch', 0) != 1 ) return;
-    if ( defined('SBA_TRACKED') && SBA_TRACKED ) return;
-    ?>
-    <script id="sba-ajax-patch">
-    (function() {
-        setTimeout(function() {
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', '<?php echo admin_url('admin-ajax.php'); ?>', true);
-            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-            xhr.send('action=sba_heartbeat');
-        }, 2000);
-    })();
-    </script>
-    <?php
-});
+add_action( 'wp_ajax_sba_ban_ip', 'sba_ajax_ban_ip' );
+function sba_ajax_ban_ip() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( __( '权限不足', SBA_TEXT_DOMAIN ) );
+        return;
+    }
+
+    $ip = sanitize_text_field( $_POST['ip'] );
+    if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+        wp_send_json_error( __( '无效的 IP 地址', SBA_TEXT_DOMAIN ) );
+        return;
+    }
+
+    $current_whitelist = sba_get_option( 'ip_whitelist', '' );
+    $whitelist_array = array_filter( array_map( 'trim', explode( "\n", $current_whitelist ) ) );
+
+    if ( in_array( $ip, $whitelist_array ) ) {
+        wp_send_json_error( __( '此 IP 在白名单中，无法封禁', SBA_TEXT_DOMAIN ) );
+        return;
+    }
+
+    $ban_list = get_option( 'sba_permanent_ban_list', [] );
+    if ( ! in_array( $ip, $ban_list ) ) {
+        $ban_list[] = $ip;
+        update_option( 'sba_permanent_ban_list', $ban_list );
+    }
+
+    sba_execute_block( sprintf( __( '管理员手动封禁 IP: %s', SBA_TEXT_DOMAIN ), $ip ) );
+
+    wp_send_json_success( [ 'message' => sprintf( __( 'IP %s 已被永久封禁', SBA_TEXT_DOMAIN ), $ip ) ] );
+}
+
+add_action( 'wp_ajax_sba_sync_threat_ranking', 'sba_ajax_sync_threat_ranking' );
+function sba_ajax_sync_threat_ranking() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( 'Permission denied' );
+    }
+
+    global $wpdb;
+    $result = $wpdb->query( "INSERT INTO {$wpdb->prefix}sba_threat_summary (ip, total_blocks, last_block_time)
+        SELECT ip, COUNT(*), MAX(block_time)
+        FROM {$wpdb->prefix}sba_blocked_log
+        GROUP BY ip
+        ON DUPLICATE KEY UPDATE
+            total_blocks = VALUES(total_blocks),
+            last_block_time = VALUES(last_block_time)" );
+
+    if ( $result !== false ) {
+        wp_send_json_success( [ 'message' => __( '历史数据对账完成！', SBA_TEXT_DOMAIN ) ] );
+    } else {
+        wp_send_json_error( __( '对账失败，请检查数据库。', SBA_TEXT_DOMAIN ) );
+    }
+}
+
+// AJAX 解封 IP
+add_action( 'wp_ajax_sba_unban_ip', 'sba_ajax_unban_ip' );
+function sba_ajax_unban_ip() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( __( '权限不足', SBA_TEXT_DOMAIN ) );
+        return;
+    }
+
+    $ip = sanitize_text_field( $_POST['ip'] );
+    $ban_list = get_option( 'sba_permanent_ban_list', [] );
+
+    if ( ( $key = array_search( $ip, $ban_list ) ) !== false ) {
+        unset( $ban_list[$key] );
+        update_option( 'sba_permanent_ban_list', array_values( $ban_list ) );
+        wp_send_json_success( [ 'message' => sprintf( __( 'IP %s 已解除封禁', SBA_TEXT_DOMAIN ), $ip ) ] );
+    } else {
+        wp_send_json_error( __( '未在封禁列表中找到该 IP', SBA_TEXT_DOMAIN ) );
+    }
+}
+
+add_filter( 'plugins_loaded', 'sba_permanent_ban_check' );
+function sba_permanent_ban_check() {
+    $ban_list = get_option( 'sba_permanent_ban_list', [] );
+    $ip = sba_get_ip();
+
+    if ( in_array( $ip, $ban_list ) && ! sba_is_ip_whitelisted( $ip ) ) {
+        status_header( 403 );
+        wp_die( __( '您的 IP 已被永久封禁。如有疑问，请联系管理员。', SBA_TEXT_DOMAIN ), 403 );
+    }
+}
 
 // ==================== iOS 登录辅助函数 ====================
 function sba_ios_check_rate_limit( $ip, $limit = 10 ) {
@@ -1274,6 +1585,7 @@ add_action( 'admin_menu', 'sba_admin_menu' );
 function sba_admin_menu() {
     add_menu_page( __( '全行为审计', SBA_TEXT_DOMAIN ), __( '全行为审计', SBA_TEXT_DOMAIN ), 'manage_options', 'sba_audit', 'sba_audit_dashboard', 'dashicons-shield-alt' );
     add_submenu_page( 'sba_audit', __( '防御设置', SBA_TEXT_DOMAIN ), __( '防御设置', SBA_TEXT_DOMAIN ), 'manage_options', 'sba_settings', 'sba_settings_page' );
+    add_submenu_page( 'sba_audit', __( '威胁排行榜', SBA_TEXT_DOMAIN ), __( '威胁排行榜', SBA_TEXT_DOMAIN ), 'manage_options', 'sba_threat_ranking', 'sba_threat_ranking_page' );
     add_submenu_page( 'sba_audit', __( 'SMTP 邮件', SBA_TEXT_DOMAIN ), __( 'SMTP 邮件', SBA_TEXT_DOMAIN ), 'manage_options', 'sba-smtp', 'sba_smtp_page' );
 }
 add_action( 'admin_init', function() { register_setting( 'sba_settings_group', 'sba_settings' ); } );
@@ -1353,7 +1665,7 @@ function sba_audit_dashboard() {
             <?php endfor; ?>
             </tbody></table></div></div>
         </div>
-        <div class="sba-card"><h3><?php printf( __( '👣 访客轨迹 (%s)', SBA_TEXT_DOMAIN ), $latest_date ); ?></h3><div class="sba-scroll-x"><table class="sba-table sba-track-table"><thead><tr><th class="col-time"><?php _e( '时间', SBA_TEXT_DOMAIN ); ?></th><th class="col-ip"><?php _e( 'IP', SBA_TEXT_DOMAIN ); ?></th><th class="col-geo"><?php _e( '归属地', SBA_TEXT_DOMAIN ); ?></th><th class="col-url"><?php _e( '访问路径', SBA_TEXT_DOMAIN ); ?></th><th class="col-pv"><?php _e( 'PV', SBA_TEXT_DOMAIN ); ?></th></td></thead><tbody id="track-body"></tbody></table></div>
+        <div class="sba-card"><h3><?php printf( __( '👣 访客轨迹 (%s)', SBA_TEXT_DOMAIN ), $latest_date ); ?></h3><div class="sba-scroll-x"><table class="sba-table sba-track-table"><thead><tr><th class="col-time"><?php _e( '时间', SBA_TEXT_DOMAIN ); ?></th><th class="col-ip"><?php _e( 'IP', SBA_TEXT_DOMAIN ); ?></th><th class="col-geo"><?php _e( '归属地', SBA_TEXT_DOMAIN ); ?></th><th class="col-url"><?php _e( '访问路径', SBA_TEXT_DOMAIN ); ?></th><th class="col-pv"><?php _e( 'PV', SBA_TEXT_DOMAIN ); ?></th></tr></thead><tbody id="track-body"></tbody></table></div>
         <div style="margin-top:15px;display:flex;justify-content:space-between;"><div><?php _e( '总记录:', SBA_TEXT_DOMAIN ); ?> <b id="total-rows">0</b></div><div><button id="prev-page" class="button"><?php _e( '◀ 上页', SBA_TEXT_DOMAIN ); ?></button> <?php _e( '第', SBA_TEXT_DOMAIN ); ?> <b id="current-page">1</b> / <b id="total-pages">1</b> <?php _e( '页', SBA_TEXT_DOMAIN ); ?> <button id="next-page" class="button"><?php _e( '下页 ▶', SBA_TEXT_DOMAIN ); ?></button></div></div></div>
         <div class="sba-card" style="border-top:3px solid #d63638;"><h3><?php printf( __( '🚫 拦截日志 (%s)', SBA_TEXT_DOMAIN ), $latest_date ); ?></h3><div class="sba-scroll-x"><table class="sba-table sba-blocked-table"><thead><tr><th><?php _e( '时间', SBA_TEXT_DOMAIN ); ?></th><th><?php _e( '拦截 IP', SBA_TEXT_DOMAIN ); ?></th><th><?php _e( '原因与目标', SBA_TEXT_DOMAIN ); ?></th></tr></thead><tbody id="blocked-log-body"></tbody></table></div>
         <div style="margin-top:15px;display:flex;justify-content:space-between;"><div><?php _e( '总记录:', SBA_TEXT_DOMAIN ); ?> <b id="blocked-total-rows">0</b></div><div><button id="blocked-prev-page" class="button"><?php _e( '◀ 上页', SBA_TEXT_DOMAIN ); ?></button> <?php _e( '第', SBA_TEXT_DOMAIN ); ?> <b id="blocked-current-page">1</b> / <b id="blocked-total-pages">1</b> <?php _e( '页', SBA_TEXT_DOMAIN ); ?> <button id="blocked-next-page" class="button"><?php _e( '下页 ▶', SBA_TEXT_DOMAIN ); ?></button></div></div></div>
@@ -1377,6 +1689,126 @@ function sba_audit_dashboard() {
     document.getElementById('blocked-prev-page').onclick=()=>{if(blockedCurPage>1)loadBlockedLogs(blockedCurPage-1);};
     document.getElementById('blocked-next-page').onclick=()=>{if(blockedCurPage<blockedMaxPages)loadBlockedLogs(blockedCurPage+1);};
     loadBlockedLogs(1);
+    </script>
+    <?php
+}
+
+// ==================== 威胁排行榜页面 ====================
+function sba_threat_ranking_page() {
+    $ban_list = get_option( 'sba_permanent_ban_list', [] );
+    ?>
+    <div class="wrap sba-wrap">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1><?php _e( '🔥 高频威胁排行榜', SBA_TEXT_DOMAIN ); ?></h1>
+            <button id="sba-sync-btn" class="button button-secondary"><?php _e( '🔄 同步历史数据', SBA_TEXT_DOMAIN ); ?></button>
+        </div>
+
+        <div class="sba-card">
+            <h3><?php _e( '实时统计', SBA_TEXT_DOMAIN ); ?></h3>
+            <div class="sba-scroll-x">
+                <table class="sba-table">
+                    <thead>
+                        <tr>
+                            <th><?php _e( '排名', SBA_TEXT_DOMAIN ); ?></th>
+                            <th><?php _e( 'IP 地址', SBA_TEXT_DOMAIN ); ?></th>
+                            <th><?php _e( '拦截次数', SBA_TEXT_DOMAIN ); ?></th>
+                            <th><?php _e( '最后活动', SBA_TEXT_DOMAIN ); ?></th>
+                            <th><?php _e( '操作', SBA_TEXT_DOMAIN ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody id="threat-ranking-body">
+                        <tr><td colspan="5"><?php _e( '加载中...', SBA_TEXT_DOMAIN ); ?></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 简单的分页导航 -->
+            <div style="margin-top:20px; display:flex; gap:10px; align-items:center;">
+                <button id="sba-prev-page" class="button" disabled><?php _e( '◀ 上一页', SBA_TEXT_DOMAIN ); ?></button>
+                <span><?php _e( '第', SBA_TEXT_DOMAIN ); ?> <b id="sba-current-page-num">1</b> <?php _e( '页', SBA_TEXT_DOMAIN ); ?></span>
+                <button id="sba-next-page" class="button" disabled><?php _e( '下一页 ▶', SBA_TEXT_DOMAIN ); ?></button>
+            </div>
+        </div>
+
+        <!-- 永久封禁名单卡片（保持不变） -->
+        <div class="sba-card" style="margin-top:20px; border-top: 3px solid #333;">
+            <h3><?php _e( '🚫 永久封禁名单', SBA_TEXT_DOMAIN ); ?></h3>
+            <?php if ( empty( $ban_list ) ) : ?>
+                <p><?php _e( '暂无手动封禁的 IP。', SBA_TEXT_DOMAIN ); ?></p>
+            <?php else : ?>
+                <div class="sba-scroll-x">
+                    <table class="sba-table">
+                        <thead>
+                            <tr>
+                                <th><?php _e( 'IP 地址', SBA_TEXT_DOMAIN ); ?></th>
+                                <th><?php _e( '操作', SBA_TEXT_DOMAIN ); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ( $ban_list as $ip ) : ?>
+                            <tr>
+                                <td><code><?php echo esc_html( $ip ); ?></code></td>
+                                <td><button class="button sba-unban-ip-btn" data-ip="<?php echo esc_attr( $ip ); ?>"><?php _e( '解除封禁', SBA_TEXT_DOMAIN ); ?></button></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <script>
+    jQuery(document).ready(function($) {
+        var currentPage = 1;
+
+        function loadThreatRanking(page) {
+            $('#threat-ranking-body').css('opacity', '0.5');
+            $.post(ajaxurl, {
+                action: 'sba_get_threat_ranking',
+                page: page
+            }, function(res) {
+                if (res.success) {
+                    $('#threat-ranking-body').html(res.data.html).css('opacity', '1');
+                    currentPage = page;
+                    $('#sba-current-page-num').text(currentPage);
+                    $('#sba-prev-page').prop('disabled', currentPage <= 1);
+                    $('#sba-next-page').prop('disabled', !res.data.has_next);
+                    $('.sba-ban-ip-btn').off('click').click(function() {
+                        handleIpAction($(this).data('ip'), 'sba_ban_ip', '<?php _e( "确定要永久封禁该 IP 吗？", SBA_TEXT_DOMAIN ); ?>');
+                    });
+                }
+            });
+        }
+
+        // 翻页逻辑
+        $('#sba-prev-page').click(function() { if(currentPage > 1) loadThreatRanking(currentPage - 1); });
+        $('#sba-next-page').click(function() { loadThreatRanking(currentPage + 1); });
+
+        function handleIpAction(ip, action, confirmMsg) {
+            if (confirm(confirmMsg + ' ' + ip)) {
+                $.post(ajaxurl, { action: action, ip: ip }, function(res) {
+                    if (res.success) { alert(res.data.message); location.reload(); }
+                    else { alert(res.data); }
+                });
+            }
+        }
+
+        $('#sba-sync-btn').click(function() {
+            var btn = $(this);
+            btn.prop('disabled', true).text('<?php _e( "同步中...", SBA_TEXT_DOMAIN ); ?>');
+            $.post(ajaxurl, { action: 'sba_sync_threat_ranking' }, function(res) {
+                alert(res.data.message || res.data);
+                location.reload();
+            });
+        });
+
+        $('.sba-unban-ip-btn').click(function() {
+            handleIpAction($(this).data('ip'), 'sba_unban_ip', '<?php _e( "确定要解除该 IP 的封禁吗？", SBA_TEXT_DOMAIN ); ?>');
+        });
+
+        loadThreatRanking(1);
+    });
     </script>
     <?php
 }
@@ -1430,8 +1862,8 @@ function sba_settings_page() {
 
 function sba_environment_panel() {
     ?>
-    <div class="sba-card" style="margin-top:20px;"><h3><?php _e( '⚙️ 服务器环境检测', SBA_TEXT_DOMAIN ); ?></h3><table class="widefat" style="width:auto;"><tr><th><?php _e( 'PHP 版本', SBA_TEXT_DOMAIN ); ?></th><td><?php echo PHP_VERSION; ?><td><th>upload_max_filesize</th><td><?php echo ini_get( 'upload_max_filesize' ); ?></td></tr>
-    <tr><th>post_max_size</th><td><?php echo ini_get( 'post_max_size' ); ?><td><th>memory_limit</th><td><?php echo ini_get( 'memory_limit' ); ?></td></tr>
+    <div class="sba-card" style="margin-top:20px;"><h3><?php _e( '⚙️ 服务器环境检测', SBA_TEXT_DOMAIN ); ?></h3><table class="widefat" style="width:auto;"><tr><th><?php _e( 'PHP 版本', SBA_TEXT_DOMAIN ); ?></th><td><?php echo PHP_VERSION; ?></td><th>upload_max_filesize</th><td><?php echo ini_get( 'upload_max_filesize' ); ?></td></tr>
+    <tr><th>post_max_size</th><td><?php echo ini_get( 'post_max_size' ); ?></td><th>memory_limit</th><td><?php echo ini_get( 'memory_limit' ); ?></td></tr>
     <tr><th>max_execution_time</th><td><?php echo ini_get( 'max_execution_time' ); ?> <?php _e( '秒', SBA_TEXT_DOMAIN ); ?></td><th>cURL</th><td><?php echo extension_loaded( 'curl' ) ? '✓' : '✗'; ?></td></tr></table>
     <p class="description"><?php _e( '若需上传大文件（超过 10MB），建议将 <code>upload_max_filesize</code> 和 <code>post_max_size</code> 调至至少 64M。', SBA_TEXT_DOMAIN ); ?></p></div>
     <?php
@@ -1571,7 +2003,7 @@ function sba_smtp_page() {
             <tr><th><label for="from_name"><?php _e( '发件人名称', SBA_TEXT_DOMAIN ); ?></label></th><td><input type="text" id="from_name" name="from_name" value="<?php echo esc_attr( $opts['from_name'] ?? '' ); ?>" class="regular-text" placeholder="<?php _e( '例如：网站名称', SBA_TEXT_DOMAIN ); ?>"></td></tr>
             </table><?php submit_button( __( '保存设置', SBA_TEXT_DOMAIN ), 'primary', 'smtp_save' ); ?>
         </form><hr><h2><?php _e( '测试邮件发送', SBA_TEXT_DOMAIN ); ?></h2>
-        <form method="post"><?php wp_nonce_field( 'sba_smtp_save' ); ?><table class="form-table"><tr><th><label for="test_to"><?php _e( '接收测试邮箱', SBA_TEXT_DOMAIN ); ?></label></th><td><input type="email" id="test_to" name="test_to" class="regular-text" placeholder="your@email.com"></td></tr></tr><?php submit_button( __( '发送测试邮件', SBA_TEXT_DOMAIN ), 'secondary', 'test_email' ); ?></form>
+        <form method="post"><?php wp_nonce_field( 'sba_smtp_save' ); ?><table class="form-table"><tr><th><label for="test_to"><?php _e( '接收测试邮箱', SBA_TEXT_DOMAIN ); ?></label></th><td><input type="email" id="test_to" name="test_to" class="regular-text" placeholder="your@email.com"></td></tr></table><?php submit_button( __( '发送测试邮件', SBA_TEXT_DOMAIN ), 'secondary', 'test_email' ); ?></form>
     </div>
     <?php
 }
@@ -1610,14 +2042,27 @@ add_shortcode( 'sba_stats', function() {
 add_filter( 'widget_text', 'do_shortcode' );
 add_action( 'wp_logout', function() { wp_redirect( home_url() ); exit; } );
 
-// ==================== SSRF 防御 ====================
+// ==================== SSRF 防御（增强协议白名单） ====================
 add_filter( 'pre_http_request', 'sba_outbound_ssrf_filter', 10, 3 );
 function sba_outbound_ssrf_filter( $preempt, $args, $url ) {
     $parts = parse_url( $url );
-    if ( empty( $parts['host'] ) || ! in_array( $parts['scheme'] ?? '', [ 'http', 'https' ] ) ) return $preempt;
-    $ips = sba_get_dns_records( $parts['host'] );
+    $scheme = strtolower( $parts['scheme'] ?? '' );
+    $host = strtolower( $parts['host'] ?? '' );
+
+    if ( empty( $host ) || $host === 'localhost' || $host === '127.0.0.1' || $host === '::1' ) {
+        return $preempt;
+    }
+
+    // 协议白名单：仅允许 http 和 https
+    if ( ! in_array( $scheme, [ 'http', 'https' ] ) ) {
+        sba_ssrf_log_and_block( "非法协议: $scheme", $url );
+        return new WP_Error( 'sba_ssrf_blocked', '🛡️ SBA 系统安全限制：仅允许 HTTP/HTTPS 协议。' );
+    }
+
+    $ips = sba_get_dns_records( $host );
     $whitelist = array_filter( array_map( 'trim', explode( "\n", sba_get_option( 'outbound_whitelist', '' ) ) ) );
     $blacklist = array_merge( [ '127.0.0.0/8', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '169.254.169.254', '::1', 'fc00::/7', 'fe80::/10', '0.0.0.0' ], array_filter( array_map( 'trim', explode( ',', sba_get_option( 'ssrf_blacklist', '' ) ) ) ) );
+
     foreach ( $ips as $ip ) {
         if ( sba_ip_in_cidr_list( $ip, $whitelist ) ) continue;
         if ( sba_ip_in_cidr_list( $ip, $blacklist ) ) {
@@ -1625,6 +2070,7 @@ function sba_outbound_ssrf_filter( $preempt, $args, $url ) {
             return new WP_Error( 'sba_ssrf_blocked', '🛡️ SBA 系统安全限制：禁止访问内部网络资源。' );
         }
     }
+
     if ( sba_get_option( 'ssrf_prevent_dns_rebind', 1 ) ) {
         static $depth = 0;
         if ( $depth < 2 ) {
@@ -1676,7 +2122,16 @@ function sba_ip_in_cidr_list( $ip, $list ) {
 }
 function sba_ssrf_log_and_block( $reason, $url ) {
     global $wpdb;
-    $wpdb->insert( $wpdb->prefix . 'sba_blocked_log', [ 'ip' => sba_get_ip(), 'reason' => 'SSRF: ' . $reason, 'target_url' => $url ] );
+    $ip = sba_get_ip();
+    $wpdb->insert( $wpdb->prefix . 'sba_blocked_log', [ 'ip' => $ip, 'reason' => 'SSRF: ' . $reason, 'target_url' => $url ] );
+
+    $wpdb->query( $wpdb->prepare(
+        "INSERT INTO {$wpdb->prefix}sba_threat_summary (ip, total_blocks, last_block_time)
+         VALUES (%s, 1, NOW())
+         ON DUPLICATE KEY UPDATE total_blocks = total_blocks + 1, last_block_time = NOW()",
+        $ip
+    ) );
+
     sba_inc_blocked();
-    error_log( "[SBA SSRF Blocked] $reason | URL: $url | Requester IP: " . sba_get_ip() );
+    error_log( "[SBA SSRF Blocked] $reason | URL: $url | Requester IP: " . $ip );
 }
