@@ -2,7 +2,7 @@
 /**
  * Plugin Name: 综合安全套件 (Site Behavior Auditor + Login Box + SMTP)
  * Description: 集成站点全行为审计、iOS风格登录/注册/忘记密码面板。3.0终极性能版：10分钟写入锁+全局读快照+自动对账。
- * Version: 3.0.0
+ * Version: 3.0.1
  * Author: Stone
  * Text Domain: site-behavior-auditor
  */
@@ -10,7 +10,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // ==================== 常量定义 ====================
-define( 'SBA_VERSION', '3.0.0' );
+define( 'SBA_VERSION', '3.0.1' );
 define( 'SBA_TEXT_DOMAIN', 'site-behavior-auditor' );
 define( 'SBA_IP_DATA_DIR', WP_CONTENT_DIR . '/uploads/sba_ip_data/' );
 define( 'SBA_IP_V4_FILE', SBA_IP_DATA_DIR . 'ip2region_v4.xdb' );
@@ -18,16 +18,12 @@ define( 'SBA_IP_V6_FILE', SBA_IP_DATA_DIR . 'ip2region_v6.xdb' );
 define( 'SBA_CHUNK_SIZE_INITIAL', 2 * 1024 * 1024 );
 define( 'SBA_MIN_CHUNK_SIZE', 512 * 1024 );
 define( 'SBA_MAX_CHUNK_SIZE', 10 * 1024 * 1024 );
-
-// 计数器前缀（autoload = no）
 define( 'SBA_PREFIX_PV', 'sba_counter_pv_today_' );
 define( 'SBA_PREFIX_UV', 'sba_counter_uv_today_' );
 define( 'SBA_PREFIX_BLOCKED', 'sba_counter_blocked_today_' );
-
-// 性能控制常量
-define( 'SBA_WRITE_LOCK_TTL', 600 );      // 10分钟写保护
-define( 'SBA_READ_CACHE_TTL', 600 );      // 10分钟读缓存
-define( 'SBA_CALIBRATE_TTL', 3600 );      // 1小时自动校准
+define( 'SBA_WRITE_LOCK_TTL', 600 );
+define( 'SBA_READ_CACHE_TTL', 600 );
+define( 'SBA_CALIBRATE_TTL', 3600 );
 
 // ==================== 初始化 ====================
 add_action( 'plugins_loaded', 'sba_load_textdomain' );
@@ -50,7 +46,7 @@ function sba_official_lib_missing_notice() {
          ' <code>' . plugin_dir_path( __FILE__ ) . 'lib/ip2region/xdb/Searcher.class.php</code>。</p></div>';
 }
 
-// ==================== 数据库安装（增加索引优化） ====================
+// ==================== 数据库安装 ====================
 register_activation_hook( __FILE__, 'sba_install' );
 function sba_install() {
     if ( ! file_exists( SBA_IP_DATA_DIR ) ) wp_mkdir_p( SBA_IP_DATA_DIR );
@@ -90,7 +86,6 @@ function sba_install() {
         delete_option( 'sba_geo_v1' );
     }
 
-    // 默认设置
     $defaults = [
         'auto_block_limit' => '60', 'login_slug' => '', 'evil_paths' => '',
         'block_target_url' => '', 'user_whitelist' => '', 'ip_whitelist' => '',
@@ -115,26 +110,45 @@ function sba_install() {
     update_option( 'sba_version', SBA_VERSION );
     if ( ! wp_next_scheduled( 'sba_daily_cleanup' ) ) wp_schedule_event( time(), 'daily', 'sba_daily_cleanup' );
 
-    // 初始化今日计数器（确保存在）
     $today = current_time('Y-m-d');
     foreach ( [ SBA_PREFIX_UV, SBA_PREFIX_PV, SBA_PREFIX_BLOCKED ] as $p ) {
         if ( get_option( $p . $today ) === false ) update_option( $p . $today, 0, false );
     }
 }
+register_deactivation_hook( __FILE__, 'sba_on_deactivation' );
+function sba_on_deactivation() {
+    $today = current_time( 'Y-m-d' );
+    sba_flush_pv_buffer( $today );
+    delete_transient( 'sba_pv_flush_lock_' . $today );
+    wp_clear_scheduled_hook( 'sba_daily_cleanup' );
+}
 
 add_action( 'sba_daily_cleanup', 'sba_cleanup_old_data' );
 function sba_cleanup_old_data() {
     global $wpdb;
+
     $wpdb->query( "DELETE FROM {$wpdb->prefix}dis_stats WHERE visit_date < DATE_SUB(NOW(), INTERVAL 30 DAY)" );
     $wpdb->query( "DELETE FROM {$wpdb->prefix}sba_blocked_log WHERE block_time < DATE_SUB(NOW(), INTERVAL 7 DAY)" );
     $wpdb->query( "DELETE FROM {$wpdb->prefix}sba_login_failures WHERE last_failed_time < DATE_SUB(NOW(), INTERVAL 30 DAY)" );
 
-    for ( $i = 7; $i < 30; $i++ ) {
-        $old = date( 'Y-m-d', strtotime( "-$i days" ) );
-        delete_option( SBA_PREFIX_PV . $old );
-        delete_option( SBA_PREFIX_UV . $old );
-        delete_option( SBA_PREFIX_BLOCKED . $old );
+    for ( $i = 31; $i <= 60; $i++ ) {
+        $old_date = date( 'Y-m-d', strtotime( "-$i days" ) );
+        delete_option( SBA_PREFIX_PV . $old_date );
+        delete_option( SBA_PREFIX_UV . $old_date );
+        delete_option( SBA_PREFIX_BLOCKED . $old_date );
     }
+
+    if ( date( 'j' ) == 1 ) {
+        $tables_to_optimize = [
+            "{$wpdb->prefix}dis_stats",
+            "{$wpdb->prefix}sba_blocked_log",
+            "{$wpdb->prefix}sba_login_failures"
+        ];
+        foreach ( $tables_to_optimize as $table ) {
+            $wpdb->query( "OPTIMIZE TABLE $table" );
+        }
+    }
+
     sba_clear_trend_cache();
 }
 
@@ -229,9 +243,6 @@ function sba_output_honeypot_links() {
 }
 
 // ==================== 高性能计数器引擎（3.0 核心） ====================
-/**
- * 原子增加计数器（直接执行 SQL，避免读-改-写竞争）
- */
 function sba_atomic_increment( $prefix ) {
     $today = current_time( 'Y-m-d' );
     $key = $prefix . $today;
@@ -246,71 +257,89 @@ function sba_atomic_increment( $prefix ) {
     return true;
 }
 
-/**
- * 获取计数器（带 10 分钟读缓存 + 1 小时自动校准 + 强制刷新）
- */
 function sba_get_counter( $prefix, $date = null ) {
     $date = $date ?: current_time( 'Y-m-d' );
     $opt_key = $prefix . $date;
 
-    // 强制刷新（Ctrl+F5）穿透所有缓存
     $is_force = isset( $_SERVER['HTTP_CACHE_CONTROL'] ) && $_SERVER['HTTP_CACHE_CONTROL'] === 'no-cache';
 
-    // 1. 尝试读取全局读快照（10分钟）
+    if ( $is_force && $prefix === SBA_PREFIX_PV ) {
+        sba_flush_pv_buffer( $date );
+    }
+
     if ( ! $is_force ) {
         $snapshot_key = 'sba_read_snapshot_' . $opt_key;
         $cached = get_transient( $snapshot_key );
         if ( $cached !== false ) return (int) $cached;
     }
 
-    // 2. 读取当前 option 值
-    $val = get_option( $opt_key );
-    if ( $is_force ) $val = false; // 强制刷新时强迫回源
+    global $wpdb;
+    $real = 0;
+    if ( $prefix === SBA_PREFIX_UV ) {
+        $real = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s", $date ) );
+    } elseif ( $prefix === SBA_PREFIX_PV ) {
+        $db_val = (int) get_option( $opt_key, 0 );
+        $buffer_val = (int) get_transient( 'sba_pv_buffer_' . $date );
+        $real = $db_val + $buffer_val;
+    } elseif ( $prefix === SBA_PREFIX_BLOCKED ) {
+        $real = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}sba_blocked_log WHERE DATE(block_time) = %s", $date ) );
+    }
 
-    // 3. 每小时自动校准（使用校准锁）或 强制刷新时强制校准
-    $calibrate_key = 'sba_calibrate_lock_' . $opt_key;
-    $need_calibrate = $is_force || ( $val === false ) || ( get_transient( $calibrate_key ) === false );
-
-    if ( $need_calibrate ) {
-        global $wpdb;
-        if ( $prefix === SBA_PREFIX_UV ) {
-            $real = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s", $date ) );
-        } elseif ( $prefix === SBA_PREFIX_PV ) {
-            $real = (int) $wpdb->get_var( $wpdb->prepare( "SELECT SUM(pv) FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s", $date ) );
-        } elseif ( $prefix === SBA_PREFIX_BLOCKED ) {
-            $real = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}sba_blocked_log WHERE DATE(block_time) = %s", $date ) );
-        } else {
-            $real = 0;
-        }
-        // 更新 option 并设置 1 小时校准锁
+    if ( $prefix !== SBA_PREFIX_PV ) {
         update_option( $opt_key, $real, false );
-        set_transient( $calibrate_key, '1', SBA_CALIBRATE_TTL );
-        $val = $real;
     }
 
-    // 4. 写入读快照缓存（10分钟），仅非强制刷新时
-    if ( ! $is_force && $val !== false ) {
-        set_transient( $snapshot_key, (int) $val, SBA_READ_CACHE_TTL );
-    }
-
-    return (int) $val;
+    set_transient( $snapshot_key, $real, SBA_READ_CACHE_TTL );
+    return $real;
 }
 
-function sba_inc_pv() { return sba_atomic_increment( SBA_PREFIX_PV ); }
+function sba_inc_pv() {
+    $today = current_time( 'Y-m-d' );
+    $buffer_key = 'sba_pv_buffer_' . $today;
+    $flush_lock = 'sba_pv_flush_lock_' . $today;
+
+    $count = get_transient( $buffer_key );
+    if ( $count === false ) {
+        set_transient( $buffer_key, 1, HOUR_IN_SECONDS );
+    } else {
+        set_transient( $buffer_key, (int) $count + 1, HOUR_IN_SECONDS );
+    }
+
+    if ( get_transient( $flush_lock ) === false ) {
+        sba_flush_pv_buffer( $today );
+        set_transient( $flush_lock, '1', 600 );
+    }
+}
+
+function sba_flush_pv_buffer( $date ) {
+    $buffer_key = 'sba_pv_buffer_' . $date;
+    $buffer_value = (int) get_transient( $buffer_key );
+    if ( $buffer_value <= 0 ) {
+        return;
+    }
+
+    global $wpdb;
+    $opt_key = SBA_PREFIX_PV . $date;
+
+    $wpdb->query( $wpdb->prepare(
+        "INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')
+         ON DUPLICATE KEY UPDATE option_value = CAST(option_value AS UNSIGNED) + %d",
+        $opt_key, (string) $buffer_value, $buffer_value
+    ) );
+
+    delete_transient( $buffer_key );
+    delete_transient( 'sba_read_snapshot_' . $opt_key );
+}
+
 function sba_inc_uv() { return sba_atomic_increment( SBA_PREFIX_UV ); }
 function sba_inc_blocked() { return sba_atomic_increment( SBA_PREFIX_BLOCKED ); }
 function sba_get_pv( $d=null ) { return sba_get_counter( SBA_PREFIX_PV, $d ); }
 function sba_get_uv( $d=null ) { return sba_get_counter( SBA_PREFIX_UV, $d ); }
 function sba_get_blocked( $d=null ) { return sba_get_counter( SBA_PREFIX_BLOCKED, $d ); }
-
-// 兼容旧函数名
 function sba_get_pv_counter( $d=null ) { return sba_get_pv( $d ); }
 function sba_get_uv_counter( $d=null ) { return sba_get_uv( $d ); }
 function sba_get_blocked_counter( $d=null ) { return sba_get_blocked( $d ); }
 
-/**
- * 趋势图：纯 Options 循环 + 整体缓存 10 分钟
- */
 function sba_get_trend_data( $days = 30 ) {
     $cache_key = 'sba_trend_v3_' . $days;
     $cached = get_transient( $cache_key );
@@ -333,7 +362,7 @@ function sba_clear_trend_cache() {
     foreach ( [7, 14, 30, 50] as $d ) delete_transient( 'sba_trend_v3_' . $d );
 }
 
-// ==================== 核心拦截与统计（plugins_loaded 提前触发） ====================
+// ==================== 核心拦截与统计 ====================
 add_action( 'plugins_loaded', 'sba_early_init', 0 );
 function sba_early_init() {
     if ( is_admin() ) return;
@@ -476,13 +505,11 @@ function sba_early_init() {
         }
     }
 
-    // ==================== 3.0 核心统计：10分钟写保护 + 原子增加 ====================
+    // ==================== 核心统计====================
+    sba_inc_pv();
+
     $write_lock_key = 'sba_write_lock_' . $ip . '_' . $date;
     if ( get_transient( $write_lock_key ) === false ) {
-        // PV 永远 +1（原子操作）
-        sba_inc_pv();
-
-        // UV 判定：使用 Cookie + 独立 transient
         $uv_cookie = 'sba_uv_' . str_replace('-', '', $date);
         $uv_transient = 'sba_uv_ip_' . md5( $ip . '_' . $date );
         if ( ! isset( $_COOKIE[ $uv_cookie ] ) && get_transient( $uv_transient ) === false ) {
@@ -491,7 +518,6 @@ function sba_early_init() {
             setcookie( $uv_cookie, '1', strtotime( 'tomorrow', current_time( 'timestamp' ) ), COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
         }
 
-        // 异步写入 dis_stats 作为底片
         $wpdb->query( $wpdb->prepare(
             "INSERT INTO {$wpdb->prefix}dis_stats (ip, url, visit_date, visit_hour, pv, last_visit)
              VALUES (%s, %s, %s, %d, 1, %s)
@@ -499,10 +525,8 @@ function sba_early_init() {
             $ip, $_SERVER['REQUEST_URI'], $date, $hour, $now, $now
         ) );
 
-        // 设置写保护锁（10分钟）
         set_transient( $write_lock_key, '1', SBA_WRITE_LOCK_TTL );
     }
-    // 写保护期内完全静默，不进行任何写操作
 }
 
 // ==================== REST API 安全 ====================
@@ -1218,7 +1242,6 @@ add_action( 'admin_init', function() { register_setting( 'sba_settings_group', '
 function sba_audit_dashboard() {
     global $wpdb;
     $latest_date = $wpdb->get_var( "SELECT MAX(visit_date) FROM {$wpdb->prefix}dis_stats" ) ?: current_time( 'Y-m-d' );
-    // 同步计数器（保留原有同步逻辑，但已由 get_counter 自愈，此处仅作额外保障）
     $cache_key = 'sba_sync_lock_' . $latest_date;
     if ( false === get_transient( $cache_key ) ) {
         $real_stats = $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(DISTINCT ip) as real_uv, SUM(pv) as real_pv FROM {$wpdb->prefix}dis_stats WHERE visit_date = %s", $latest_date ) );
@@ -1230,7 +1253,6 @@ function sba_audit_dashboard() {
     }
     $online = $wpdb->get_var( "SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE last_visit > DATE_SUB(NOW(), INTERVAL 5 MINUTE)" ) ?: 0;
     $trend = sba_get_trend_data( 30 );
-    // 获取50天审计数据（直接从 dis_stats 读取，不影响性能，因为只读一次）
     $history_50 = $wpdb->get_results( "SELECT visit_date, COUNT(DISTINCT ip) as uv, SUM(pv) as pv FROM {$wpdb->prefix}dis_stats GROUP BY visit_date ORDER BY visit_date DESC LIMIT 50", OBJECT_K );
     $history_blocked = $wpdb->get_results( "SELECT DATE(block_time) as d, COUNT(*) as c FROM {$wpdb->prefix}sba_blocked_log GROUP BY d ORDER BY d DESC LIMIT 50", OBJECT_K );
     $end_ts = strtotime( $latest_date );
