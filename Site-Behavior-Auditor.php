@@ -513,7 +513,7 @@ function sba_clear_trend_cache() {
     foreach ( [7, 14, 30, 50] as $d ) delete_transient( 'sba_trend_v4_' . $d );
 }
 
-// ==================== IP 掩码函数（访客轨迹隐私保护） ====================
+// ==================== IP 掩码函数 ====================
 function sba_mask_ip( $ip ) {
     if ( current_user_can( 'manage_options' ) || sba_is_user_whitelisted() ) {
         return $ip;
@@ -537,38 +537,41 @@ function sba_mask_ip( $ip ) {
 // ==================== 核心拦截与统计 ====================
 add_action( 'plugins_loaded', 'sba_early_init', 0 );
 function sba_early_init() {
-    // 1. 基础排除逻辑
     if ( is_admin() ) return;
     if ( isset( $_GET['action'] ) && $_GET['action'] === 'logout' ) return;
     if ( defined( 'DOING_AJAX' ) && DOING_AJAX && strpos( $_POST['action'] ?? '', 'sba_ios_' ) === 0 ) return;
 
     $ip = sba_get_ip();
-    $now = current_time( 'mysql' );
-    $date = substr( $now, 0, 10 );
-    $hour = (int) substr( $now, 11, 2 );
-    $uri = strtolower( $_SERVER['REQUEST_URI'] );
-    global $wpdb;
+    $is_internal = ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE );
 
-    // ==================== 第一步：核心统计（先记账，拦截不丢数） ====================
-    sba_inc_pv();
-    if ( ! defined( 'SBA_TRACKED' ) ) define( 'SBA_TRACKED', true );
-    $write_lock_key = 'sba_write_lock_' . $ip . '_' . $date;
-    if ( get_transient( $write_lock_key ) === false ) {
-        $uv_cookie = 'sba_uv_' . str_replace('-', '', $date);
-        $uv_transient = 'sba_uv_ip_' . md5( $ip . '_' . $date );
-        if ( ! isset( $_COOKIE[ $uv_cookie ] ) && get_transient( $uv_transient ) === false ) {
-            sba_inc_uv();
-            set_transient( $uv_transient, '1', DAY_IN_SECONDS );
-            setcookie( $uv_cookie, '1', strtotime( 'tomorrow', current_time( 'timestamp' ) ), COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+    // ==================== 第一步：核心统计 ====================
+    if ( ! $is_internal ) {
+        sba_inc_pv();
+        if ( ! defined( 'SBA_TRACKED' ) ) define( 'SBA_TRACKED', true );
+
+        $now = current_time( 'mysql' );
+        $date = substr( $now, 0, 10 );
+        $hour = (int) substr( $now, 11, 2 );
+        global $wpdb;
+
+        $write_lock_key = 'sba_write_lock_' . $ip . '_' . $date;
+        if ( get_transient( $write_lock_key ) === false ) {
+            $uv_cookie = 'sba_uv_' . str_replace('-', '', $date);
+            $uv_transient = 'sba_uv_ip_' . md5( $ip . '_' . $date );
+            if ( ! isset( $_COOKIE[ $uv_cookie ] ) && get_transient( $uv_transient ) === false ) {
+                sba_inc_uv();
+                set_transient( $uv_transient, '1', DAY_IN_SECONDS );
+                setcookie( $uv_cookie, '1', strtotime( 'tomorrow', current_time( 'timestamp' ) ), COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+            }
+
+            $wpdb->query( $wpdb->prepare(
+                "INSERT INTO {$wpdb->prefix}dis_stats (ip, url, visit_date, visit_hour, pv, last_visit)
+                 VALUES (%s, %s, %s, %d, 1, %s)
+                 ON DUPLICATE KEY UPDATE pv = pv + 1, last_visit = %s",
+                $ip, $_SERVER['REQUEST_URI'], $date, $hour, $now, $now
+            ) );
+            set_transient( $write_lock_key, '1', SBA_WRITE_LOCK_TTL );
         }
-
-        $wpdb->query( $wpdb->prepare(
-            "INSERT INTO {$wpdb->prefix}dis_stats (ip, url, visit_date, visit_hour, pv, last_visit)
-             VALUES (%s, %s, %s, %d, 1, %s)
-             ON DUPLICATE KEY UPDATE pv = pv + 1, last_visit = %s",
-            $ip, $_SERVER['REQUEST_URI'], $date, $hour, $now, $now
-        ) );
-        set_transient( $write_lock_key, '1', SBA_WRITE_LOCK_TTL );
     }
 
     // ==================== 第二步：安全校验与执行拦截（抓捕阶段） ====================
@@ -595,14 +598,13 @@ function sba_early_init() {
         }
     }
 
-    // 2.3 【关键修复】：带参数清洗的登录动作放行 (防止利用 action=lostpassword 在首页绕过 WAF)
+    // 2.3 带参数清洗的登录动作放行
     $allowed_actions = [ 'register', 'lostpassword', 'retrievepassword', 'rp', 'resetpass', 'postpass', 'checkemail' ];
     $current_action = $_REQUEST['action'] ?? '';
 
     if ( in_array( $current_action, $allowed_actions ) ) {
         $query_string = $_SERVER['QUERY_STRING'] ?? '';
         if ( ! empty( $query_string ) ) {
-            // 如果在执行这些动作时，带了不该出现的参数（如 &gshstadmin 或 template=）
             if ( preg_match( '/(template|theme|paged|setup)=/i', $query_string ) ||
                  preg_match( '/&[^=]+(&|$)/', '&' . $query_string ) ) {
                 if ( ! isset( $_GET['reauth'] ) ) {
@@ -610,7 +612,6 @@ function sba_early_init() {
                 }
             }
         }
-        // 如果是访问真正的登录页且参数纯净，才放行
         if ( strpos( $uri, 'wp-login.php' ) !== false || strpos( $uri, 'wp-signup.php' ) !== false ) {
             return;
         }
@@ -1774,7 +1775,7 @@ function sba_threat_ranking_page() {
             </div>
         </div>
 
-        <!-- 永久封禁名单卡片（保持不变） -->
+        <!-- 永久封禁名单卡片 -->
         <div class="sba-card" style="margin-top:20px; border-top: 3px solid #333;">
             <h3><?php _e( '🚫 永久封禁名单', SBA_TEXT_DOMAIN ); ?></h3>
             <?php if ( empty( $ban_list ) ) : ?>
@@ -2086,7 +2087,7 @@ add_shortcode( 'sba_stats', function() {
 add_filter( 'widget_text', 'do_shortcode' );
 add_action( 'wp_logout', function() { wp_redirect( home_url() ); exit; } );
 
-// ==================== SSRF 防御（增强协议白名单） ====================
+// ==================== SSRF 防御 ====================
 add_filter( 'pre_http_request', 'sba_outbound_ssrf_filter', 10, 3 );
 function sba_outbound_ssrf_filter( $preempt, $args, $url ) {
     $parts = parse_url( $url );
