@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: 综合安全套件 (Site Behavior Auditor + Login Box + SMTP)
- * Description: 集成站点全行为审计、iOS风格登录/注册/忘记密码面板。4.0终极版：安全加固+威胁排行榜+百万级性能优化
- * Version: 4.0.2
+ * Description: 集成站点全行为审计、iOS风格登录/注册/忘记密码面板。
+ * Version: 4.0.3
  * Author: Stone
  * Text Domain: site-behavior-auditor
  */
@@ -342,10 +342,15 @@ function sba_check_rate_limit( $ip, $limit ) {
 
 // ==================== 拦截逻辑增强（含汇总表） ====================
 function sba_execute_block( $reason ) {
-    if ( sba_is_user_whitelisted() || sba_is_ip_whitelisted() ) return;
-    global $wpdb;
     $ip = sba_get_ip();
 
+    if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+        return;
+    }
+
+    if ( sba_is_user_whitelisted() || sba_is_ip_whitelisted( $ip ) ) return;
+
+    global $wpdb;
     $wpdb->insert( $wpdb->prefix . 'sba_blocked_log', [
         'ip' => $ip, 'reason' => $reason, 'target_url' => $_SERVER['REQUEST_URI']
     ] );
@@ -359,7 +364,11 @@ function sba_execute_block( $reason ) {
 
     sba_inc_blocked();
     $url = sba_get_option( 'block_target_url', '' );
-    if ( ! empty( $url ) && filter_var( $url, FILTER_VALIDATE_URL ) ) { wp_redirect( $url ); exit; }
+    if ( ! empty( $url ) && filter_var( $url, FILTER_VALIDATE_URL ) ) {
+        wp_redirect( $url );
+        exit;
+    }
+
     wp_die( "🛡️ SBA 拦截：$reason", __( 'Security Block', SBA_TEXT_DOMAIN ), 403 );
 }
 
@@ -586,15 +595,14 @@ function sba_early_init() {
         }
     }
 
-    // 2.3 带参数清洗的登录动作放行
+    // 2.3 【关键修复】：带参数清洗的登录动作放行 (防止利用 action=lostpassword 在首页绕过 WAF)
     $allowed_actions = [ 'register', 'lostpassword', 'retrievepassword', 'rp', 'resetpass', 'postpass', 'checkemail' ];
     $current_action = $_REQUEST['action'] ?? '';
 
-    if ( ( strpos( $uri, 'wp-login.php' ) !== false || strpos( $uri, 'wp-signup.php' ) !== false ) &&
-         in_array( $current_action, $allowed_actions ) ) {
-
+    if ( in_array( $current_action, $allowed_actions ) ) {
         $query_string = $_SERVER['QUERY_STRING'] ?? '';
         if ( ! empty( $query_string ) ) {
+            // 如果在执行这些动作时，带了不该出现的参数（如 &gshstadmin 或 template=）
             if ( preg_match( '/(template|theme|paged|setup)=/i', $query_string ) ||
                  preg_match( '/&[^=]+(&|$)/', '&' . $query_string ) ) {
                 if ( ! isset( $_GET['reauth'] ) ) {
@@ -602,7 +610,10 @@ function sba_early_init() {
                 }
             }
         }
-        return;
+        // 如果是访问真正的登录页且参数纯净，才放行
+        if ( strpos( $uri, 'wp-login.php' ) !== false || strpos( $uri, 'wp-signup.php' ) !== false ) {
+            return;
+        }
     }
 
     // 2.4 自动化扫描器检测
