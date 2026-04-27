@@ -1,4 +1,4 @@
-# SBA 综合安全运维引擎 (v4.0.3) 🛡️
+# SBA 综合安全运维引擎 (v4.0.6) 🛡️
 
 [简体中文](#-简体中文) | [English](#-english)
 
@@ -8,83 +8,65 @@
 
 **SBA (Site Behavior Auditor)** 是一款专为 WordPress 深度定制的高性能、全链路安全加固与审计套件。
 
-不同于传统的统计插件，SBA 采用了 **“计算下沉”** 与 **“异步写回”** 架构，将安全拦截、指纹抹除、出站防御、行为审计与高性能统计完美集成于一个 300KB 的轻量化核心中，旨在日均百万级流量环境下实现“零感运行”。
+v4.0.6 版本实现了 **“攻击面清零”** 战略：通过弃用传统的 Gate 钥匙，转而将 `wp-login.php` 与 `wp-admin` 进行物理级封锁。所有身份鉴权逻辑均收缩至前端 AJAX 容器中，彻底根治了高并发与强缓存环境下的登录冲突及崩溃隐患。
 
 ### 💎 核心功能模块解析
 
-#### 1. 📊 全维度行为审计系统 (Behavioral Auditing)
-*   **实时轨迹追踪**：毫秒级记录访客 IP、地理位置（基于 ip2region xdb 内存镜像）、设备指纹及详细访问路径。
-*   **增量汇总排行榜**：独创威胁统计表，自动从海量日志中提取高频攻击者，无需扫表即可秒级查看「头号公敌」。
-*   **隐私保护脱敏**：在展示访客轨迹时自动对 IP 进行掩码处理（如 `122.67.***.***`），兼顾管理审计与隐私合规。
-*   **高性能分页引擎**：采用流式分页（Stream Pagination）技术，彻底杜绝大数据量下翻页卡顿。
+#### 1. 🚫 入口物理封锁 (Entrance Sequestration)
+*   **正门焊死**：直接拦截所有未登录用户对 `wp-login.php` 和 `wp-admin` 的访问，从物理层阻断暴力破解与漏洞探测。
+*   **身份感知重定向**：已登录用户访问登录页将自动、丝滑地重定向至后台，杜绝 Fatal Error 产生。
+*   **唯一安全入口**：强制所有登录、注册、找回密码行为通过 `[sba_login_box]` 渲染的前台 iOS 风格面板进行。
 
-#### 2. 🛡️ 静态加固与指纹抹除 (System Hardening)
-*   **隐身模式**：自动移除 WordPress 版本号、资源链接后的 `ver` 变量、以及后端 PHP 的 `X-Powered-By` 标签，消除黑客侦察指纹。
-*   **安全响应头注入**：一键注入 HSTS、X-Frame-Options (防点击劫持)、X-Content-Type-Options (防嗅探) 等五大安全头，提升全站安全评分。
-*   **接口与目录锁**：阻断非登录用户探测 REST API 根目录及插件列表；物理隔离 `.env`、`.sql`、`.bak` 等敏感后缀的访问。
+#### 2. 📊 全维度行为审计系统 (Behavioral Auditing)
+*   **审计豁免锁**：自动识别内网 IP（如 Nginx 容器的 `172.20.0.7`），不计入 PV/UV 及轨迹，保持审计报表绝对纯净。
+*   **增量汇总排行**：基于汇总表架构，秒级聚合百万级拦截数据，直观展示高频攻击者。
+*   **隐私保护脱敏**：访客轨迹 IP 自动执行掩码处理（如 `122.67.***.***`），兼顾审计需求与隐私合规。
 
-#### 3. 🔒 双向流量过滤网关 (WAF & SSRF)
-*   **入站防御**：集成 CC 阶梯限流、智能蜜罐陷阱（Honeypot）、自动化扫描器识别及 Gate 钥匙级后台隐藏。
-*   **出站安全 (SSRF)**：强制执行协议白名单（仅 HTTP/HTTPS），阻断服务器被利用探测内网 IP 或访问危险协议（Gopher/File）。
-*   **智能 Loopback**：自动识别并放行内部通讯（如 WP-Cron），确保系统调度与更新功能在严苛策略下依然正常运行。
+#### 3. 🛡️ 静态加固与 WAF 防御 (System Hardening)
+*   **全域参数清洗**：即使利用 `action=lostpassword` 等合法动作作为掩护，任何携带非法参数（如模板切换、无值探测键）的请求都将被即刻拦截。
+*   **指纹全面抹除**：移除 WordPress 版本、脚本 `ver` 参数及 `X-Powered-By` 头，实现全站“深度隐身”。
+*   **安全头注入**：自动强制开启 HSTS、X-Frame-Options、X-Content-Type-Options 等五大安全头。
 
 #### 4. 🚀 工业级写缓冲架构 (High Performance)
-*   **Write-Back 引擎**：PV 统计先进入内存缓冲区，每 10-20 分钟合并写回数据库。**数据库写入压力降低 99% 以上**。
-*   **防刷签名校验**：异步统计接口引入“动态时间戳签名”，防止黑客利用统计接口进行反向 DDoS。
+*   **Write-Back 引擎**：PV 统计采用内存级缓冲，每 10-20 分钟合并写回，数据库写入压力降低 99% 以上。
+*   **安全心跳 Token**：异步统计接口引入“双时段动态签名”，解决跨点统计丢失并防御恶意刷量。
 
 ---
 
 ### 📖 快速配置指南
 
 #### 第一步：部署与初始化
-1.  将插件上传并启用。
-2.  **IP 数据准备**：前往「防御设置」底部，通过分片上传组件上传 `ip2region_v4.xdb` 文件。
+1.  将插件上传至 `/wp-content/plugins/` 并启用。
+2.  **IP 数据准备**：在「防御设置」底部上传 `ip2region_v4.xdb` 文件以启用精准归属地解析。
 
-#### 第二步：信任来源配置 (关键)
-*   若您的站点使用了 **Cloudflare**：在 IP 信任来源中选 `Cloudflare (CF_IP)`。
-*   若您使用了 **Nginx 反向代理**：选 `Nginx 转发 (REAL_IP)`。
-*   *验证方法*：看仪表盘显示的 IP 是否为您本人的真实公网 IP。
+#### 第二步：创建唯一入口 (关键)
+1.  新建一个 WordPress 页面（页面地址建议设为私密，如 `/safe-entry`）。
+2.  在页面内容中填入短代码：`[sba_login_box]`。
+3.  **从此以后，这是您和用户登录网站的唯一合法入口。**
 
-#### 第三步：开启「AJAX 统计补丁」
-*   **判断条件**：开启无痕窗口访问首页，若后台「访客轨迹」没实时增加记录，说明 PHP 被静态缓存（如 WP Rocket）拦截，此时**必须开启**此开关以确保统计准确。
-
-#### 第四步：设置「Gate 钥匙」
-*   填入一个私密字符串（如 `mystone`），保存后，您的登录地址将变为 `wp-login.php?gate=mystone`。直接访问原登录页将返回 403。
+#### 第三步：信任来源与统计补丁
+*   若在仪表盘看到的 IP 是 `127.0.0.1`：请在「IP 信任来源」中切换至 `Nginx 转发` 或 `Cloudflare`。
+*   若使用了静态缓存（如 WP Rocket）：请务必开启「AJAX 统计补丁」。
 
 ---
 
 ## 🇺🇸 English
 
-**SBA (Site Behavior Auditor)** is a professional-grade, all-in-one security hardening and auditing infrastructure for WordPress. Engineered for high-load environments, SBA balances advanced defense with extreme performance using **Write-Back Buffering** and **Summary Aggregation** technologies.
+**SBA (Site Behavior Auditor)** is a professional-grade security hardening and auditing infrastructure for WordPress. v4.0.6 introduces the **"Zero Attack Surface"** strategy by physically sequestering standard login entrances.
 
-### 💎 Key Feature Modules
+### ✨ Key Features
 
-#### 1. 📊 Behavioral Auditing & Privacy
-*   **Real-time Trace**: Microsecond-level logging of visitor IP, Geo-location, and request paths.
-*   **Threat Ranking**: A dedicated summary table aggregates millions of attack logs into a "Top Offenders" list instantly.
-*   **Privacy Obfuscation**: Automatic IP masking (`1.2.***.***`) for public tracking logs to ensure data privacy.
-*   **High-Speed Navigation**: Stream pagination eliminates `COUNT(*)` overhead, providing smooth browsing through millions of records.
-
-#### 2. 🛡️ System Hardening
-*   **Fingerprint Erasure**: Removes WP versions, script tags, and `X-Powered-By` headers to stop attackers from fingerprinting your stack.
-*   **Security Header Injection**: Automatically enforces HSTS, X-Frame-Options (SAMEORIGIN), and Referrer Policies.
-*   **Endpoint Lockdown**: Restricts anonymous REST API index probing and blocks access to sensitive files (.sql, .env, .log).
-
-#### 3. 🔒 Traffic Filtering Gateway (WAF & SSRF)
-*   **Inbound Defense**: Tiered rate limiting, Honeypot traps, and "Gate Key" backend hiding.
-*   **Outbound SSRF Shield**: Restricts outbound traffic to standard HTTP/HTTPS and prevents internal network probing.
-*   **Cron-Friendly**: Intelligently bypasses Loopback requests to ensure WP-Cron and core updates remain functional.
-
-#### 4. 🚀 Enterprise Performance
-*   **Write-Back Buffering**: PV counts are cached in memory and merged into the DB every 10-20 minutes, reducing DB writes by **over 99%**.
-*   **Secure Heartbeat**: AJAX tracking uses HMAC-based dynamic tokens to prevent traffic inflation attacks.
+*   **🔒 Physical Entrance Sequestration**: Blocks all direct access to `wp-login.php` and `wp-admin` for unauthenticated users. The only way in is through your custom shortcode page.
+*   **📊 Clean Audit Stream**: Automatically excludes internal/proxy IPs (e.g., Docker gateway `172.20.0.1`) from statistics to ensure data purity.
+*   **🛡️ Parameter Sanitization**: Deeply inspects Query Strings even on "allowed actions" to prevent attackers from using `lostpassword` as a shield for scanning.
+*   **🚀 Write-Back Architecture**: PV/UV counts are buffered in memory and flushed to the DB every 10-20 minutes, reducing write I/O by **99%+**.
+*   **👤 iOS-Style Auth UI**: A modern, glassmorphism UI for all authentication needs, fully compatible with object caching and static environments.
 
 ### 📥 Getting Started
 
-1.  **Sync IP Data**: Upload the `ip2region.xdb` file via the chunked uploader in Settings.
-2.  **Configure IP Source**: If behind **Cloudflare** or **Nginx Proxy**, select the appropriate header source to ensure correct IP identification.
-3.  **Enable AJAX Patch**: If using static caching (e.g., WP Rocket), enable the AJAX Patch to ensure visitors are tracked even on cached pages.
-4.  **Set Gate Key**: Secure your login page by appending a secret key requirement (e.g., `wp-login.php?gate=secret`).
+1.  **Sync IP Data**: Upload the `ip2region.xdb` file via the settings page.
+2.  **Deploy Login Portal**: Create a new page and insert the shortcode `[sba_login_box]`. **This is now your only secure entrance.**
+3.  **Identity Redirection**: Logged-in users visiting the standard login page will be automatically and safely redirected to the dashboard.
 
 ---
 
@@ -99,11 +81,6 @@
 <div style="display: flex; gap: 10px;">
   <img src="https://github.com/user-attachments/assets/1a323212-bdf8-46ae-b079-9563f80a4eac" alt="Trace" width="45%">
   <img src="https://github.com/user-attachments/assets/d1595991-1dde-455e-91b7-4eccbf805230" alt="Blocked Logs" width="45%">
-</div>
-
-#### 防御设置 (Detailed Settings)
-<div style="text-align: left;">
-  <img src="https://github.com/user-attachments/assets/4b1daf8e-3223-41eb-bbde-9cce9f390a80" alt="Settings" width="60%">
 </div>
 
 ---

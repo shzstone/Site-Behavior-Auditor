@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Site Behavior Auditor 4.0.3\n"
+"Project-Id-Version: Site Behavior Auditor 4.0.6\n"
 "Report-Msgid-Bugs-To: https://blog.cacca.cc\n"
-"POT-Creation-Date: 2026-04-26 20:30+0800\n"
+"POT-Creation-Date: 2026-04-27 22:55+0800\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -12,11 +12,10 @@ msgstr ""
 "X-Generator: Poedit 3.0\n"
 "X-Domain: site-behavior-auditor\n"
 
-# --- 插件元数据与初始化 ---
 msgid "综合安全套件 (Site Behavior Auditor + Login Box + SMTP)"
 msgstr ""
 
-msgid "集成站点全行为审计、iOS风格登录/注册/忘记密码面板。4.0终极版：安全加固+威胁排行榜+百万级性能优化"
+msgid "集成站点全行为审计、iOS风格登录/注册/忘记密码面板。"
 msgstr ""
 
 msgid "SBA 安全套件"
@@ -25,14 +24,13 @@ msgstr ""
 msgid "未检测到官方 ip2region 类库，已自动降级为内置简化版（仅支持 IPv4 查询）。如需完整 IPv6 支持，请将官方类库放置于"
 msgstr ""
 
+msgid "未检测到官方 ip2region 类库，已自动降级为内置简化版。"
+msgstr ""
+
 msgid "未知"
 msgstr ""
 
 msgid "查询失败"
-msgstr ""
-
-# --- 安全拦截原因 (WAF/SSRF/入站) ---
-msgid "合法页面携带非法扫描参数"
 msgstr ""
 
 msgid "Security Block"
@@ -41,10 +39,13 @@ msgstr ""
 msgid "触碰隐藏蜜罐陷阱"
 msgstr ""
 
+msgid "敏感文件探测: %s"
+msgstr ""
+
 msgid "自动化扫描器: %s"
 msgstr ""
 
-msgid "敏感文件探测: %s"
+msgid "敏感数据枚举探测 (User/Comment/Bypass)"
 msgstr ""
 
 msgid "遗留 filter[author] 参数探测"
@@ -71,9 +72,6 @@ msgstr ""
 msgid "扫描路径探测: %s"
 msgstr ""
 
-msgid "敏感数据枚举探测 (User/Comment/Bypass)"
-msgstr ""
-
 msgid "非法路径探测: %s"
 msgstr ""
 
@@ -86,13 +84,10 @@ msgstr ""
 msgid "非法的 XML-RPC 请求方法"
 msgstr ""
 
-msgid "Gate 钥匙错误或已失效"
+msgid "频率超限 (CC风险)"
 msgstr ""
 
 msgid "采集器高频抓取 (Sensitive API)"
-msgstr ""
-
-msgid "频率超限 (CC风险)"
 msgstr ""
 
 msgid "登录失败次数过多 (暴力破解)"
@@ -101,25 +96,39 @@ msgstr ""
 msgid "尝试次数太多，请稍后再试。"
 msgstr ""
 
+msgid "物理封锁：未经授权的登录入口访问"
+msgstr ""
+
+msgid "标准入口已封锁，请从前台面板登录"
+msgstr ""
+
+msgid "物理封锁：未经授权的后台访问"
+msgstr ""
+
+msgid "无权限访问此 API"
+msgstr ""
+
+msgid "REST API 访问受限"
+msgstr ""
+
+msgid "REST API 索引访问受限"
+msgstr ""
+
 msgid "🛡️ SBA 系统安全限制：仅允许 HTTP/HTTPS 协议。"
 msgstr ""
 
 msgid "🛡️ SBA 系统安全限制：禁止访问内部网络资源。"
 msgstr ""
 
-msgid "REST API 访问受限"
-msgstr ""
-
-msgid "无权限访问此 API"
-msgstr ""
-
-msgid "REST API 索引访问受限"
+msgid "合法页面携带非法扫描参数"
 msgstr ""
 
 msgid "您的 IP 已被永久封禁。如有疑问，请联系管理员。"
 msgstr ""
 
-# --- 审计仪表盘 (Dashboard) ---
+msgid "管理员手动封禁 IP: %s"
+msgstr ""
+
 msgid "全行为审计"
 msgstr ""
 
@@ -156,12 +165,6 @@ msgstr ""
 msgid "日期"
 msgstr ""
 
-msgid "拦截"
-msgstr ""
-
-msgid "深度"
-msgstr ""
-
 msgid "UV (人)"
 msgstr ""
 
@@ -169,6 +172,12 @@ msgid "PV (次)"
 msgstr ""
 
 msgid "拦截 (次)"
+msgstr ""
+
+msgid "深度"
+msgstr ""
+
+msgid "拦截"
 msgstr ""
 
 msgid "👣 访客轨迹 (%s)"
@@ -222,23 +231,19 @@ msgstr ""
 msgid "加载失败，请刷新页面重试"
 msgstr ""
 
-# --- 威胁排行榜 (4.0.1 核心新增) ---
 msgid "🔥 高频威胁排行榜"
+msgstr ""
+
+msgid "头号公敌 (Top 30)"
+msgstr ""
+
+msgid "实时统计"
 msgstr ""
 
 msgid "🔄 同步历史数据"
 msgstr ""
 
 msgid "同步中..."
-msgstr ""
-
-msgid "历史数据对账完成！"
-msgstr ""
-
-msgid "对账失败，请检查数据库。"
-msgstr ""
-
-msgid "实时统计"
 msgstr ""
 
 msgid "排名"
@@ -260,6 +265,9 @@ msgid "永久封禁"
 msgstr ""
 
 msgid "封禁中..."
+msgstr ""
+
+msgid "解封中..."
 msgstr ""
 
 msgid "确定要永久封禁该 IP 吗？"
@@ -286,19 +294,13 @@ msgstr ""
 msgid "暂无威胁数据"
 msgstr ""
 
+msgid "暂无威胁数据，请先同步历史数据"
+msgstr ""
+
 msgid "◀ 上一页"
 msgstr ""
 
 msgid "下一页 ▶"
-msgstr ""
-
-msgid "IP %s 已被永久封禁"
-msgstr ""
-
-msgid "IP %s 已解除封禁"
-msgstr ""
-
-msgid "管理员手动封禁 IP: %s"
 msgstr ""
 
 msgid "权限不足"
@@ -310,13 +312,27 @@ msgstr ""
 msgid "此 IP 在白名单中，无法封禁"
 msgstr ""
 
+msgid "历史数据对账完成！"
+msgstr ""
+
+msgid "历史数据对账完成！共同步 %d 条记录"
+msgstr ""
+
+msgid "对账失败，请检查数据库。"
+msgstr ""
+
+msgid "IP %s 已解除封禁"
+msgstr ""
+
 msgid "未在封禁列表中找到该 IP"
+msgstr ""
+
+msgid "IP %s 已被永久封禁"
 msgstr ""
 
 msgid "请求失败，请重试"
 msgstr ""
 
-# --- 防御设置页面 (精简语法提取) ---
 msgid "🛠️ SBA 防御设置"
 msgstr ""
 
@@ -326,7 +342,7 @@ msgstr ""
 msgid "1. <b>性能对账：</b>数据每 10 分钟写库。若觉延迟，按 <code>Ctrl + F5</code> 强制对账。白名单用户豁免所有拦截。"
 msgstr ""
 
-msgid "2. <b>入口保护：</b>启用钥匙后，入口变为 <code>wp-login.php?gate=钥匙</code>。未携带参数将返回 403 阻断暴破。"
+msgid "2. <b>入口保护：</b>系统已自动封锁 wp-login.php 和 wp-admin 目录。请使用 <code>[sba_login_box]</code> 短代码在前台展示登录面板。"
 msgstr ""
 
 msgid "3. <b>IP 信任：</b>看仪表盘 IP。若为 127.0.0.1 或内网 IP，请根据 CDN/代理环境切换至「Nginx」或「Cloudflare」。"
@@ -389,12 +405,6 @@ msgstr ""
 msgid "启用异步统计（解决静态 HTML 缓存导致的 PV 丢失）"
 msgstr ""
 
-msgid "Gate 钥匙"
-msgstr ""
-
-msgid "<code>wp-login.php?gate=钥匙</code>"
-msgstr ""
-
 msgid "追加拦截路径"
 msgstr ""
 
@@ -428,7 +438,6 @@ msgstr ""
 msgid "保存核心配置"
 msgstr ""
 
-# --- 服务器环境检测 ---
 msgid "⚙️ 服务器环境检测"
 msgstr ""
 
@@ -441,7 +450,6 @@ msgstr ""
 msgid "若需上传大文件（超过 10MB），建议将 <code>upload_max_filesize</code> 和 <code>post_max_size</code> 调至至少 64M。"
 msgstr ""
 
-# --- 文件分片上传 ---
 msgid "📁 IP 归属地库 (ip2region xdb) 分片上传"
 msgstr ""
 
@@ -463,7 +471,27 @@ msgstr ""
 msgid "取消上传"
 msgstr ""
 
-# --- iOS 风格登录交互 (AJAX/UI) ---
+msgid "欢迎回来"
+msgstr ""
+
+msgid "控制台"
+msgstr ""
+
+msgid "个人资料"
+msgstr ""
+
+msgid "注销"
+msgstr ""
+
+msgid "密码重置链接已发送到您的邮箱，请查收。"
+msgstr ""
+
+msgid "密码修改成功，请使用新密码登录。"
+msgstr ""
+
+msgid "账号激活成功，请登录。"
+msgstr ""
+
 msgid "登录"
 msgstr ""
 
@@ -474,6 +502,9 @@ msgid "忘记密码"
 msgstr ""
 
 msgid "用户名或邮箱"
+msgstr ""
+
+msgid "密码"
 msgstr ""
 
 msgid "记住我"
@@ -489,18 +520,6 @@ msgid "确认密码"
 msgstr ""
 
 msgid "发送重置链接"
-msgstr ""
-
-msgid "欢迎回来"
-msgstr ""
-
-msgid "控制台"
-msgstr ""
-
-msgid "个人资料"
-msgstr ""
-
-msgid "注销"
 msgstr ""
 
 msgid "登录中..."
@@ -533,6 +552,9 @@ msgstr ""
 msgid "注册成功，请查收激活邮件。"
 msgstr ""
 
+msgid "重置链接已发送至您的邮箱。"
+msgstr ""
+
 msgid "由于多次失败，您的IP已被封禁24小时。"
 msgstr ""
 
@@ -558,9 +580,6 @@ msgid "用户名或邮箱未注册。"
 msgstr ""
 
 msgid "无法生成重置链接，请稍后重试。"
-msgstr ""
-
-msgid "重置链接已发送至您的邮箱。"
 msgstr ""
 
 msgid "账号尚未激活，请查收激活邮件。"
@@ -599,7 +618,6 @@ msgstr ""
 msgid "IP: %s\n失败次数: %d\n封禁至: %s"
 msgstr ""
 
-# --- SMTP 设置 ---
 msgid "SMTP 邮件设置"
 msgstr ""
 
@@ -664,4 +682,16 @@ msgid "SMTP 测试邮件 - %s"
 msgstr ""
 
 msgid "这是一封测试邮件，确认您的 SMTP 配置正确。"
+msgstr ""
+
+msgid "匿名访客"
+msgstr ""
+
+msgid "当前在线"
+msgstr ""
+
+msgid "今日访客"
+msgstr ""
+
+msgid "累积浏览"
 msgstr ""
