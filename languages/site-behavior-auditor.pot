@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Site Behavior Auditor 4.0.1\n"
+"Project-Id-Version: Site Behavior Auditor 4.0.2\n"
 "Report-Msgid-Bugs-To: https://blog.cacca.cc\n"
 "POT-Creation-Date: 2026-04-26 20:30+0800\n"
 "MIME-Version: 1.0\n"
@@ -32,10 +32,13 @@ msgid "查询失败"
 msgstr ""
 
 # --- 安全拦截原因 (WAF/SSRF/入站) ---
+msgid "合法页面携带非法扫描参数"
+msgstr ""
+
 msgid "Security Block"
 msgstr ""
 
-msgid "蜜罐陷阱触发"
+msgid "触碰隐藏蜜罐陷阱"
 msgstr ""
 
 msgid "自动化扫描器: %s"

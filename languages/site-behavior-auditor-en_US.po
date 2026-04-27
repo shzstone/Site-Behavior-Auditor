@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Site Behavior Auditor 4.0.1\n"
+"Project-Id-Version: Site Behavior Auditor 4.0.2\n"
 "Report-Msgid-Bugs-To: https://blog.cacca.cc\n"
 "POT-Creation-Date: 2026-04-26 20:30+0800\n"
 "PO-Revision-Date: 2026-04-26 20:40+0800\n"
@@ -36,8 +36,11 @@ msgid "Security Block"
 msgstr "Security Block"
 
 # --- 拦截原因与加固消息 ---
-msgid "蜜罐陷阱触发"
-msgstr "Honeypot Trap Triggered"
+msgid "合法页面携带非法扫描参数"
+msgstr "Legitimate page carrying illegal scanning parameters"
+
+msgid "触碰隐藏蜜罐陷阱"
+msgstr "Touched hidden honeypot trap"
 
 msgid "自动化扫描器: %s"
 msgstr "Automated Scanner: %s"
