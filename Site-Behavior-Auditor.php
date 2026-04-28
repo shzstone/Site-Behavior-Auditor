@@ -2130,10 +2130,23 @@ function sba_settings_page() {
                 <tr><th><?php _e( '高级策略', SBA_TEXT_DOMAIN ); ?></th><td><label><input type="checkbox" name="sba_settings[enable_cookie_check]" value="1" <?php checked( $opts['enable_cookie_check'] ?? 1, 1 ); ?> /> <?php _e( '启用 Cookie 身份校验', SBA_TEXT_DOMAIN ); ?></label></td></tr>
                 <tr><th><?php _e( '拦截重定向', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[block_target_url]" value="<?php echo esc_attr( $opts['block_target_url'] ?? '' ); ?>" style="width:100%" placeholder="https://127.0.0.1" /></td></tr></table></div>
             </div>
-            <div class="sba-card" style="margin-top:20px;"><h3><?php _e( '🔒 出站安全（SSRF 防御）', SBA_TEXT_DOMAIN ); ?></h3><table class="form-table"><tr><th><?php _e( 'DNS Rebinding', SBA_TEXT_DOMAIN ); ?></th><td><label><input type="checkbox" name="sba_settings[ssrf_prevent_dns_rebind]" value="1" <?php checked( $opts['ssrf_prevent_dns_rebind'] ?? 1, 1 ); ?> /> <?php _e( '启用强制 IP 直连 + Host 头校验', SBA_TEXT_DOMAIN ); ?></label></td></tr>
-                <tr><th><?php _e( '出站 IP 白名单', SBA_TEXT_DOMAIN ); ?></th><td><textarea name="sba_settings[outbound_whitelist]" rows="2" style="width:100%;" placeholder="192.168.1.100&#10;10.0.0.0/8"><?php echo esc_textarea( $opts['outbound_whitelist'] ?? '' ); ?></textarea></td></tr>
-                <tr><th><?php _e( '额外黑名单 (CIDR)', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[ssrf_blacklist]" value="<?php echo esc_attr( $opts['ssrf_blacklist'] ?? '' ); ?>" style="width:100%;" placeholder="192.0.2.0/24, 203.0.113.0/24" /></td></tr></table></div>
-            <div style="margin-top:20px;"><?php submit_button( __( '保存核心配置', SBA_TEXT_DOMAIN ) ); ?></div>
+            <div class="sba-card" style="margin-top:20px;">
+                <h3><?php _e( '🔒 出站安全（SSRF 防御）', SBA_TEXT_DOMAIN ); ?></h3>
+                <table class="form-table">
+                    <tr>
+                        <th><?php _e( 'DNS Rebinding', SBA_TEXT_DOMAIN ); ?></th>
+                        <td><label><input type="checkbox" name="sba_settings[ssrf_prevent_dns_rebind]" value="1" <?php checked( $opts['ssrf_prevent_dns_rebind'] ?? 1, 1 ); ?> /> <?php _e( '启用强制 IP 直连 + Host 头校验', SBA_TEXT_DOMAIN ); ?></label></td>
+                    </tr>
+                    <tr>
+                        <th><?php _e( '出站 IP 白名单', SBA_TEXT_DOMAIN ); ?></th>
+                        <td><textarea name="sba_settings[outbound_whitelist]" rows="2" style="width:100%;" placeholder="<?php echo esc_attr__( "192.168.1.100\n10.0.0.0/8", SBA_TEXT_DOMAIN ); ?>"><?php echo esc_textarea( $opts['outbound_whitelist'] ?? '' ); ?></textarea></td>
+                    </tr>
+                    <tr>
+                        <th><?php _e( '额外黑名单 (CIDR)', SBA_TEXT_DOMAIN ); ?></th>
+                        <td><input type="text" name="sba_settings[ssrf_blacklist]" value="<?php echo esc_attr( $opts['ssrf_blacklist'] ?? '' ); ?>" style="width:100%;" placeholder="<?php echo esc_attr__( "192.0.2.0/24, 203.0.113.0/24", SBA_TEXT_DOMAIN ); ?>" /></td>
+                    </tr>
+                </table>
+            </div>
         </form>
         <div class="sba-card"><h3><?php _e( '📁 IP 归属地库 (ip2region xdb) 分片上传', SBA_TEXT_DOMAIN ); ?></h3>
             <?php foreach ( [ 'v4' => __('IPv4 库', SBA_TEXT_DOMAIN), 'v6' => __('IPv6 库', SBA_TEXT_DOMAIN) ] as $type => $label ): ?>

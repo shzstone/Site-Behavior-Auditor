@@ -843,3 +843,15 @@ msgstr "Abnormal request rate"
 
 msgid "触碰隐藏蜜罐陷阱"
 msgstr "Triggered hidden honeypot trap"
+
+msgid "🔒 出站安全（SSRF 防御）"
+msgstr "🔒 Outbound Security (SSRF Protection)"
+
+msgid "启用强制 IP 直连 + Host 头校验"
+msgstr "Enable Mandatory Direct IP + Host Header Validation"
+
+msgid "确定要永久封禁该 IP 吗？"
+msgstr "Are you sure you want to permanently ban this IP?"
+
+msgid "确定要解除该 IP 的封禁吗？"
+msgstr "Are you sure you want to unban this IP?"

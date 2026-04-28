@@ -843,3 +843,15 @@ msgstr ""
 
 msgid "触碰隐藏蜜罐陷阱"
 msgstr ""
+
+msgid "🔒 出站安全（SSRF 防御）"
+msgstr ""
+
+msgid "启用强制 IP 直连 + Host 头校验"
+msgstr ""
+
+msgid "确定要永久封禁该 IP 吗？"
+msgstr ""
+
+msgid "确定要解除该 IP 的封禁吗？"
+msgstr ""
