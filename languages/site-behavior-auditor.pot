@@ -855,3 +855,9 @@ msgstr ""
 
 msgid "确定要解除该 IP 的封禁吗？"
 msgstr ""
+
+msgid "出站 IP 白名单"
+msgstr ""
+
+msgid "额外黑名单 (CIDR)"
+msgstr ""

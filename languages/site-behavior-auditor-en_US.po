@@ -855,3 +855,9 @@ msgstr "Are you sure you want to permanently ban this IP?"
 
 msgid "确定要解除该 IP 的封禁吗？"
 msgstr "Are you sure you want to unban this IP?"
+
+msgid "出站 IP 白名单"
+msgstr "Outbound IP Whitelist"
+
+msgid "额外黑名单 (CIDR)"
+msgstr "Extra Blacklist (CIDR)"
