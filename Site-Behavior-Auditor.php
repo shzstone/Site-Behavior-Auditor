@@ -235,9 +235,23 @@ function sba_is_user_whitelisted() {
 
 function sba_is_ip_whitelisted( $ip = null ) {
     $ip = $ip ?: sba_get_ip();
+    $emergency_key = sba_get_option( 'emergency_entrance_key', '' );
+    if ( ! empty( $emergency_key ) && isset( $_GET['sba_key'] ) && $_GET['sba_key'] === $emergency_key ) {
+        $opts = get_option( 'sba_settings' );
+        $current_whitelist = $opts['ip_whitelist'] ?? '';
+
+        if ( strpos( $current_whitelist, $ip ) === false ) {
+            $opts['ip_whitelist'] = trim($current_whitelist) . "\n" . $ip;
+            update_option( 'sba_settings', $opts );
+            error_log("SBA: IP $ip has been whitelisted via emergency key.");
+        }
+        return true;
+    }
+
     $raw_list = str_replace( ["\r", "\n"], ',', sba_get_option( 'ip_whitelist', '' ) );
     $list = array_filter( array_map( 'trim', explode( ',', $raw_list ) ) );
     if ( in_array( $ip, $list ) ) return true;
+
     if ( function_exists( 'current_user_can' ) && current_user_can( 'manage_options' ) ) return true;
     return false;
 }
@@ -361,7 +375,6 @@ function sba_check_rate_limit( $ip, $limit ) {
 // ==================== 拦截逻辑增强 ====================
 function sba_execute_block( $reason ) {
     $ip = sba_get_ip();
-
     if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
         return;
     }
@@ -406,12 +419,10 @@ function sba_output_honeypot_links() {
 function sba_atomic_increment( $prefix ) {
     $today = current_time( 'Y-m-d' );
     $key = $prefix . $today;
-    global $wpdb;
-    $wpdb->query( $wpdb->prepare(
-        "INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, '1', 'no')
-         ON DUPLICATE KEY UPDATE option_value = CAST(option_value AS UNSIGNED) + 1",
-        $key
-    ) );
+
+    $val = (int) get_option( $key, 0 );
+    update_option( $key, $val + 1, false );
+
     wp_cache_delete( $key, 'options' );
     sba_clear_trend_cache();
     return true;
@@ -591,10 +602,9 @@ function sba_stats_engine() {
 }
 
 // ==================== 第二部分：安全引擎 ====================
-add_action( 'init', 'sba_security_engine', -1000 );
+add_action( 'init', 'sba_security_engine', 1 );
 function sba_security_engine() {
     $ip = sba_get_ip();
-
     if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
         return;
     }
@@ -602,7 +612,6 @@ function sba_security_engine() {
     $request_uri = $_SERVER['REQUEST_URI'] ?? '';
     $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
     $uri = strtolower( $request_uri );
-
     if ( (defined( 'DOING_AJAX' ) && DOING_AJAX) || strpos( $request_uri, 'admin-ajax.php' ) !== false ) {
         return;
     }
@@ -610,7 +619,6 @@ function sba_security_engine() {
     $is_bot = sba_is_search_engine();
     $is_logged_in = is_user_logged_in();
     $action = $_REQUEST['action'] ?? '';
-
     $is_wp_login = strpos( $request_uri, 'wp-login.php' ) !== false || strpos( $script_name, 'wp-login.php' ) !== false;
     $is_wp_signup = strpos( $request_uri, 'wp-signup.php' ) !== false;
 
@@ -661,7 +669,6 @@ function sba_security_engine() {
     if ( in_array( $action, $legit_actions ) ) {
         $query_string = $_SERVER['QUERY_STRING'] ?? '';
         if ( ! empty( $query_string ) ) {
-            // 匹配特征：劫持参数 或 无值探测键名
             if ( ( preg_match( '/(template|theme|paged|setup|gshst)=?/i', $query_string ) ||
                    preg_match( '/&[^=]+(&|$)/', '&' . $query_string ) ) && ! isset( $_GET['reauth'] ) ) {
                 sba_execute_block( __( '合法页面携带非法扫描参数', SBA_TEXT_DOMAIN ) );
@@ -863,18 +870,30 @@ add_action( 'template_redirect', function() {
     if ( is_author() || isset( $_GET['author'] ) ) { wp_redirect( home_url(), 301 ); exit; }
 } );
 
-// ==================== 登录暴力破解防护 ====================
-add_action( 'wp_login_failed', 'sba_limit_login' );
-add_action( 'wp_login_errors', 'sba_limit_login', 10, 2 );
-function sba_limit_login() {
+add_action( 'wp_login_failed', 'sba_limit_login_trigger' );
+add_filter( 'wp_login_errors', 'sba_limit_login_check_only', 10, 2 );
+
+function sba_limit_login_trigger() {
     $ip = sba_get_ip();
+    if ( sba_is_ip_whitelisted( $ip ) ) return;
+
     $attempts = (int) get_transient( 'sba_login_fail_' . md5( $ip ) );
     $attempts++;
+
     set_transient( 'sba_login_fail_' . md5( $ip ), $attempts, 3600 );
+
     if ( $attempts >= 5 ) {
         set_transient( 'sba_temp_block_' . $ip, 1, 900 );
-        sba_execute_block( __( '登录失败次数过多 (暴力破解)', SBA_TEXT_DOMAIN ) );
+        sba_execute_block( __( '登录失败次数过多 (暴力破解防护)', SBA_TEXT_DOMAIN ) );
     }
+}
+
+function sba_limit_login_check_only( $errors, $redirect_to ) {
+    $ip = sba_get_ip();
+    if ( get_transient( 'sba_temp_block_' . $ip ) ) {
+        sba_execute_block( __( '您的 IP 处于临时封禁期，请 15 分钟后再试。', SBA_TEXT_DOMAIN ) );
+    }
+    return $errors;
 }
 add_action( 'init', 'sba_check_temp_block', 0 );
 function sba_check_temp_block() {
@@ -2084,6 +2103,7 @@ function sba_settings_page() {
             <?php settings_fields( 'sba_settings_group' ); ?>
             <div class="sba-grid">
                 <div class="sba-card"><h3><?php _e( '✅ 信任通道', SBA_TEXT_DOMAIN ); ?></h3><table class="form-table"><tr><th><?php _e( '用户名白名单', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[user_whitelist]" value="<?php echo esc_attr( $opts['user_whitelist'] ?? '' ); ?>" class="regular-text" /><br><small><?php _e( '登录此用户时，系统自动信任，不执行拦截逻辑。', SBA_TEXT_DOMAIN ); ?></small></td></tr>
+                <tr><th><?php _e( '应急密钥', SBA_TEXT_DOMAIN ); ?></th><td><input type="text" name="sba_settings[emergency_entrance_key]" value="<?php echo esc_attr( $opts['emergency_entrance_key'] ?? '' ); ?>" class="regular-text" placeholder="?sba_key=xxx" /><br><small><?php _e( '访问 <code>域名/?sba_key=密钥</code> 可秒加白名单，建议设置复杂一些。', SBA_TEXT_DOMAIN ); ?></small></td></tr>
                 <tr><th><?php _e( 'IP 白名单', SBA_TEXT_DOMAIN ); ?></th><td><textarea name="sba_settings[ip_whitelist]" rows="3" style="width:100%"><?php echo esc_textarea( $opts['ip_whitelist'] ?? '' ); ?></textarea><br><small><?php _e( '每行一个 IP。支持 IPv4 和 IPv6。', SBA_TEXT_DOMAIN ); ?></small></td></tr></table></div>
                 <div class="sba-card"><h3><?php _e( '🚫 防御配置', SBA_TEXT_DOMAIN ); ?></h3><table class="form-table"><tr><th><?php _e( 'CC 封禁阈值', SBA_TEXT_DOMAIN ); ?></th><td><input type="number" name="sba_settings[auto_block_limit]" value="<?php echo esc_attr( $opts['auto_block_limit'] ?? '60' ); ?>" /> <?php _e( '次/分', SBA_TEXT_DOMAIN ); ?><br><small><?php _e( '单 IP 每分钟请求超过此值自动封禁（0 为关闭）。', SBA_TEXT_DOMAIN ); ?></small></td></tr>
                 <tr><th><?php _e( 'IP 信任来源', SBA_TEXT_DOMAIN ); ?></th><td><select name="sba_settings[ip_source]"><option value="REMOTE_ADDR" <?php selected( $opts['ip_source'] ?? '', 'REMOTE_ADDR' ); ?>><?php _e( 'REMOTE_ADDR (标准直连)', SBA_TEXT_DOMAIN ); ?></option><option value="HTTP_CF_CONNECTING_IP" <?php selected( $opts['ip_source'] ?? '', 'HTTP_CF_CONNECTING_IP' ); ?>><?php _e( 'Cloudflare (CF_IP)', SBA_TEXT_DOMAIN ); ?></option><option value="HTTP_X_REAL_IP" <?php selected( $opts['ip_source'] ?? '', 'HTTP_X_REAL_IP' ); ?>><?php _e( 'Nginx 转发 (REAL_IP)', SBA_TEXT_DOMAIN ); ?></option><option value="HTTP_X_FORWARDED_FOR" <?php selected( $opts['ip_source'] ?? '', 'HTTP_X_FORWARDED_FOR' ); ?>><?php _e( '标准代理 (XFF)', SBA_TEXT_DOMAIN ); ?></option></select><br><small><?php _e( '根据 CDN 环境选择正确的 IP 来源。', SBA_TEXT_DOMAIN ); ?></small></td></tr>
@@ -2325,9 +2345,8 @@ function sba_outbound_ssrf_filter( $preempt, $args, $url ) {
     }
 
     if ( ! in_array( $scheme, [ 'http', 'https' ] ) ) {
-        $error_msg = sprintf( __( '非法协议: %s', SBA_TEXT_DOMAIN ), $scheme );
-        sba_ssrf_log_and_block( $error_msg, $url );
-        return new WP_Error( 'sba_ssrf_blocked', __( '🛡️ SBA 系统安全限制：仅允许 HTTP/HTTPS 协议。', SBA_TEXT_DOMAIN ) );
+        sba_ssrf_log_and_block( "非法协议: $scheme", $url );
+        return new WP_Error( 'sba_ssrf_blocked', '🛡️ SBA 系统安全限制：仅允许 HTTP/HTTPS 协议。' );
     }
 
     $ips = sba_get_dns_records( $host );
@@ -2337,9 +2356,8 @@ function sba_outbound_ssrf_filter( $preempt, $args, $url ) {
     foreach ( $ips as $ip ) {
         if ( sba_ip_in_cidr_list( $ip, $whitelist ) ) continue;
         if ( sba_ip_in_cidr_list( $ip, $blacklist ) ) {
-            $error_msg = sprintf( __( '禁止访问内网/敏感 IP: %s', SBA_TEXT_DOMAIN ), $ip );
-            sba_ssrf_log_and_block( $error_msg, $url );
-            return new WP_Error( 'sba_ssrf_blocked', __( '🛡️ SBA 系统安全限制：禁止访问内部网络资源。', SBA_TEXT_DOMAIN ) );
+            sba_ssrf_log_and_block( "禁止访问内网/敏感 IP: $ip", $url );
+            return new WP_Error( 'sba_ssrf_blocked', '🛡️ SBA 系统安全限制：禁止访问内部网络资源。' );
         }
     }
 
@@ -2398,13 +2416,7 @@ function sba_ip_in_cidr_list( $ip, $list ) {
 function sba_ssrf_log_and_block( $reason, $url ) {
     global $wpdb;
     $ip = sba_get_ip();
-
-    $full_reason = sprintf( __( 'SSRF: %s', SBA_TEXT_DOMAIN ), $reason );
-    $wpdb->insert( $wpdb->prefix . 'sba_blocked_log', [
-        'ip' => $ip,
-        'reason' => $full_reason,
-        'target_url' => $url
-    ] );
+    $wpdb->insert( $wpdb->prefix . 'sba_blocked_log', [ 'ip' => $ip, 'reason' => 'SSRF: ' . $reason, 'target_url' => $url ] );
 
     $wpdb->query( $wpdb->prepare(
         "INSERT INTO {$wpdb->prefix}sba_threat_summary (ip, total_blocks, last_block_time)
@@ -2414,5 +2426,5 @@ function sba_ssrf_log_and_block( $reason, $url ) {
     ) );
 
     sba_inc_blocked();
-    error_log( sprintf( "[SBA SSRF Blocked] %s | URL: %s | Requester IP: %s", $reason, $url, $ip ) );
+    error_log( "[SBA SSRF Blocked] $reason | URL: $url | Requester IP: " . $ip );
 }
