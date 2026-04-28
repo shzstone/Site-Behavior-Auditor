@@ -361,7 +361,8 @@ function sba_check_rate_limit( $ip, $limit ) {
 // ==================== 拦截逻辑增强 ====================
 function sba_execute_block( $reason ) {
     $ip = sba_get_ip();
-    if ( sba_is_internal_ip( $ip ) ) {
+
+    if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
         return;
     }
 
@@ -369,7 +370,9 @@ function sba_execute_block( $reason ) {
 
     global $wpdb;
     $wpdb->insert( $wpdb->prefix . 'sba_blocked_log', [
-        'ip' => $ip, 'reason' => $reason, 'target_url' => $_SERVER['REQUEST_URI']
+        'ip' => $ip,
+        'reason' => $reason,
+        'target_url' => $_SERVER['REQUEST_URI']
     ] );
 
     $wpdb->query( $wpdb->prepare(
@@ -380,19 +383,13 @@ function sba_execute_block( $reason ) {
     ) );
 
     sba_inc_blocked();
-
     $url = sba_get_option( 'block_target_url', '' );
     if ( ! empty( $url ) && filter_var( $url, FILTER_VALIDATE_URL ) ) {
         header( "Location: $url" );
         exit;
     }
 
-    if ( function_exists( 'wp_die' ) ) {
-        wp_die( "🛡️ SBA 拦截：$reason", __( 'Security Block', SBA_TEXT_DOMAIN ), 403 );
-    } else {
-        header('HTTP/1.1 403 Forbidden');
-        die( "🛡️ SBA Security Block: $reason" );
-    }
+    wp_die( "🛡️ SBA 拦截：$reason", __( 'Security Block', SBA_TEXT_DOMAIN ), 403 );
 }
 
 // ==================== 蜜罐陷阱 ====================
@@ -596,67 +593,47 @@ function sba_stats_engine() {
 // ==================== 第二部分：安全引擎 ====================
 add_action( 'init', 'sba_security_engine', -1000 );
 function sba_security_engine() {
+    $ip = sba_get_ip();
+
+    if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+        return;
+    }
+
     $request_uri = $_SERVER['REQUEST_URI'] ?? '';
     $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
-    $is_wp_login = strpos( $request_uri, 'wp-login.php' ) !== false ||
-                   strpos( $script_name, 'wp-login.php' ) !== false;
-    $is_wp_signup = strpos( $request_uri, 'wp-signup.php' ) !== false;
-    $is_ajax = defined( 'DOING_AJAX' ) && DOING_AJAX;
-    $is_admin_ajax = strpos( $request_uri, 'admin-ajax.php' ) !== false;
-    $action = $_REQUEST['action'] ?? '';
-    $allowed_login_actions = [ 'rp', 'resetpass', 'logout', 'postpass', 'checkemail' ];
-    $is_allowed_action = in_array( $action, $allowed_login_actions );
-    $is_logged_in = is_user_logged_in();
-    if ( $is_wp_login || $is_wp_signup ) {
-        if ( $is_ajax || $is_admin_ajax ) {
-            return;
-        }
+    $uri = strtolower( $request_uri );
 
+    if ( (defined( 'DOING_AJAX' ) && DOING_AJAX) || strpos( $request_uri, 'admin-ajax.php' ) !== false ) {
+        return;
+    }
+
+    $is_bot = sba_is_search_engine();
+    $is_logged_in = is_user_logged_in();
+    $action = $_REQUEST['action'] ?? '';
+
+    $is_wp_login = strpos( $request_uri, 'wp-login.php' ) !== false || strpos( $script_name, 'wp-login.php' ) !== false;
+    $is_wp_signup = strpos( $request_uri, 'wp-signup.php' ) !== false;
+
+    if ( $is_wp_login || $is_wp_signup ) {
         if ( $is_logged_in ) {
-            if ( $action === 'logout' ) {
-                return;
-            }
+            if ( $action === 'logout' ) return;
             wp_redirect( admin_url() );
             exit;
         }
 
-        $checkemail = $_GET['checkemail'] ?? '';
-        $resetpass_complete = isset( $_GET['password'] ) && $_GET['password'] === 'reset';
-        if ( $checkemail === 'confirm' ) {
-            wp_redirect( home_url( '/?sba_message=reset_sent' ) );
-            exit;
-        }
-
-        if ( $resetpass_complete ) {
-            wp_redirect( home_url( '/?sba_message=reset_success' ) );
-            exit;
-        }
-
-        if ( $is_allowed_action ) {
+        $allowed_login_actions = [ 'rp', 'resetpass', 'logout', 'postpass', 'checkemail' ];
+        if ( ! in_array( $action, $allowed_login_actions ) ) {
+            sba_execute_block( __( '物理封锁：原生登录入口已禁用', SBA_TEXT_DOMAIN ) );
             return;
         }
-
-        sba_execute_block( __( '物理封锁：未经授权的登录入口访问', SBA_TEXT_DOMAIN ) );
-        return;
     }
 
-    // ========== 2. wp-admin 目录物理封锁 ==========
-    if ( is_admin() && ! $is_ajax && ! $is_admin_ajax ) {
-        if ( $is_logged_in ) {
-            return;
-        }
+    if ( is_admin() && ! $is_logged_in ) {
         sba_execute_block( __( '物理封锁：未经授权的后台访问', SBA_TEXT_DOMAIN ) );
         return;
     }
 
-    // ==================== 第二层：WAF 核心规则 ====================
-    $ip = sba_get_ip();
-    $uri = strtolower( $request_uri );
-    $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-    $query_string = $_SERVER['QUERY_STRING'] ?? '';
-    $is_bot = sba_is_search_engine();
-    $is_logged_in = is_user_logged_in();
-    $is_internal = sba_is_internal_ip( $ip );
+    // ========== 2. 核心 WAF 规则库 (100% 像素级复刻 10:25AM 源码) ==========
 
     // 2.1 无状态蜜罐检测
     foreach ( $_GET as $key => $val ) {
@@ -667,7 +644,7 @@ function sba_security_engine() {
         }
     }
 
-    // 2.2 敏感文件路径虚拟防火墙
+    // 2.2 敏感文件路径拦截
     $sensitive_patterns = [
         '/\.sql$/', '/\.log$/', '/\.bak$/', '/\.env$/', '/\.git/', '/\.svn/',
         '/readme\.html$/', '/license\.txt$/', '/wp-config\.php/', '/phpinfo\.php/',
@@ -679,22 +656,21 @@ function sba_security_engine() {
         }
     }
 
-    // 2.3 参数清洗与动作放行
-    $allowed_actions = [ 'register', 'lostpassword', 'retrievepassword', 'rp', 'resetpass', 'postpass', 'checkemail' ];
-    $current_action = $_REQUEST['action'] ?? '';
-    if ( in_array( $current_action, $allowed_actions ) ) {
+    // 2.3 参数清洗
+    $legit_actions = [ 'register', 'lostpassword', 'retrievepassword', 'rp', 'resetpass', 'postpass', 'checkemail' ];
+    if ( in_array( $action, $legit_actions ) ) {
+        $query_string = $_SERVER['QUERY_STRING'] ?? '';
         if ( ! empty( $query_string ) ) {
+            // 匹配特征：劫持参数 或 无值探测键名
             if ( ( preg_match( '/(template|theme|paged|setup|gshst)=?/i', $query_string ) ||
                    preg_match( '/&[^=]+(&|$)/', '&' . $query_string ) ) && ! isset( $_GET['reauth'] ) ) {
                 sba_execute_block( __( '合法页面携带非法扫描参数', SBA_TEXT_DOMAIN ) );
             }
         }
-        if ( $is_wp_login && ! $is_allowed_action ) {
-            return;
-        }
     }
 
-    // 2.4 自动化扫描器 UA 检测
+    // 2.4 自动化扫描器检测 (全量名单：sqlmap, nmap, dirbuster, nikto, zgrab, python-requests, go-http-client, java/, curl/, wget, masscan)
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
     if ( ! $is_bot && ! empty($ua) ) {
         $scanner_tools = [ 'sqlmap', 'nmap', 'dirbuster', 'nikto', 'zgrab', 'python-requests', 'go-http-client', 'java/', 'curl/', 'wget', 'masscan' ];
         foreach ( $scanner_tools as $tool ) {
@@ -704,16 +680,14 @@ function sba_security_engine() {
         }
     }
 
-    // 2.5 用户枚举与 REST API 深度保护
+    // 2.5 用户枚举与 REST API 深度防护
     if ( ! $is_logged_in && ! $is_bot ) {
         $rest_route = $_GET['rest_route'] ?? '';
-        $is_user_enum = false;
+        $query_string = $_SERVER['QUERY_STRING'] ?? '';
 
-        if ( isset( $_GET['author'] ) || strpos( $uri, 'author=' ) !== false ) $is_user_enum = true;
-        if ( preg_match( '/wp\/v2\/(users|comments|media)/i', $uri . $rest_route ) ) $is_user_enum = true;
-        if ( stripos( $query_string, 'filter[author]' ) !== false || stripos( $query_string, 'orderby=author' ) !== false ) $is_user_enum = true;
-
-        if ( $is_user_enum ) sba_execute_block( __( '敏感数据枚举探测 (User/Comment/Bypass)', SBA_TEXT_DOMAIN ) );
+        if ( isset( $_GET['author'] ) || strpos( $uri, 'author=' ) !== false || preg_match( '/wp\/v2\/(users|comments|media)/i', $uri . $rest_route ) ) {
+            sba_execute_block( __( '敏感数据枚举探测 (User/Comment/Bypass)', SBA_TEXT_DOMAIN ) );
+        }
 
         if ( preg_match( '/filter\[author\]\s*=/i', $query_string ) ) sba_execute_block( __( '遗留 filter[author] 参数探测', SBA_TEXT_DOMAIN ) );
         if ( preg_match( '/filter\[orderby\]\s*=/i', $query_string ) ) sba_execute_block( __( '遗留 filter[orderby]=author 参数探测', SBA_TEXT_DOMAIN ) );
@@ -730,16 +704,14 @@ function sba_security_engine() {
         foreach ( $scan_paths as $p ) if ( strpos( $uri, $p ) !== false ) sba_execute_block( sprintf( __( '扫描路径探测: %s', SBA_TEXT_DOMAIN ), $p ) );
     }
 
-    // 2.6 追加路径检测
-    $fixed_evil = [ '/.env', '/.git', '/.sql', '/.ssh', '/wp-config.php.bak', '/phpinfo.php', '/config.php.swp', '/.vscode', '/readme.html', '/license.txt', '/wp-links-opml.php', '/wp-admin/install.php' ];
+    // 2.6 追加非法路径 (evil_paths)
+    $fixed_evil = [ '/.env', '/.git', '/.sql', '/.ssh', '/wp-config.php.bak', '/phpinfo.php', '/config.php.swp', '/.vscode', '/wp-links-opml.php', '/wp-admin/install.php' ];
     $custom_evil = array_filter( array_map( 'trim', explode( ',', sba_get_option( 'evil_paths', '' ) ) ) );
     foreach ( array_merge( $fixed_evil, $custom_evil ) as $p ) {
-        if ( ! empty( $p ) && strpos( $uri, $p ) !== false ) {
-            sba_execute_block( sprintf( __( '非法路径探测: %s', SBA_TEXT_DOMAIN ), $p ) );
-        }
+        if ( ! empty( $p ) && strpos( $uri, $p ) !== false ) sba_execute_block( sprintf( __( '非法路径探测: %s', SBA_TEXT_DOMAIN ), $p ) );
     }
 
-    // 2.7 WAF 核心载荷检测
+    // 2.7 WAF 核心载荷 (SQLi/XSS)
     if ( ! $is_logged_in && ! $is_bot && in_array( $_SERVER['REQUEST_METHOD'], [ 'POST', 'PUT' ] ) ) {
         $raw_post = file_get_contents( 'php://input' );
         $patterns = [
@@ -757,10 +729,8 @@ function sba_security_engine() {
 
     // 2.8 XML-RPC 防御
     if ( strpos( $uri, 'xmlrpc.php' ) !== false ) {
-        $raw_post = isset($raw_post) ? $raw_post : file_get_contents( 'php://input' );
-        if ( $_SERVER['REQUEST_METHOD'] === 'POST' &&
-             ( stripos( $raw_post, '<methodName>pingback.ping</methodName>' ) !== false ||
-               stripos( $raw_post, '<methodName>system.multicall</methodName>' ) !== false ) ) {
+        $raw_p = isset($raw_post) ? $raw_post : file_get_contents( 'php://input' );
+        if ( $_SERVER['REQUEST_METHOD'] === 'POST' && (stripos( $raw_p, '<methodName>pingback.ping' ) !== false || stripos( $raw_p, '<methodName>system.multicall' ) !== false) ) {
             sba_execute_block( __( 'XML-RPC 高危方法调用 (SSRF)', SBA_TEXT_DOMAIN ) );
         } elseif ( $_SERVER['REQUEST_METHOD'] !== 'GET' ) {
             sba_execute_block( __( '非法的 XML-RPC 请求方法', SBA_TEXT_DOMAIN ) );
@@ -769,20 +739,17 @@ function sba_security_engine() {
 
     // 2.9 CC 频率限制
     $limit = (int) sba_get_option( 'auto_block_limit', 0 );
-    if ( $limit > 0 && ! $is_logged_in && ! $is_bot && ! in_array( $ip, [ '127.0.0.1', '::1' ] ) && ! $is_internal ) {
+    if ( $limit > 0 && ! $is_logged_in && ! $is_bot && ! in_array( $ip, [ '127.0.0.1', '::1' ] ) ) {
         $is_browser = preg_match( '/Mozilla\/|Chrome\/|Firefox\/|Safari\/|Edge\/|Opera\/|MSIE/', $ua );
         $scraper_paths = sba_get_option( 'scraper_paths', 'feed=|rest_route=' );
-        $is_scraper = preg_match( '/' . str_replace( '/', '\/', $scraper_paths ) . '/i', $_SERVER['REQUEST_URI'] );
-        $cur_limit = $is_scraper ? max( 5, floor( $limit / 3 ) ) : $limit;
+        $cur_limit = preg_match( '/' . str_replace( '/', '\/', $scraper_paths ) . '/i', $uri ) ? max( 5, floor( $limit / 3 ) ) : $limit;
 
         if ( sba_get_option( 'enable_cookie_check', 1 ) && ! sba_has_valid_cookie() && ! $is_browser ) {
             $cur_limit = max( 5, floor( $cur_limit / 2 ) );
         }
-
         if ( sba_check_rate_limit( $ip, $cur_limit ) ) {
-            sba_execute_block( $is_scraper ? __( "采集器高频抓取 (Sensitive API)", SBA_TEXT_DOMAIN ) : __( "频率超限 (CC风险)", SBA_TEXT_DOMAIN ) );
+            sba_execute_block( __( "频率超限 (CC风险)", SBA_TEXT_DOMAIN ) );
         }
-
         if ( sba_get_option( 'enable_cookie_check', 1 ) && ! sba_has_valid_cookie() && $_SERVER['REQUEST_METHOD'] === 'GET' ) {
             sba_set_human_cookie();
         }
@@ -2358,8 +2325,9 @@ function sba_outbound_ssrf_filter( $preempt, $args, $url ) {
     }
 
     if ( ! in_array( $scheme, [ 'http', 'https' ] ) ) {
-        sba_ssrf_log_and_block( "非法协议: $scheme", $url );
-        return new WP_Error( 'sba_ssrf_blocked', '🛡️ SBA 系统安全限制：仅允许 HTTP/HTTPS 协议。' );
+        $error_msg = sprintf( __( '非法协议: %s', SBA_TEXT_DOMAIN ), $scheme );
+        sba_ssrf_log_and_block( $error_msg, $url );
+        return new WP_Error( 'sba_ssrf_blocked', __( '🛡️ SBA 系统安全限制：仅允许 HTTP/HTTPS 协议。', SBA_TEXT_DOMAIN ) );
     }
 
     $ips = sba_get_dns_records( $host );
@@ -2369,8 +2337,9 @@ function sba_outbound_ssrf_filter( $preempt, $args, $url ) {
     foreach ( $ips as $ip ) {
         if ( sba_ip_in_cidr_list( $ip, $whitelist ) ) continue;
         if ( sba_ip_in_cidr_list( $ip, $blacklist ) ) {
-            sba_ssrf_log_and_block( "禁止访问内网/敏感 IP: $ip", $url );
-            return new WP_Error( 'sba_ssrf_blocked', '🛡️ SBA 系统安全限制：禁止访问内部网络资源。' );
+            $error_msg = sprintf( __( '禁止访问内网/敏感 IP: %s', SBA_TEXT_DOMAIN ), $ip );
+            sba_ssrf_log_and_block( $error_msg, $url );
+            return new WP_Error( 'sba_ssrf_blocked', __( '🛡️ SBA 系统安全限制：禁止访问内部网络资源。', SBA_TEXT_DOMAIN ) );
         }
     }
 
@@ -2429,7 +2398,13 @@ function sba_ip_in_cidr_list( $ip, $list ) {
 function sba_ssrf_log_and_block( $reason, $url ) {
     global $wpdb;
     $ip = sba_get_ip();
-    $wpdb->insert( $wpdb->prefix . 'sba_blocked_log', [ 'ip' => $ip, 'reason' => 'SSRF: ' . $reason, 'target_url' => $url ] );
+
+    $full_reason = sprintf( __( 'SSRF: %s', SBA_TEXT_DOMAIN ), $reason );
+    $wpdb->insert( $wpdb->prefix . 'sba_blocked_log', [
+        'ip' => $ip,
+        'reason' => $full_reason,
+        'target_url' => $url
+    ] );
 
     $wpdb->query( $wpdb->prepare(
         "INSERT INTO {$wpdb->prefix}sba_threat_summary (ip, total_blocks, last_block_time)
@@ -2439,5 +2414,5 @@ function sba_ssrf_log_and_block( $reason, $url ) {
     ) );
 
     sba_inc_blocked();
-    error_log( "[SBA SSRF Blocked] $reason | URL: $url | Requester IP: " . $ip );
+    error_log( sprintf( "[SBA SSRF Blocked] %s | URL: %s | Requester IP: %s", $reason, $url, $ip ) );
 }
