@@ -899,3 +899,15 @@ msgstr "SSRF: %s"
 
 msgid "✅ 您的 IP 已成功加入 white 列表，拦截已解除。"
 msgstr "✅ Your IP has been whitelisted. Blocking lifted."
+
+msgid "🚀 SBA 站点行为监控 v%s"
+msgstr "🚀 SBA Site Behavior Monitor v%s"
+
+msgid "发送测试邮件"
+msgstr "Send Test Email"
+
+msgid "确定要永久封禁该 IP 吗？"
+msgstr "Are you sure you want to permanently ban this IP?"
+
+msgid "确定要解除该 IP 的封禁吗？"
+msgstr "Are you sure you want to unban this IP?"
