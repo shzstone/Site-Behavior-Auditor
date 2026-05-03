@@ -227,8 +227,10 @@ function sba_is_search_engine() {
     $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
     if ( empty( $ua ) ) return false;
     $bots = array('Googlebot', 'Baiduspider', 'bingbot', 'msnbot', 'BingPreview', 'MicrosoftPreview', 'Sogou', 'YisouSpiderman', '360Spider', 'YandexBot', 'Applebot', 'DuckDuckBot', 'DotBot', 'PetalBot');
-    foreach ( $bots as $b ) if ( stripos( $ua, $b ) !== false ) return true;
-    return (bool) preg_match( '/(bot|spider|crawler|slurp)/i', $ua );
+    foreach ( $bots as $b ) {
+        if ( stripos( $ua, $b ) !== false ) return true;
+    }
+    return false;
 }
 
 function sba_is_user_whitelisted() {
@@ -748,19 +750,30 @@ function sba_security_engine() {
     if ( ! $is_logged_in && ! $is_bot ) {
         $rest = $_GET['rest_route'] ?? '';
         $qs_enum = $_SERVER['QUERY_STRING'] ?? '';
-        if ( isset( $_GET['author'] ) || strpos( $uri, 'author=' ) !== false || preg_match( '/wp\/v2\/(users|comments|media)/i', $uri . $rest ) ) sba_execute_block( __( '数据探测: 用户枚举', SBA_TEXT_DOMAIN ) );
+
+        if ( isset( $_GET['author'] ) || strpos( $uri, 'author=' ) !== false || preg_match( '/wp\/v2\/(users|comments|media|posts|pages|types)/i', $uri . $rest ) ) {
+            sba_execute_block( __( '数据探测: 敏感信息/内容抓取', SBA_TEXT_DOMAIN ) );
+        }
+
         if ( preg_match( '/filter\[author\]\s*=/i', $qs_enum ) ) sba_execute_block( __( '探测: filter注入', SBA_TEXT_DOMAIN ) );
         if ( preg_match( '/filter\[orderby\]\s*=/i', $qs_enum ) ) sba_execute_block( __( '探测: orderby注入', SBA_TEXT_DOMAIN ) );
         if ( isset( $_GET['context'] ) && $_GET['context'] === 'edit' ) sba_execute_block( __( 'REST限制: 非法上下文', SBA_TEXT_DOMAIN ) );
         if ( isset( $_GET['per_page'] ) && (int) $_GET['per_page'] > 50 ) sba_execute_block( __( 'REST限制: 分页超限', SBA_TEXT_DOMAIN ) );
         if ( isset( $_GET['offset'] ) && (int) $_GET['offset'] > 200 ) sba_execute_block( __( 'REST限制: 偏移超限', SBA_TEXT_DOMAIN ) );
-        if ( strpos( $uri, '/oembed/1.0/proxy' ) !== false ) sba_execute_block( __( 'SSRF探测: OEmbed代理', SBA_TEXT_DOMAIN ) );
+        if ( strpos( $uri . $rest, '/oembed/1.0/proxy' ) !== false ) sba_execute_block( __( 'SSRF探测: OEmbed代理', SBA_TEXT_DOMAIN ) );
 
-        if ( strpos( $uri, '/.well-known' ) !== false ) sba_execute_block( __( '扫描: .well-known', SBA_TEXT_DOMAIN ) );
-        if ( strpos( $uri, '/wp-json/yoast' ) !== false ) sba_execute_block( __( '扫描: yoast', SBA_TEXT_DOMAIN ) );
-        if ( strpos( $uri, '/wp-json/acf' ) !== false ) sba_execute_block( __( '扫描: acf', SBA_TEXT_DOMAIN ) );
-        if ( strpos( $uri, '/wp-json/tribe' ) !== false ) sba_execute_block( __( '扫描: tribe', SBA_TEXT_DOMAIN ) );
-        if ( strpos( $uri, '/wp-json/woocommerce' ) !== false ) sba_execute_block( __( '扫描: woo', SBA_TEXT_DOMAIN ) );
+        $scan_patterns = array(
+            '/.well-known' => '.well-known',
+            '/wp-json/yoast' => 'yoast',
+            '/wp-json/acf' => 'acf',
+            '/wp-json/tribe' => 'tribe',
+            '/wp-json/woocommerce' => 'woo'
+        );
+        foreach ( $scan_patterns as $p => $label ) {
+            if ( strpos( $uri . $rest, $p ) !== false ) {
+                sba_execute_block( sprintf( __( '扫描: %s', SBA_TEXT_DOMAIN ), $label ) );
+            }
+        }
     }
 
     $limit = (int) sba_get_option( 'auto_block_limit', 0 );

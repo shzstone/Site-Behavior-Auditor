@@ -861,3 +861,9 @@ msgstr ""
 
 msgid "额外黑名单 (CIDR)"
 msgstr ""
+
+msgid "数据探测: 敏感信息/内容抓取"
+msgstr ""
+
+msgid "扫描: %s"
+msgstr ""

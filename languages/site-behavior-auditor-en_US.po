@@ -861,3 +861,9 @@ msgstr "Outbound IP Whitelist"
 
 msgid "额外黑名单 (CIDR)"
 msgstr "Extra Blacklist (CIDR)"
+
+msgid "数据探测: 敏感信息/内容抓取"
+msgstr "Data Probing: Sensitive Info/Content Scraping"
+
+msgid "扫描: %s"
+msgstr "Scanning: %s"
