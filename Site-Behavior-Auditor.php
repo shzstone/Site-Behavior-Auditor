@@ -2,7 +2,7 @@
 /**
  * Plugin Name: 综合安全套件 (Site Behavior Auditor + Login Box + SMTP)
  * Description: 集成站点全行为审计、iOS风格登录/注册/忘记密码面板。
- * Version: 4.0.6
+ * Version: 4.1.0
  * Author: Stone
  * Text Domain: site-behavior-auditor
  */
@@ -10,7 +10,7 @@
 if (!defined('ABSPATH')) exit;
 
 // ==================== 常量定义 ====================
-define('SBA_VERSION', '4.0.6');
+define('SBA_VERSION', '4.1.0');
 define('SBA_TEXT_DOMAIN', 'site-behavior-auditor');
 define('SBA_IP_DATA_DIR', WP_CONTENT_DIR . '/uploads/sba_ip_data/');
 define('SBA_IP_V4_FILE', SBA_IP_DATA_DIR . 'ip2region_v4.xdb');
