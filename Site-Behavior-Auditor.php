@@ -192,27 +192,20 @@ function sba_get_ip() {
     if ($ip !== null) return $ip;
 
     $ip_source = sba_get_option('ip_source', 'REMOTE_ADDR');
-    $header_keys = ['REMOTE_ADDR'];
-    switch ($ip_source) {
-        case 'HTTP_CF_CONNECTING_IP':
-            $header_keys = ['HTTP_CF_CONNECTING_IP', 'REMOTE_ADDR'];
-            break;
-        case 'HTTP_X_REAL_IP':
-            $header_keys = ['HTTP_X_REAL_IP', 'REMOTE_ADDR'];
-            break;
-        case 'HTTP_X_FORWARDED_FOR':
-            $header_keys = ['HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'];
-            break;
-    }
+    $header_keys = [];
+
+    if ($ip_source === 'HTTP_CF_CONNECTING_IP') $header_keys = ['HTTP_CF_CONNECTING_IP', 'REMOTE_ADDR'];
+    elseif ($ip_source === 'HTTP_X_REAL_IP') $header_keys = ['HTTP_X_REAL_IP', 'REMOTE_ADDR'];
+    elseif ($ip_source === 'HTTP_X_FORWARDED_FOR') $header_keys = ['HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'];
+    else $header_keys = ['REMOTE_ADDR'];
+
     foreach ($header_keys as $key) {
         if (!empty($_SERVER[$key])) {
-            $ip_list = explode(',', $_SERVER[$key]);
-            foreach ($ip_list as $temp) {
-                $temp = trim($temp);
-                if (filter_var($temp, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-                    $ip = $temp;
-                    return $ip;
-                }
+            $ips = explode(',', $_SERVER[$key]);
+            $temp = trim($ips[0]);
+            if (filter_var($temp, FILTER_VALIDATE_IP)) {
+                $ip = $temp;
+                return $ip;
             }
         }
     }
@@ -244,11 +237,21 @@ function sba_is_user_whitelisted() {
 
 function sba_is_ip_whitelisted($ip = null) {
     $ip = $ip ?: sba_get_ip();
+    if (empty($ip) || $ip === '0.0.0.0') return false;
+
+    if (function_exists('current_user_can') && current_user_can('manage_options')) return true;
+
     $opts = get_option('sba_settings', []);
     $raw = str_replace(["\r", "\n"], ',', (string)($opts['ip_whitelist'] ?? ''));
     $list = array_filter(array_map('trim', explode(',', $raw)));
-    if (in_array($ip, $list)) return true;
-    if (function_exists('current_user_can') && current_user_can('manage_options')) return true;
+
+    $current_ip_hex = bin2hex((string)@inet_pton($ip));
+
+    foreach ($list as $w_ip) {
+        if ($ip === $w_ip) return true;
+        $w_ip_hex = bin2hex((string)@inet_pton($w_ip));
+        if (!empty($w_ip_hex) && $current_ip_hex === $w_ip_hex) return true;
+    }
     return false;
 }
 
@@ -428,8 +431,8 @@ function sba_check_rate_limit($ip, $limit) {
 
 function sba_execute_block($reason) {
     $ip = sba_get_ip();
-    if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) return;
-    if (sba_is_user_whitelisted() || sba_is_ip_whitelisted($ip)) return;
+    if (empty($ip) || $ip === '0.0.0.0') return;
+    if (sba_is_ip_whitelisted($ip)) return;
 
     global $wpdb;
     $wpdb->insert($wpdb->prefix . 'sba_blocked_log', [
@@ -444,10 +447,11 @@ function sba_execute_block($reason) {
 
     $url = sba_get_option('block_target_url', '');
     if (!empty($url) && filter_var($url, FILTER_VALIDATE_URL)) {
-        header("Location: $url");
+        wp_redirect($url);
         exit;
     }
     wp_die(sprintf(__("🛡️ SBA 拦截：%s", SBA_TEXT_DOMAIN), $reason), __('Security Block', SBA_TEXT_DOMAIN), 403);
+    exit;
 }
 
 // ==================== 蜜罐陷阱 ====================
@@ -542,7 +546,7 @@ function sba_flush_pv_buffer_batch($date, $increment = 0) {
     $key = SBA_PREFIX_PV . $date;
     global $wpdb;
     $wpdb->query($wpdb->prepare(
-        "INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no') ON DUPLICATE KEY UPDATE option_value = CAST(option_value AS UNSIGNED) + %d",
+        "INSERT INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no') ON DUPLICATE KEY UPDATE option_value = option_value + %d",
         $key, (string)$increment, $increment
     ));
     delete_transient('sba_read_snapshot_' . $key);
@@ -728,7 +732,7 @@ function sba_stats_engine() {
 }
 
 // ==================== 动态规则引擎 ====================
-add_action('init', 'sba_security_engine', 1);
+add_action('init', 'sba_security_engine', 5);
 function sba_security_engine() {
     $ip = sba_get_ip();
     if (sba_is_ip_whitelisted($ip)) return;
