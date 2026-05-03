@@ -911,3 +911,6 @@ msgstr "Are you sure you want to permanently ban this IP?"
 
 msgid "确定要解除该 IP 的封禁吗？"
 msgstr "Are you sure you want to unban this IP?"
+
+msgid "保存设置"
+msgstr "Save Settings"

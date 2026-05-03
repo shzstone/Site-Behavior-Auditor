@@ -908,3 +908,6 @@ msgstr ""
 
 msgid "确定要解除该 IP 的封禁吗？"
 msgstr ""
+
+msgid "保存设置"
+msgstr "Save Settings"
