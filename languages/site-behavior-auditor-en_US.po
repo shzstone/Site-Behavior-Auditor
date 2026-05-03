@@ -1,20 +1,250 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: SBA 4.0.6\n"
+"Project-Id-Version: Site Behavior Auditor 4.0.6\n"
 "Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-03 21:50+0800\n"
+"PO-Revision-Date: 2026-05-03 21:55+0800\n"
 "Last-Translator: Stone\n"
-"Language-Team: English\n"
+"Language-Team: English (US)\n"
 "Language: en_US\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.0\n"
+"X-Domain: site-behavior-auditor\n"
+
+msgid "综合安全套件 (Site Behavior Auditor + Login Box + SMTP)"
+msgstr "Security Suite (Site Behavior Auditor + Login Box + SMTP)"
+
+msgid "集成站点全行为审计、iOS风格登录/注册/忘记密码面板。"
+msgstr "Integrated behavior audit, iOS-style Login/Register/Forgot Password panel."
 
 msgid "SBA 安全套件"
 msgstr "SBA Security Suite"
 
 msgid "未检测到官方 ip2region 类库，已自动降级为内置简化版（仅支持 IPv4 查询）。如需完整 IPv6 支持，请将官方类库放置于"
-msgstr "Official ip2region library not detected. Downgraded to built-in version (IPv4 only). For IPv6 support, place the official library at"
+msgstr "Official ip2region library not detected. Downgraded to built-in IPv4 version. For IPv6 support, place the library in"
+
+msgid "✔"
+msgstr "✔"
+
+msgid "物理级加白成功"
+msgstr "Hardware-level Whitelisting Success"
+
+msgid "识别到的真实公网 IP:"
+msgstr "Identified Public IP:"
+
+msgid "该地址已成功通过密钥验证并加入永久白名单。"
+msgstr "This address has passed key verification and joined the permanent whitelist."
+
+msgid "请点击下方按钮返回，拦截已解除。"
+msgstr "Click the button below to return; blocking has been lifted."
+
+msgid "返回首页"
+msgstr "Return to Home"
+
+msgid "XML-RPC 请求过多，IP 已被临时封锁"
+msgstr "Too many XML-RPC requests. IP temporarily blocked."
+
+msgid "XML-RPC 高危方法拦截"
+msgstr "XML-RPC High-risk method blocked"
+
+msgid "触碰隐藏蜜罐陷阱"
+msgstr "Triggered hidden honeypot trap"
+
+msgid "探测敏感文件: SQL"
+msgstr "Sensitive file probing: SQL"
+
+msgid "探测敏感文件: LOG"
+msgstr "Sensitive file probing: LOG"
+
+msgid "探测敏感文件: BAK"
+msgstr "Sensitive file probing: BAK"
+
+msgid "探测敏感文件: ENV"
+msgstr "Sensitive file probing: ENV"
+
+msgid "探测敏感文件: GIT"
+msgstr "Sensitive file probing: GIT"
+
+msgid "探测敏感文件: SVN"
+msgstr "Sensitive file probing: SVN"
+
+msgid "探测敏感文件: README"
+msgstr "Sensitive file probing: README"
+
+msgid "探测敏感文件: LICENSE"
+msgstr "Sensitive file probing: LICENSE"
+
+msgid "探测敏感文件: CONFIG"
+msgstr "Sensitive file probing: CONFIG"
+
+msgid "探测敏感文件: PHPINFO"
+msgstr "Sensitive file probing: PHPINFO"
+
+msgid "探测敏感文件: HTACCESS"
+msgstr "Sensitive file probing: HTACCESS"
+
+msgid "探测敏感文件: HTPASSWD"
+msgstr "Sensitive file probing: HTPASSWD"
+
+msgid "探测敏感文件: INI"
+msgstr "Sensitive file probing: INI"
+
+msgid "探测敏感文件: MAIL"
+msgstr "Sensitive file probing: MAIL"
+
+msgid "探测敏感文件: OPML"
+msgstr "Sensitive file probing: OPML"
+
+msgid "备份文件 (.bgbk)"
+msgstr "Backup File (.bgbk)"
+
+msgid "压缩包文件"
+msgstr "Archive File (zip/rar/7z)"
+
+msgid "数据库文件"
+msgstr "Database File (db/sqlite)"
+
+msgid "Docker Compose 配置"
+msgstr "Docker Compose Config"
+
+msgid "Dockerfile"
+msgstr "Dockerfile"
+
+msgid "IDE 配置目录"
+msgstr "IDE Config Dir"
+
+msgid "Node.js 项目文件"
+msgstr "Node.js Project File"
+
+msgid "WordPress 调试日志"
+msgstr "WordPress Debug Log"
+
+msgid "环境配置备份"
+msgstr "Environment Config Backup"
+
+msgid "编辑器临时文件"
+msgstr "Editor Temp File"
+
+msgid "自动备份文件"
+msgstr "Auto Backup File"
+
+msgid "敏感文件探测: %s"
+msgstr "Sensitive file probing: %s"
+
+msgid "非法路径探测: .env"
+msgstr "Illegal path probing: .env"
+
+msgid "非法路径探测: .git"
+msgstr "Illegal path probing: .git"
+
+msgid "非法路径探测: .sql"
+msgstr "Illegal path probing: .sql"
+
+msgid "非法路径探测: .ssh"
+msgstr "Illegal path probing: .ssh"
+
+msgid "非法路径探测: wp-config-bak"
+msgstr "Illegal path probing: wp-config-bak"
+
+msgid "非法路径探测: phpinfo"
+msgstr "Illegal path probing: phpinfo"
+
+msgid "非法路径探测: swp"
+msgstr "Illegal path probing: swp"
+
+msgid "非法路径探测: vscode"
+msgstr "Illegal path probing: vscode"
+
+msgid "非法路径探测: opml"
+msgstr "Illegal path probing: opml"
+
+msgid "非法路径探测: install"
+msgstr "Illegal path probing: install"
+
+msgid "非法路径探测: %s"
+msgstr "Illegal path probing: %s"
+
+msgid "自动化扫描: sqlmap"
+msgstr "Automated scan: sqlmap"
+
+msgid "自动化扫描: nmap"
+msgstr "Automated scan: nmap"
+
+msgid "自动化扫描: dirbuster"
+msgstr "Automated scan: dirbuster"
+
+msgid "自动化扫描: nikto"
+msgstr "Automated scan: nikto"
+
+msgid "自动化扫描: zgrab"
+msgstr "Automated scan: zgrab"
+
+msgid "自动化扫描: python"
+msgstr "Automated scan: python"
+
+msgid "自动化扫描: go-client"
+msgstr "Automated scan: go-client"
+
+msgid "自动化扫描: java"
+msgstr "Automated scan: java"
+
+msgid "自动化扫描: curl"
+msgstr "Automated scan: curl"
+
+msgid "自动化扫描: wget"
+msgstr "Automated scan: wget"
+
+msgid "自动化扫描: masscan"
+msgstr "Automated scan: masscan"
+
+msgid "自动化扫描: %s"
+msgstr "Automated scan: %s"
+
+msgid "恶意载荷注入（命令/SQL/XSS/文件包含）"
+msgstr "Malicious payload injection (RCE/SQLi/XSS/LFI)"
+
+msgid "物理封锁：入口禁用"
+msgstr "Physical Block: Entrance Disabled"
+
+msgid "物理封锁：未经授权"
+msgstr "Physical Block: Unauthorized"
+
+msgid "非法扫描参数拦截"
+msgstr "Illegal scanning parameter blocked"
+
+msgid "异常 URL 参数"
+msgstr "Abnormal URL parameter"
+
+msgid "数据探测: 敏感信息/内容抓取"
+msgstr "Data probing: Sensitive info/Content scraping"
+
+msgid "探测: filter注入"
+msgstr "Probing: filter injection"
+
+msgid "探测: orderby注入"
+msgstr "Probing: orderby injection"
+
+msgid "REST限制: 非法上下文"
+msgstr "REST limit: Illegal context"
+
+msgid "REST限制: 分页超限"
+msgstr "REST limit: Pagination exceeded"
+
+msgid "REST限制: 偏移超限"
+msgstr "REST limit: Offset exceeded"
+
+msgid "SSRF探测: OEmbed代理"
+msgstr "SSRF probing: OEmbed proxy"
+
+msgid "扫描: %s"
+msgstr "Scanning: %s"
+
+msgid "恶意载荷注入（静态资源）"
+msgstr "Malicious payload injection (Static resource)"
+
+msgid "访问速率异常"
+msgstr "Abnormal access rate (CC)"
 
 msgid "REST API 访问受限"
 msgstr "REST API access restricted"
@@ -23,7 +253,10 @@ msgid "无权限访问此 API"
 msgstr "No permission to access this API"
 
 msgid "REST API 索引访问受限"
-msgstr "REST API index access restricted"
+msgstr "REST API index restricted"
+
+msgid "空字节注入攻击"
+msgstr "Null-byte Injection Attack"
 
 msgid "🛡️ SBA 拦截：%s"
 msgstr "🛡️ SBA Blocked: %s"
@@ -31,32 +264,44 @@ msgstr "🛡️ SBA Blocked: %s"
 msgid "Security Block"
 msgstr "Security Block"
 
+msgid "登录失败次数过多 (暴力破解防护)"
+msgstr "Too many login failures (Brute-force protection)"
+
+msgid "您的 IP 处于临时封禁期，请 15 分钟后再试。"
+msgstr "Your IP is temporarily banned. Try again in 15 minutes."
+
+msgid "尝试次数太多，请稍后再试。"
+msgstr "Too many attempts. Try again later."
+
 msgid "未知"
 msgstr "Unknown"
 
 msgid "暂无更多记录"
-msgstr "No more records available"
+msgstr "No more records"
 
 msgid "暂无拦截记录"
-msgstr "No block records found"
+msgstr "No blocked records"
 
 msgid "权限不足"
-msgstr "Insufficient permissions"
+msgstr "Permission Denied"
 
 msgid "暂无威胁数据"
-msgstr "No threat data available"
+msgstr "No threat data"
 
 msgid "永久封禁"
-msgstr "Permanent Ban"
+msgstr "Permanently Ban"
 
 msgid "无效的 IP 地址"
-msgstr "Invalid IP address"
+msgstr "Invalid IP Address"
 
 msgid "此 IP 在白名单中，无法封禁"
-msgstr "This IP is in the whitelist and cannot be banned"
+msgstr "This IP is whitelisted and cannot be banned."
+
+msgid "管理员手动封禁 IP: %s"
+msgstr "Admin Manually Banned IP: %s"
 
 msgid "IP %s 已被永久封禁"
-msgstr "IP %s has been permanently banned"
+msgstr "IP %s has been permanently banned."
 
 msgid "暂无手动封禁的 IP。"
 msgstr "No manually banned IPs."
@@ -71,19 +316,19 @@ msgid "解除封禁"
 msgstr "Unban"
 
 msgid "历史数据对账完成！共同步 %d 条记录"
-msgstr "Historical data sync completed! Total %d records synchronized"
+msgstr "Historical data sync complete! %d records synced."
 
 msgid "对账失败，请检查数据库。"
-msgstr "Sync failed, please check the database."
+msgstr "Sync failed. Please check the database."
 
 msgid "IP %s 已解除封禁"
-msgstr "IP %s has been unbanned"
+msgstr "IP %s has been unbanned."
 
 msgid "未在封禁列表中找到该 IP"
-msgstr "IP not found in the ban list"
+msgstr "IP not found in ban list."
 
 msgid "您的 IP 已被永久封禁。如有疑问，请联系管理员。"
-msgstr "Your IP has been permanently banned. Please contact the administrator if you have questions."
+msgstr "Your IP has been permanently banned. Contact admin for details."
 
 msgid "安全提醒"
 msgstr "Security Alert"
@@ -91,23 +336,14 @@ msgstr "Security Alert"
 msgid "IP: %s\n失败次数: %d\n封禁至: %s"
 msgstr "IP: %s\nFailed Attempts: %d\nBanned Until: %s"
 
-msgid "登录失败次数过多 (暴力破解防护)"
-msgstr "Too many login failures (Brute-force protection)"
-
-msgid "您的 IP 处于临时封禁期，请 15 分钟后再试。"
-msgstr "Your IP is temporarily banned. Please try again in 15 minutes."
-
-msgid "尝试次数太多，请稍后再试。"
-msgstr "Too many attempts, please try again later."
-
 msgid "密码重置链接已发送到您的邮箱，请查收。"
-msgstr "A password reset link has been sent to your email."
+msgstr "Reset link sent to your email. Please check."
 
 msgid "密码修改成功，请使用新密码登录。"
-msgstr "Password changed successfully. Please log in with your new password."
+msgstr "Password changed. Use your new password to login."
 
 msgid "账号激活成功，请登录。"
-msgstr "Account activated successfully. Please log in."
+msgstr "Account activated. Please login."
 
 msgid "欢迎回来"
 msgstr "Welcome Back"
@@ -140,7 +376,7 @@ msgid "记住我"
 msgstr "Remember Me"
 
 msgid "验证码"
-msgstr "CAPTCHA"
+msgstr "Captcha"
 
 msgid "用户名"
 msgstr "Username"
@@ -167,34 +403,34 @@ msgid "两次输入的密码不一致。"
 msgstr "Passwords do not match."
 
 msgid "密码必须至少8位，且包含字母和数字。"
-msgstr "Password must be at least 8 characters and include both letters and numbers."
+msgstr "Must be 8+ chars with letters & numbers."
 
 msgid "请先填写验证码。"
-msgstr "Please enter the CAPTCHA first."
+msgstr "Please enter captcha first."
 
 msgid "网络错误，请稍后重试。"
-msgstr "Network error, please try again later."
+msgstr "Network error. Try again later."
 
 msgid "验证码："
-msgstr "CAPTCHA: "
+msgstr "Captcha: "
 
 msgid "登录成功"
-msgstr "Login Successful"
+msgstr "Login Success"
 
 msgid "注册成功，请查收激活邮件。"
-msgstr "Registration successful. Please check your activation email."
+msgstr "Registration successful. Please check activation email."
 
 msgid "重置链接已发送至您的邮箱。"
 msgstr "Reset link has been sent to your email."
 
 msgid "由于多次失败，您的IP已被封禁24小时。"
-msgstr "Due to multiple failures, your IP has been banned for 24 hours."
+msgstr "IP banned for 24 hours due to multiple failures."
 
 msgid "操作过于频繁，请稍后再试。"
-msgstr "Operation too frequent, please try again later."
+msgstr "Too frequent operations. Try again later."
 
 msgid "验证码错误"
-msgstr "Invalid CAPTCHA"
+msgstr "Invalid Captcha"
 
 msgid "所有字段都不能为空。"
 msgstr "All fields are required."
@@ -206,58 +442,49 @@ msgid "邮箱已被注册。"
 msgstr "Email already registered."
 
 msgid "邮件发送失败，请联系管理员。"
-msgstr "Email sending failed, please contact the administrator."
+msgstr "Mail delivery failed. Contact admin."
 
 msgid "用户名或邮箱未注册。"
-msgstr "Username or email not registered."
+msgstr "Username or Email not registered."
 
 msgid "无法生成重置链接，请稍后重试。"
-msgstr "Cannot generate reset link, please try again later."
-
-msgid "您已被封禁24小时，请稍后再试。"
-msgstr "You have been banned for 24 hours, please try again later."
-
-msgid "当前无需验证码"
-msgstr "CAPTCHA not required currently"
+msgstr "Cannot generate reset link. Try later."
 
 msgid "账号尚未激活，请查收激活邮件。"
-msgstr "Account not activated, please check your email."
+msgstr "Account not activated. Check your email."
 
 msgid "请激活您的账号 - %s"
-msgstr "Please activate your account - %s"
+msgstr "Activate your account - %s"
 
 msgid "您好 %s,\n\n请点击以下链接激活您的账号（链接24小时内有效）：\n%s\n\n如果没有注册过，请忽略此邮件。"
-msgstr "Hello %s,\n\nPlease click the link below to activate your account (valid for 24 hours):\n%s\n\nIf you did not register, please ignore this email."
+msgstr "Hello %s,\n\nPlease click the link below to activate (valid for 24h):\n%s\n\nIf you did not register, ignore this."
 
 msgid "重置密码"
 msgstr "Reset Password"
 
 msgid "请点击以下链接重置密码（链接24小时内有效）：\n%s"
-msgstr "Please click the link below to reset your password (valid for 24 hours):\n%s"
+msgstr "Click link below to reset (valid for 24h):\n%s"
 
 msgid "激活链接无效或已使用。"
-msgstr "Activation link is invalid or has expired."
+msgstr "Activation link invalid or already used."
 
 msgid "激活失败"
 msgstr "Activation Failed"
 
 msgid "激活码不正确。"
-msgstr "Incorrect activation code."
+msgstr "Incorrect activation key."
 
 msgid "全行为审计"
-msgstr "Site Behavior Auditor"
+msgstr "Behavior Audit"
 
 msgid "防御设置"
-msgstr "Defense Settings"
+msgstr "Security Settings"
 
 msgid "威胁排行榜"
-msgstr "Threat Rankings"
+msgstr "Threat Ranking"
 
 msgid "SMTP 邮件"
 msgstr "SMTP Mail"
-
-msgid "🚀 SBA 站点行为监控 v%s"
-msgstr "🚀 SBA Behavior Dashboard v%s"
 
 msgid "当前在线:"
 msgstr "Online Now:"
@@ -272,7 +499,7 @@ msgid "今日 (%s) 拦截:"
 msgstr "Today (%s) Blocked:"
 
 msgid "📈 30天访问趋势"
-msgstr "📈 30-Day Traffic Trends"
+msgstr "📈 30-Day Traffic Trend"
 
 msgid "📊 50天审计详表"
 msgstr "📊 50-Day Audit Table"
@@ -281,16 +508,13 @@ msgid "日期"
 msgstr "Date"
 
 msgid "UV (人)"
-msgstr "UV (Users)"
+msgstr "UV (People)"
 
 msgid "PV (次)"
 msgstr "PV (Hits)"
 
 msgid "拦截 (次)"
 msgstr "Blocked (Times)"
-
-msgid "拦截"
-msgstr "Blocked"
 
 msgid "深度"
 msgstr "Depth"
@@ -305,13 +529,13 @@ msgid "IP"
 msgstr "IP"
 
 msgid "归属地"
-msgstr "Location"
+msgstr "Geo Location"
 
 msgid "访问路径"
-msgstr "Access Path"
+msgstr "Path"
 
 msgid "总记录:"
-msgstr "Total Records:"
+msgstr "Total:"
 
 msgid "◀ 上页"
 msgstr "◀ Prev"
@@ -320,13 +544,13 @@ msgid "第"
 msgstr "Page"
 
 msgid "页"
-msgstr "Of"
+msgstr " "
 
 msgid "下页 ▶"
 msgstr "Next ▶"
 
 msgid "🚫 拦截日志 (%s)"
-msgstr "🚫 Block Logs (%s)"
+msgstr "🚫 Blocked Logs (%s)"
 
 msgid "拦截 IP"
 msgstr "Blocked IP"
@@ -334,92 +558,86 @@ msgstr "Blocked IP"
 msgid "原因与目标"
 msgstr "Reason & Target"
 
+msgid "拦截"
+msgstr "Blocked"
+
 msgid "🔥 高频威胁排行榜"
-msgstr "🔥 Top Threat Ranking"
+msgstr "🔥 High Frequency Threat Ranking"
 
 msgid "🔄 同步历史数据"
 msgstr "🔄 Sync History"
 
 msgid "实时统计"
-msgstr "Real-time Statistics"
+msgstr "Real-time Stats"
 
 msgid "排名"
 msgstr "Rank"
 
-msgid "拦截次数"
-msgstr "Blocks"
-
 msgid "最后活动"
-msgstr "Last Seen"
+msgstr "Last Active"
 
 msgid "加载中..."
 msgstr "Loading..."
-
-msgid "◀ 上一页"
-msgstr "◀ Previous"
-
-msgid "下一页 ▶"
-msgstr "Next ▶"
 
 msgid "🚫 永久封禁名单"
 msgstr "🚫 Permanent Ban List"
 
 msgid "🛠️ SBA 防御设置"
-msgstr "🛠️ SBA Settings"
+msgstr "🛠️ SBA Security Config"
 
 msgid "📖 核心功能配置指南"
-msgstr "📖 Core Configuration Guide"
+msgstr "📖 Core Feature Guide"
 
 msgid "1. <b>性能对账：</b>数据每 10 分钟写库。若觉延迟，按 <code>Ctrl + F5</code> 强制对账。白名单用户豁免所有拦截。"
-msgstr "1. <b>Data Sync:</b> Data is written to DB every 10 mins. Use <code>Ctrl + F5</code> for immediate sync. Whitelisted users are exempt."
+msgstr "1. <b>Performance:</b> Data writes every 10m. Press <code>Ctrl+F5</code> to force sync. Whitelisted users are exempt."
 
 msgid "2. <b>入口保护：</b>系统已自动封锁 wp-login.php 和 wp-admin 目录。请使用 <code>[sba_login_box]</code> 短代码在前台展示登录面板。"
-msgstr "2. <b>Entrance Protection:</b> wp-login.php and wp-admin are blocked. Use the <code>[sba_login_box]</code> shortcode for front-end login."
+msgstr "2. <b>Entry Protection:</b> wp-login and wp-admin are blocked. Use <code>[sba_login_box]</code> shortcode for front-end login."
 
 msgid "3. <b>IP 信任：</b>看仪表盘 IP。若为 127.0.0.1 或内网 IP，请根据 CDN/代理环境切换至「Nginx」或「Cloudflare」。"
-msgstr "3. <b>IP Trust:</b> If dashboard shows 127.0.0.1, switch IP source to Nginx or Cloudflare based on your environment."
+msgstr "3. <b>IP Trust:</b> Check Dashboard IP. If 127.0.0.1, change source to Nginx or Cloudflare."
 
 msgid "4. <b>AJAX 补丁：</b>无痕访问首页。若「访客轨迹」未增加记录，说明 PHP 被静态缓存截断，此时必须开启。"
-msgstr "4. <b>AJAX Patch:</b> If tracks aren't recording due to static caching, enable this to bypass cache for statistics."
+msgstr "4. <b>AJAX Patch:</b> Enable this if visitor tracks aren't updating due to static caching."
 
 msgid "5. <b>爬虫防御：</b>「Cookie 校验」识别无状态脚本。内置「蜜罐陷阱」会自动诱捕并封禁扫描页面的恶意爬虫。"
-msgstr "5. <b>Bot Defense:</b> Cookie verification identifies stateless scripts. Honeypots trap and ban malicious crawlers."
+msgstr "5. <b>Anti-Bot:</b> Cookie check identifies scripts. Honeypot traps and bans scanners automatically."
 
 msgid "✅ 信任通道"
-msgstr "✅ Trust Channels"
+msgstr "✅ Trust Channel"
 
 msgid "用户名白名单"
 msgstr "Username Whitelist"
 
 msgid "登录此用户时，系统自动信任，不执行拦截逻辑。"
-msgstr "No blocking logic will be applied when logged in as these users."
+msgstr "Logged-in users in this list are exempt from blocks."
 
 msgid "应急密钥"
 msgstr "Emergency Key"
 
 msgid "访问 <code>域名/?sba_key=密钥</code> 可自动加白名单。"
-msgstr "Access <code>domain/?sba_key=your_key</code> to auto-whitelist your IP."
+msgstr "Visit <code>domain.com/?sba_key=key</code> to whitelist your IP automatically."
 
 msgid "IP 白名单"
 msgstr "IP Whitelist"
 
 msgid "每行一个 IP。支持 IPv4 和 IPv6。"
-msgstr "One IP per line. Supports IPv4 and IPv6."
+msgstr "One IP per line. Supports IPv4/v6."
 
 msgid "🚫 防御配置"
-msgstr "🚫 Security Config"
+msgstr "🚫 Defense Config"
 
 msgid "CC 封禁阈值"
-msgstr "CC Rate Limit"
+msgstr "CC Ban Threshold"
 
 msgid "次/分"
 msgstr "Req/Min"
 
 msgid "单 IP 每分钟请求超过此值自动封禁（0 为关闭）。"
-msgstr "Auto-ban if single IP exceeds this limit per minute (0 to disable)."
+msgstr "Ban IP if requests exceed this per minute (0 to disable)."
 
 msgid "IP 信任来源"
-msgstr "IP Source Trust"
+msgstr "IP Trust Source"
 
 msgid "REMOTE_ADDR (标准直连)"
 msgstr "REMOTE_ADDR (Direct)"
@@ -428,46 +646,64 @@ msgid "Cloudflare (CF_IP)"
 msgstr "Cloudflare (CF_IP)"
 
 msgid "Nginx 转发 (REAL_IP)"
-msgstr "Nginx Reverse Proxy (REAL_IP)"
+msgstr "Nginx (REAL_IP)"
 
 msgid "标准代理 (XFF)"
-msgstr "Standard Proxy (XFF)"
+msgstr "Proxy (XFF)"
 
 msgid "根据 CDN 环境选择正确的 IP 来源。"
-msgstr "Select the correct IP source based on your CDN environment."
+msgstr "Select the correct source based on your CDN environment."
 
 msgid "AJAX 异步统计"
-msgstr "AJAX Async Statistics"
+msgstr "AJAX Async Stats"
 
 msgid "启用异步统计（解决静态 HTML 缓存导致的 PV 丢失）"
-msgstr "Enable async stats to fix PV loss caused by static HTML caching."
+msgstr "Enable async stats to solve PV loss from static caching."
 
 msgid "追加拦截路径"
-msgstr "Extra Block Paths"
+msgstr "Evil Paths"
 
 msgid "爬虫特征正则"
-msgstr "Bot Patterns (RegEx)"
+msgstr "Crawler Regex"
 
 msgid "高级策略"
 msgstr "Advanced Policy"
 
 msgid "启用 Cookie 身份校验"
-msgstr "Enable Cookie Verification"
+msgstr "Enable Cookie Validation"
 
 msgid "拦截重定向"
 msgstr "Block Redirect URL"
 
-msgid "保存核心配置"
-msgstr "Save Settings"
+msgid "🔒 出站安全（SSRF 防御）"
+msgstr "🔒 Outbound Security (SSRF)"
+
+msgid "DNS Rebinding"
+msgstr "DNS Rebinding"
+
+msgid "启用强制 IP 直连 + Host 头校验"
+msgstr "Enable Forced IP Connection + Host Header Check"
+
+msgid "出站 IP 白名单"
+msgstr "Outbound Whitelist"
+
+msgid "192.168.1.100\n10.0.0.0/8"
+msgstr "192.168.1.100\n10.0.0.0/8"
+
+msgid "额外黑名单 (CIDR)"
+msgstr "Extra Blacklist (CIDR)"
+
+msgid "192.0.2.0/24, 203.0.113.0/24"
+msgstr "192.0.2.0/24, 203.0.113.0/24"
 
 msgid "📁 IP 归属地库 (ip2region xdb) 分片上传"
-msgstr "📁 IP Database (ip2region xdb) Chunked Upload"
+msgstr "📁 IP Database (ip2region xdb) Chunk Upload"
 
 msgid "IPv4 库"
-msgstr "IPv4 Database"
+msgstr "IPv4 Library"
 
 msgid "IPv6 库"
-msgstr "IPv6 Database"
+msgstr "IPv6 Library"
 
 msgid "已上传"
 msgstr "Uploaded"
@@ -487,17 +723,14 @@ msgstr "⚙️ Server Environment"
 msgid "PHP 版本"
 msgstr "PHP Version"
 
-msgid "秒"
-msgstr "sec"
-
 msgid "若需上传大文件（超过 10MB），建议将 <code>upload_max_filesize</code> 和 <code>post_max_size</code> 调至至少 64M。"
-msgstr "To upload large files (>10MB), set upload_max_filesize and post_max_size to at least 64M."
+msgstr "If uploading >10MB, adjust upload_max_filesize and post_max_size to 64M."
 
 msgid "网络良好，分片大小提升至"
-msgstr "Network stable, chunk size increased to"
+msgstr "Network good, chunk size increased to"
 
 msgid "上传失败"
-msgstr "Upload failed"
+msgstr "Upload Failed"
 
 msgid "单片过大，已降低至"
 msgstr "Chunk too large, reduced to"
@@ -506,25 +739,25 @@ msgid "重试中..."
 msgstr "Retrying..."
 
 msgid "网络错误"
-msgstr "Network error"
+msgstr "Network Error"
 
 msgid "上传超时"
-msgstr "Upload timeout"
+msgstr "Upload Timeout"
 
 msgid "区间"
 msgstr "Range"
 
 msgid "上传失败，"
-msgstr "Upload failed,"
+msgstr "Upload failed, "
 
 msgid "秒后重试"
-msgstr "seconds before retry"
+msgstr "s before retry"
 
 msgid "查询状态失败"
 msgstr "Failed to query status"
 
 msgid "中断请求失败"
-msgstr "Cancel request failed"
+msgstr "Failed to interrupt"
 
 msgid "准备上传，动态分片大小"
 msgstr "Preparing upload, dynamic chunk size"
@@ -533,46 +766,46 @@ msgid "剩余"
 msgstr "Remaining"
 
 msgid "个区间"
-msgstr "ranges"
+msgstr "intervals"
+
+msgid "上传并合并完成"
+msgstr "Upload and merge complete"
 
 msgid "上传成功，正在刷新页面..."
-msgstr "Upload successful, refreshing page..."
+msgstr "Upload successful, refreshing..."
 
 msgid "上传成功"
-msgstr "Upload success"
+msgstr "Upload Successful"
 
 msgid "上传失败:"
-msgstr "Upload failed:"
+msgstr "Upload Failed:"
 
 msgid "上传未完全完成"
 msgstr "Upload incomplete"
+
+msgid "上传失败："
+msgstr "Upload Failed: "
 
 msgid "请选择文件"
 msgstr "Please select a file"
 
 msgid "只允许 .xdb 格式的文件"
-msgstr "Only .xdb files allowed"
+msgstr "Only .xdb files allowed."
 
 msgid "确定要中断上传并清理已上传的临时文件吗？"
-msgstr "Are you sure you want to cancel and clean up temp files?"
+msgstr "Are you sure you want to cancel and cleanup temp files?"
 
 msgid "正在中断并清理临时文件..."
-msgstr "Canceling and cleaning up..."
+msgstr "Interrupting and cleaning temp files..."
 
 msgid "已中断上传，临时文件已清理"
-msgstr "Upload canceled, temp files cleaned up"
+msgstr "Upload cancelled and temp files cleaned."
 
 msgid "中断失败："
-msgstr "Cancel failed:"
-
-msgid "上传并合并完成"
-msgstr "Upload and merge completed"
+msgstr "Interrupt failed: "
 
 msgid "分片接收成功"
-msgstr "Chunk received"
-
-msgid "SMTP 邮件设置"
-msgstr "SMTP Email Settings"
+msgstr "Chunk received."
 
 msgid "设置已保存。"
 msgstr "Settings saved."
@@ -581,25 +814,31 @@ msgid "SMTP 测试邮件 - %s"
 msgstr "SMTP Test Mail - %s"
 
 msgid "这是一封测试邮件，确认您的 SMTP 配置正确。"
-msgstr "This is a test email to confirm your SMTP configuration."
+msgstr "This is a test mail to confirm SMTP settings."
 
 msgid "测试邮件已发送到 %s，请检查收件箱。"
-msgstr "Test email sent to %s, please check your inbox."
+msgstr "Test mail sent to %s. Please check."
 
 msgid "测试邮件发送失败：%s"
-msgstr "Test email failed: %s"
+msgstr "Test mail failed: %s"
 
 msgid "请输入有效的测试邮箱地址。"
-msgstr "Please enter a valid test email address."
+msgstr "Please enter a valid test email."
+
+msgid "SMTP 邮件设置"
+msgstr "SMTP Mail Config"
 
 msgid "SMTP 主机"
 msgstr "SMTP Host"
+
+msgid "例如：smtp.gmail.com"
+msgstr "e.g., smtp.gmail.com"
 
 msgid "端口"
 msgstr "Port"
 
 msgid "常用：587 (TLS) 或 465 (SSL)"
-msgstr "Common: 587 (TLS) or 465 (SSL)"
+msgstr "Commonly 587 (TLS) or 465 (SSL)"
 
 msgid "加密方式"
 msgstr "Encryption"
@@ -607,8 +846,14 @@ msgstr "Encryption"
 msgid "无"
 msgstr "None"
 
+msgid "TLS"
+msgstr "TLS"
+
+msgid "SSL"
+msgstr "SSL"
+
 msgid "启用认证"
-msgstr "Authentication"
+msgstr "Enable Auth"
 
 msgid "通常需要勾选"
 msgstr "Usually required"
@@ -617,253 +862,40 @@ msgid "发件人邮箱"
 msgstr "From Email"
 
 msgid "留空则使用 WordPress 默认"
-msgstr "Leave blank for WordPress default"
+msgstr "Leave empty for WP default"
 
 msgid "发件人名称"
 msgstr "From Name"
 
-msgid "保存设置"
-msgstr "Save Settings"
+msgid "例如：网站名称"
+msgstr "e.g., Site Name"
 
 msgid "测试邮件发送"
-msgstr "Test Email"
-
-msgid "接收测试邮箱"
-msgstr "Recipient Email"
-
-msgid "发送测试邮件"
 msgstr "Send Test Email"
 
+msgid "接收测试邮箱"
+msgstr "Receiver Email"
+
 msgid "当前在线"
-msgstr "Online"
+msgstr "Online Now"
 
 msgid "今日访客"
-msgstr "Today UV"
+msgstr "Today Visitors"
 
 msgid "累积浏览"
-msgstr "Total PV"
+msgstr "Accumulated PV"
 
 msgid "🛡️ SBA 系统安全限制：仅允许 HTTP/HTTPS 协议。"
-msgstr "🛡️ SBA Security Restriction: Only HTTP/HTTPS protocols allowed."
+msgstr "🛡️ SBA Security: Only HTTP/HTTPS allowed."
+
+msgid "禁止访问内网/敏感 IP: %s"
+msgstr "Access to Intranet/Sensitive IP forbidden: %s"
 
 msgid "🛡️ SBA 系统安全限制：禁止访问内部网络资源。"
-msgstr "🛡️ SBA Security Restriction: Internal network access prohibited."
+msgstr "🛡️ SBA Security: Internal network access prohibited."
 
-msgid "物理级加白成功"
-msgstr "Whitelist Successful"
+msgid "SSRF: %s"
+msgstr "SSRF: %s"
 
-msgid "识别到的真实公网 IP:"
-msgstr "Detected Public IP:"
-
-msgid "该地址已成功通过密钥验证并加入永久白名单。"
-msgstr "This address has been verified and added to the permanent whitelist."
-
-msgid "请点击下方按钮返回，拦截已解除。"
-msgstr "Please click the button below to return; the block has been lifted."
-
-msgid "返回首页"
-msgstr "Return Home"
-
-msgid "探测敏感文件: SQL"
-msgstr "Probing sensitive file: SQL"
-
-msgid "探测敏感文件: LOG"
-msgstr "Probing sensitive file: LOG"
-
-msgid "探测敏感文件: BAK"
-msgstr "Probing sensitive file: BAK"
-
-msgid "探测敏感文件: ENV"
-msgstr "Probing sensitive file: ENV"
-
-msgid "探测敏感文件: GIT"
-msgstr "Probing sensitive file: GIT"
-
-msgid "探测敏感文件: SVN"
-msgstr "Probing sensitive file: SVN"
-
-msgid "探测敏感文件: README"
-msgstr "Probing sensitive file: README"
-
-msgid "探测敏感文件: LICENSE"
-msgstr "Probing sensitive file: LICENSE"
-
-msgid "探测敏感文件: CONFIG"
-msgstr "Probing sensitive file: CONFIG"
-
-msgid "探测敏感文件: PHPINFO"
-msgstr "Probing sensitive file: PHPINFO"
-
-msgid "探测敏感文件: HTACCESS"
-msgstr "Probing sensitive file: HTACCESS"
-
-msgid "探测敏感文件: HTPASSWD"
-msgstr "Probing sensitive file: HTPASSWD"
-
-msgid "探测敏感文件: INI"
-msgstr "Probing sensitive file: INI"
-
-msgid "探测敏感文件: MAIL"
-msgstr "Probing sensitive file: MAIL"
-
-msgid "探测敏感文件: OPML"
-msgstr "Probing sensitive file: OPML"
-
-msgid "自动化扫描: sqlmap"
-msgstr "Auto Scan: sqlmap"
-
-msgid "自动化扫描: nmap"
-msgstr "Auto Scan: nmap"
-
-msgid "自动化扫描: dirbuster"
-msgstr "Auto Scan: dirbuster"
-
-msgid "自动化扫描: nikto"
-msgstr "Auto Scan: nikto"
-
-msgid "自动化扫描: zgrab"
-msgstr "Auto Scan: zgrab"
-
-msgid "自动化扫描: python"
-msgstr "Auto Scan: python-requests"
-
-msgid "自动化扫描: go-client"
-msgstr "Auto Scan: go-http-client"
-
-msgid "自动化扫描: java"
-msgstr "Auto Scan: java"
-
-msgid "自动化扫描: curl"
-msgstr "Auto Scan: curl"
-
-msgid "自动化扫描: wget"
-msgstr "Auto Scan: wget"
-
-msgid "自动化扫描: masscan"
-msgstr "Auto Scan: masscan"
-
-msgid "非法路径探测: .env"
-msgstr "Invalid path: .env"
-
-msgid "非法路径探测: .git"
-msgstr "Invalid path: .git"
-
-msgid "非法路径探测: .sql"
-msgstr "Invalid path: .sql"
-
-msgid "非法路径探测: .ssh"
-msgstr "Invalid path: .ssh"
-
-msgid "非法路径探测: wp-config-bak"
-msgstr "Invalid path: wp-config.php.bak"
-
-msgid "非法路径探测: phpinfo"
-msgstr "Invalid path: phpinfo.php"
-
-msgid "非法路径探测: swp"
-msgstr "Invalid path: swp"
-
-msgid "非法路径探测: vscode"
-msgstr "Invalid path: .vscode"
-
-msgid "非法路径探测: opml"
-msgstr "Invalid path: opml"
-
-msgid "非法路径探测: install"
-msgstr "Invalid path: install.php"
-
-msgid "恶意载荷: SQL注入"
-msgstr "Malicious payload: SQL Injection"
-
-msgid "恶意载荷: 数据库改写"
-msgstr "Malicious payload: DB Manipulation"
-
-msgid "恶意载荷: XSS脚本"
-msgstr "Malicious payload: XSS script"
-
-msgid "恶意载荷: JS脚本执行"
-msgstr "Malicious payload: JS Execution"
-
-msgid "恶意载荷: 事件注入攻击"
-msgstr "Malicious payload: Event Injection"
-
-msgid "XML-RPC 高危方法拦截"
-msgstr "Blocked high-risk XML-RPC method"
-
-msgid "物理封锁：入口禁用"
-msgstr "Physical Block: Entrance Disabled"
-
-msgid "物理封锁：未经授权"
-msgstr "Physical Block: Unauthorized"
-
-msgid "非法扫描参数拦截"
-msgstr "Illegal scan parameters"
-
-msgid "异常 URL 参数"
-msgstr "Abnormal URL parameters"
-
-msgid "数据探测: 用户枚举"
-msgstr "Data Probing: User Enumeration"
-
-msgid "探测: filter注入"
-msgstr "Probing: filter injection"
-
-msgid "探测: orderby注入"
-msgstr "Probing: orderby injection"
-
-msgid "REST限制: 非法上下文"
-msgstr "REST Limit: Illegal context"
-
-msgid "REST限制: 分页超限"
-msgstr "REST Limit: Page limit exceeded"
-
-msgid "REST限制: 偏移超限"
-msgstr "REST Limit: Offset limit exceeded"
-
-msgid "SSRF探测: OEmbed代理"
-msgstr "SSRF Probing: OEmbed proxy"
-
-msgid "扫描: .well-known"
-msgstr "Scanning: .well-known"
-
-msgid "扫描: yoast"
-msgstr "Scanning: Yoast patterns"
-
-msgid "扫描: acf"
-msgstr "Scanning: ACF patterns"
-
-msgid "扫描: tribe"
-msgstr "Scanning: Tribe patterns"
-
-msgid "扫描: woo"
-msgstr "Scanning: WooCommerce patterns"
-
-msgid "访问速率异常"
-msgstr "Abnormal request rate"
-
-msgid "触碰隐藏蜜罐陷阱"
-msgstr "Triggered hidden honeypot trap"
-
-msgid "🔒 出站安全（SSRF 防御）"
-msgstr "🔒 Outbound Security (SSRF Protection)"
-
-msgid "启用强制 IP 直连 + Host 头校验"
-msgstr "Enable Mandatory Direct IP + Host Header Validation"
-
-msgid "确定要永久封禁该 IP 吗？"
-msgstr "Are you sure you want to permanently ban this IP?"
-
-msgid "确定要解除该 IP 的封禁吗？"
-msgstr "Are you sure you want to unban this IP?"
-
-msgid "出站 IP 白名单"
-msgstr "Outbound IP Whitelist"
-
-msgid "额外黑名单 (CIDR)"
-msgstr "Extra Blacklist (CIDR)"
-
-msgid "数据探测: 敏感信息/内容抓取"
-msgstr "Data Probing: Sensitive Info/Content Scraping"
-
-msgid "扫描: %s"
-msgstr "Scanning: %s"
+msgid "✅ 您的 IP 已成功加入 white 列表，拦截已解除。"
+msgstr "✅ Your IP has been whitelisted. Blocking lifted."

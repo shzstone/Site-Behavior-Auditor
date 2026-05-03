@@ -1,19 +1,249 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: SBA 4.0.6\n"
+"Project-Id-Version: Site Behavior Auditor 4.0.6\n"
 "Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-03 21:50+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Stone\n"
 "Language-Team: \n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-04-28 13:47+0000\n"
-"X-Generator: Poedit 3.0\n"
+"X-Domain: site-behavior-auditor\n"
+
+msgid "综合安全套件 (Site Behavior Auditor + Login Box + SMTP)"
+msgstr ""
+
+msgid "集成站点全行为审计、iOS风格登录/注册/忘记密码面板。"
+msgstr ""
 
 msgid "SBA 安全套件"
 msgstr ""
 
 msgid "未检测到官方 ip2region 类库，已自动降级为内置简化版（仅支持 IPv4 查询）。如需完整 IPv6 支持，请将官方类库放置于"
+msgstr ""
+
+msgid "✔"
+msgstr ""
+
+msgid "物理级加白成功"
+msgstr ""
+
+msgid "识别到的真实公网 IP:"
+msgstr ""
+
+msgid "该地址已成功通过密钥验证并加入永久白名单。"
+msgstr ""
+
+msgid "请点击下方按钮返回，拦截已解除。"
+msgstr ""
+
+msgid "返回首页"
+msgstr ""
+
+msgid "XML-RPC 请求过多，IP 已被临时封锁"
+msgstr ""
+
+msgid "XML-RPC 高危方法拦截"
+msgstr ""
+
+msgid "触碰隐藏蜜罐陷阱"
+msgstr ""
+
+msgid "探测敏感文件: SQL"
+msgstr ""
+
+msgid "探测敏感文件: LOG"
+msgstr ""
+
+msgid "探测敏感文件: BAK"
+msgstr ""
+
+msgid "探测敏感文件: ENV"
+msgstr ""
+
+msgid "探测敏感文件: GIT"
+msgstr ""
+
+msgid "探测敏感文件: SVN"
+msgstr ""
+
+msgid "探测敏感文件: README"
+msgstr ""
+
+msgid "探测敏感文件: LICENSE"
+msgstr ""
+
+msgid "探测敏感文件: CONFIG"
+msgstr ""
+
+msgid "探测敏感文件: PHPINFO"
+msgstr ""
+
+msgid "探测敏感文件: HTACCESS"
+msgstr ""
+
+msgid "探测敏感文件: HTPASSWD"
+msgstr ""
+
+msgid "探测敏感文件: INI"
+msgstr ""
+
+msgid "探测敏感文件: MAIL"
+msgstr ""
+
+msgid "探测敏感文件: OPML"
+msgstr ""
+
+msgid "备份文件 (.bgbk)"
+msgstr ""
+
+msgid "压缩包文件"
+msgstr ""
+
+msgid "数据库文件"
+msgstr ""
+
+msgid "Docker Compose 配置"
+msgstr ""
+
+msgid "Dockerfile"
+msgstr ""
+
+msgid "IDE 配置目录"
+msgstr ""
+
+msgid "Node.js 项目文件"
+msgstr ""
+
+msgid "WordPress 调试日志"
+msgstr ""
+
+msgid "环境配置备份"
+msgstr ""
+
+msgid "编辑器临时文件"
+msgstr ""
+
+msgid "自动备份文件"
+msgstr ""
+
+msgid "敏感文件探测: %s"
+msgstr ""
+
+msgid "非法路径探测: .env"
+msgstr ""
+
+msgid "非法路径探测: .git"
+msgstr ""
+
+msgid "非法路径探测: .sql"
+msgstr ""
+
+msgid "非法路径探测: .ssh"
+msgstr ""
+
+msgid "非法路径探测: wp-config-bak"
+msgstr ""
+
+msgid "非法路径探测: phpinfo"
+msgstr ""
+
+msgid "非法路径探测: swp"
+msgstr ""
+
+msgid "非法路径探测: vscode"
+msgstr ""
+
+msgid "非法路径探测: opml"
+msgstr ""
+
+msgid "非法路径探测: install"
+msgstr ""
+
+msgid "非法路径探测: %s"
+msgstr ""
+
+msgid "自动化扫描: sqlmap"
+msgstr ""
+
+msgid "自动化扫描: nmap"
+msgstr ""
+
+msgid "自动化扫描: dirbuster"
+msgstr ""
+
+msgid "自动化扫描: nikto"
+msgstr ""
+
+msgid "自动化扫描: zgrab"
+msgstr ""
+
+msgid "自动化扫描: python"
+msgstr ""
+
+msgid "自动化扫描: go-client"
+msgstr ""
+
+msgid "自动化扫描: java"
+msgstr ""
+
+msgid "自动化扫描: curl"
+msgstr ""
+
+msgid "自动化扫描: wget"
+msgstr ""
+
+msgid "自动化扫描: masscan"
+msgstr ""
+
+msgid "自动化扫描: %s"
+msgstr ""
+
+msgid "恶意载荷注入（命令/SQL/XSS/文件包含）"
+msgstr ""
+
+msgid "物理封锁：入口禁用"
+msgstr ""
+
+msgid "物理封锁：未经授权"
+msgstr ""
+
+msgid "非法扫描参数拦截"
+msgstr ""
+
+msgid "异常 URL 参数"
+msgstr ""
+
+msgid "数据探测: 敏感信息/内容抓取"
+msgstr ""
+
+msgid "探测: filter注入"
+msgstr ""
+
+msgid "探测: orderby注入"
+msgstr ""
+
+msgid "REST限制: 非法上下文"
+msgstr ""
+
+msgid "REST限制: 分页超限"
+msgstr ""
+
+msgid "REST限制: 偏移超限"
+msgstr ""
+
+msgid "SSRF探测: OEmbed代理"
+msgstr ""
+
+msgid "扫描: %s"
+msgstr ""
+
+msgid "恶意载荷注入（静态资源）"
+msgstr ""
+
+msgid "访问速率异常"
 msgstr ""
 
 msgid "REST API 访问受限"
@@ -29,6 +259,15 @@ msgid "🛡️ SBA 拦截：%s"
 msgstr ""
 
 msgid "Security Block"
+msgstr ""
+
+msgid "登录失败次数过多 (暴力破解防护)"
+msgstr ""
+
+msgid "您的 IP 处于临时封禁期，请 15 分钟后再试。"
+msgstr ""
+
+msgid "尝试次数太多，请稍后再试。"
 msgstr ""
 
 msgid "未知"
@@ -53,6 +292,9 @@ msgid "无效的 IP 地址"
 msgstr ""
 
 msgid "此 IP 在白名单中，无法封禁"
+msgstr ""
+
+msgid "管理员手动封禁 IP: %s"
 msgstr ""
 
 msgid "IP %s 已被永久封禁"
@@ -89,15 +331,6 @@ msgid "安全提醒"
 msgstr ""
 
 msgid "IP: %s\n失败次数: %d\n封禁至: %s"
-msgstr ""
-
-msgid "登录失败次数过多 (暴力破解防护)"
-msgstr ""
-
-msgid "您的 IP 处于临时封禁期，请 15 分钟后再试。"
-msgstr ""
-
-msgid "尝试次数太多，请稍后再试。"
 msgstr ""
 
 msgid "密码重置链接已发送到您的邮箱，请查收。"
@@ -214,12 +447,6 @@ msgstr ""
 msgid "无法生成重置链接，请稍后重试。"
 msgstr ""
 
-msgid "您已被封禁24小时，请稍后再试。"
-msgstr ""
-
-msgid "当前无需验证码"
-msgstr ""
-
 msgid "账号尚未激活，请查收激活邮件。"
 msgstr ""
 
@@ -256,9 +483,6 @@ msgstr ""
 msgid "SMTP 邮件"
 msgstr ""
 
-msgid "🚀 SBA 站点行为监控 v%s"
-msgstr ""
-
 msgid "当前在线:"
 msgstr ""
 
@@ -287,9 +511,6 @@ msgid "PV (次)"
 msgstr ""
 
 msgid "拦截 (次)"
-msgstr ""
-
-msgid "拦截"
 msgstr ""
 
 msgid "深度"
@@ -334,6 +555,9 @@ msgstr ""
 msgid "原因与目标"
 msgstr ""
 
+msgid "拦截"
+msgstr ""
+
 msgid "🔥 高频威胁排行榜"
 msgstr ""
 
@@ -346,19 +570,10 @@ msgstr ""
 msgid "排名"
 msgstr ""
 
-msgid "拦截次数"
-msgstr ""
-
 msgid "最后活动"
 msgstr ""
 
 msgid "加载中..."
-msgstr ""
-
-msgid "◀ 上一页"
-msgstr ""
-
-msgid "下一页 ▶"
 msgstr ""
 
 msgid "🚫 永久封禁名单"
@@ -457,7 +672,25 @@ msgstr ""
 msgid "拦截重定向"
 msgstr ""
 
-msgid "保存核心配置"
+msgid "🔒 出站安全（SSRF 防御）"
+msgstr ""
+
+msgid "DNS Rebinding"
+msgstr ""
+
+msgid "启用强制 IP 直连 + Host 头校验"
+msgstr ""
+
+msgid "出站 IP 白名单"
+msgstr ""
+
+msgid "192.168.1.100\n10.0.0.0/8"
+msgstr ""
+
+msgid "额外黑名单 (CIDR)"
+msgstr ""
+
+msgid "192.0.2.0/24, 203.0.113.0/24"
 msgstr ""
 
 msgid "📁 IP 归属地库 (ip2region xdb) 分片上传"
@@ -485,9 +718,6 @@ msgid "⚙️ 服务器环境检测"
 msgstr ""
 
 msgid "PHP 版本"
-msgstr ""
-
-msgid "秒"
 msgstr ""
 
 msgid "若需上传大文件（超过 10MB），建议将 <code>upload_max_filesize</code> 和 <code>post_max_size</code> 调至至少 64M。"
@@ -535,6 +765,9 @@ msgstr ""
 msgid "个区间"
 msgstr ""
 
+msgid "上传并合并完成"
+msgstr ""
+
 msgid "上传成功，正在刷新页面..."
 msgstr ""
 
@@ -545,6 +778,9 @@ msgid "上传失败:"
 msgstr ""
 
 msgid "上传未完全完成"
+msgstr ""
+
+msgid "上传失败："
 msgstr ""
 
 msgid "请选择文件"
@@ -565,13 +801,7 @@ msgstr ""
 msgid "中断失败："
 msgstr ""
 
-msgid "上传并合并完成"
-msgstr ""
-
 msgid "分片接收成功"
-msgstr ""
-
-msgid "SMTP 邮件设置"
 msgstr ""
 
 msgid "设置已保存。"
@@ -592,7 +822,13 @@ msgstr ""
 msgid "请输入有效的测试邮箱地址。"
 msgstr ""
 
+msgid "SMTP 邮件设置"
+msgstr ""
+
 msgid "SMTP 主机"
+msgstr ""
+
+msgid "例如：smtp.gmail.com"
 msgstr ""
 
 msgid "端口"
@@ -605,6 +841,12 @@ msgid "加密方式"
 msgstr ""
 
 msgid "无"
+msgstr ""
+
+msgid "TLS"
+msgstr ""
+
+msgid "SSL"
 msgstr ""
 
 msgid "启用认证"
@@ -622,16 +864,13 @@ msgstr ""
 msgid "发件人名称"
 msgstr ""
 
-msgid "保存设置"
+msgid "例如：网站名称"
 msgstr ""
 
 msgid "测试邮件发送"
 msgstr ""
 
 msgid "接收测试邮箱"
-msgstr ""
-
-msgid "发送测试邮件"
 msgstr ""
 
 msgid "当前在线"
@@ -646,224 +885,14 @@ msgstr ""
 msgid "🛡️ SBA 系统安全限制：仅允许 HTTP/HTTPS 协议。"
 msgstr ""
 
+msgid "禁止访问内网/敏感 IP: %s"
+msgstr ""
+
 msgid "🛡️ SBA 系统安全限制：禁止访问内部网络资源。"
 msgstr ""
 
-msgid "物理级加白成功"
+msgid "SSRF: %s"
 msgstr ""
 
-msgid "识别到的真实公网 IP:"
-msgstr ""
-
-msgid "该地址已成功通过密钥验证并加入永久白名单。"
-msgstr ""
-
-msgid "请点击下方按钮返回，拦截已解除。"
-msgstr ""
-
-msgid "返回首页"
-msgstr ""
-
-msgid "探测敏感文件: SQL"
-msgstr ""
-
-msgid "探测敏感文件: LOG"
-msgstr ""
-
-msgid "探测敏感文件: BAK"
-msgstr ""
-
-msgid "探测敏感文件: ENV"
-msgstr ""
-
-msgid "探测敏感文件: GIT"
-msgstr ""
-
-msgid "探测敏感文件: SVN"
-msgstr ""
-
-msgid "探测敏感文件: README"
-msgstr ""
-
-msgid "探测敏感文件: LICENSE"
-msgstr ""
-
-msgid "探测敏感文件: CONFIG"
-msgstr ""
-
-msgid "探测敏感文件: PHPINFO"
-msgstr ""
-
-msgid "探测敏感文件: HTACCESS"
-msgstr ""
-
-msgid "探测敏感文件: HTPASSWD"
-msgstr ""
-
-msgid "探测敏感文件: INI"
-msgstr ""
-
-msgid "探测敏感文件: MAIL"
-msgstr ""
-
-msgid "探测敏感文件: OPML"
-msgstr ""
-
-msgid "自动化扫描: sqlmap"
-msgstr ""
-
-msgid "自动化扫描: nmap"
-msgstr ""
-
-msgid "自动化扫描: dirbuster"
-msgstr ""
-
-msgid "自动化扫描: nikto"
-msgstr ""
-
-msgid "自动化扫描: zgrab"
-msgstr ""
-
-msgid "自动化扫描: python"
-msgstr ""
-
-msgid "自动化扫描: go-client"
-msgstr ""
-
-msgid "自动化扫描: java"
-msgstr ""
-
-msgid "自动化扫描: curl"
-msgstr ""
-
-msgid "自动化扫描: wget"
-msgstr ""
-
-msgid "自动化扫描: masscan"
-msgstr ""
-
-msgid "非法路径探测: .env"
-msgstr ""
-
-msgid "非法路径探测: .git"
-msgstr ""
-
-msgid "非法路径探测: .sql"
-msgstr ""
-
-msgid "非法路径探测: .ssh"
-msgstr ""
-
-msgid "非法路径探测: wp-config-bak"
-msgstr ""
-
-msgid "非法路径探测: phpinfo"
-msgstr ""
-
-msgid "非法路径探测: swp"
-msgstr ""
-
-msgid "非法路径探测: vscode"
-msgstr ""
-
-msgid "非法路径探测: opml"
-msgstr ""
-
-msgid "非法路径探测: install"
-msgstr ""
-
-msgid "恶意载荷: SQL注入"
-msgstr ""
-
-msgid "恶意载荷: 数据库改写"
-msgstr ""
-
-msgid "恶意载荷: XSS脚本"
-msgstr ""
-
-msgid "恶意载荷: JS脚本执行"
-msgstr ""
-
-msgid "恶意载荷: 事件注入攻击"
-msgstr ""
-
-msgid "XML-RPC 高危方法拦截"
-msgstr ""
-
-msgid "物理封锁：入口禁用"
-msgstr ""
-
-msgid "物理封锁：未经授权"
-msgstr ""
-
-msgid "非法扫描参数拦截"
-msgstr ""
-
-msgid "异常 URL 参数"
-msgstr ""
-
-msgid "数据探测: 用户枚举"
-msgstr ""
-
-msgid "探测: filter注入"
-msgstr ""
-
-msgid "探测: orderby注入"
-msgstr ""
-
-msgid "REST限制: 非法上下文"
-msgstr ""
-
-msgid "REST限制: 分页超限"
-msgstr ""
-
-msgid "REST限制: 偏移超限"
-msgstr ""
-
-msgid "SSRF探测: OEmbed代理"
-msgstr ""
-
-msgid "扫描: .well-known"
-msgstr ""
-
-msgid "扫描: yoast"
-msgstr ""
-
-msgid "扫描: acf"
-msgstr ""
-
-msgid "扫描: tribe"
-msgstr ""
-
-msgid "扫描: woo"
-msgstr ""
-
-msgid "访问速率异常"
-msgstr ""
-
-msgid "触碰隐藏蜜罐陷阱"
-msgstr ""
-
-msgid "🔒 出站安全（SSRF 防御）"
-msgstr ""
-
-msgid "启用强制 IP 直连 + Host 头校验"
-msgstr ""
-
-msgid "确定要永久封禁该 IP 吗？"
-msgstr ""
-
-msgid "确定要解除该 IP 的封禁吗？"
-msgstr ""
-
-msgid "出站 IP 白名单"
-msgstr ""
-
-msgid "额外黑名单 (CIDR)"
-msgstr ""
-
-msgid "数据探测: 敏感信息/内容抓取"
-msgstr ""
-
-msgid "扫描: %s"
+msgid "✅ 您的 IP 已成功加入白名单，拦截已解除。"
 msgstr ""
