@@ -26,7 +26,7 @@ define('SBA_READ_CACHE_TTL', 600);
 define('SBA_HEARTBEAT_SALT', 'sba_hb_salt_');
 
 // ==================== 初始化 ====================
-add_action('plugins_loaded', 'sba_load_textdomain');
+add_action( 'plugins_loaded', 'sba_load_textdomain', -1 );
 function sba_load_textdomain() {
     load_plugin_textdomain(SBA_TEXT_DOMAIN, false, dirname(plugin_basename(__FILE__)) . '/languages');
 }
@@ -1052,7 +1052,13 @@ function sba_ajax_load_blocked_logs() {
     if ($rows) {
         foreach ($rows as $b) {
             $display = current_user_can('manage_options') ? esc_html($b->ip) : sba_mask_ip($b->ip);
-            $html .= "<tr><td>" . date('m-d H:i', strtotime($b->block_time)) . "</td><td><code>{$display}</code></td><td class='sba-cell-wrap' style='color:#d63638;'>" . esc_html($b->reason) . " ⚡ " . esc_html($b->target_url) . "</td></tr>";
+
+            $translated_reason = __($b->reason, SBA_TEXT_DOMAIN);
+            $html .= "<tr>
+                <td>" . date('m-d H:i', strtotime($b->block_time)) . "</td>
+                <td><code>{$display}</code></td>
+                <td class='sba-cell-wrap' style='color:#d63638;'>" . esc_html($translated_reason) . " ⚡ " . esc_html($b->target_url) . "</td>
+            </tr>";
         }
     } else {
         $html = '<tr><td colspan="3">' . __('暂无拦截记录', SBA_TEXT_DOMAIN) . '</td></tr>';
@@ -1619,8 +1625,6 @@ function sba_audit_dashboard() {
     }
     $online = (int)$wpdb->get_var("SELECT COUNT(DISTINCT ip) FROM {$wpdb->prefix}dis_stats WHERE last_visit > DATE_SUB(NOW(), INTERVAL 5 MINUTE)");
     $trend = sba_get_trend_data(30);
-    $history_50 = $wpdb->get_results("SELECT visit_date, COUNT(DISTINCT ip) as uv, SUM(pv) as pv FROM {$wpdb->prefix}dis_stats GROUP BY visit_date ORDER BY visit_date DESC LIMIT 50", OBJECT_K);
-    $history_blocked = $wpdb->get_results("SELECT DATE(block_time) as d, COUNT(*) as c FROM {$wpdb->prefix}sba_blocked_log GROUP BY d ORDER BY d DESC LIMIT 50", OBJECT_K);
     $end_ts = strtotime($latest);
     ?>
     <style>
@@ -1672,12 +1676,8 @@ function sba_audit_dashboard() {
             <div class="sba-card" style="border-left:4px solid #d63638;"><div><?php printf(__('今日 (%s) 拦截:', SBA_TEXT_DOMAIN), $latest); ?></div><span class="stat-val" style="color:#d63638;"><?php echo sba_get_blocked($latest); ?></span></div>
         </div>
         <div class="sba-grid">
-            <div class="sba-card"><h3><?php _e('📈 30天访问趋势', SBA_TEXT_DOMAIN); ?></h3><div class="chart-container"><canvas id="sbaChart"></canvas></div></div>
-            <div class="sba-card"><h3><?php _e('📊 50天审计详表', SBA_TEXT_DOMAIN); ?></h3><div class="sba-scroll-x" style="height:250px;"><table class="sba-table sba-audit-table"><thead><tr><th><?php _e('日期', SBA_TEXT_DOMAIN); ?></th><th><?php _e('UV (人)', SBA_TEXT_DOMAIN); ?></th><th><?php _e('PV (次)', SBA_TEXT_DOMAIN); ?></th><th><?php _e('拦截 (次)', SBA_TEXT_DOMAIN); ?></th><th><?php _e('深度', SBA_TEXT_DOMAIN); ?></th></tr></thead><tbody>
-            <?php for ($i = 0; $i < 50; $i++): $d = date('Y-m-d', $end_ts - ($i * 86400)); $u = isset($history_50[$d]) ? $history_50[$d]->uv : 0; $p = isset($history_50[$d]) ? $history_50[$d]->pv : 0; $b = isset($history_blocked[$d]) ? $history_blocked[$d]->c : 0; ?>
-            <tr><td><b><?php echo $d; ?></b></td><td><?php echo $u; ?></td><td><?php echo $p; ?></td><td style="color:#d63638;"><?php echo $b; ?></td><td><code><?php echo round($p / max(1, $u), 1); ?></code></td></tr>
-            <?php endfor; ?>
-            </tbody></table></div></div>
+            <div class="sba-card"><h3><?php _e( '📈 30天访问趋势', SBA_TEXT_DOMAIN ); ?></h3><div class="chart-container"><canvas id="sbaChart"></canvas></div></div>
+            <div class="sba-card"><h3><?php _e( '📊 50天审计详表', SBA_TEXT_DOMAIN ); ?></h3><div class="sba-scroll-x" style="height:250px;"><table class="sba-table sba-audit-table"><thead><tr><th><?php _e( '日期', SBA_TEXT_DOMAIN ); ?></th><th><?php _e( 'UV (人)', SBA_TEXT_DOMAIN ); ?></th><th><?php _e( 'PV (次)', SBA_TEXT_DOMAIN ); ?></th><th><?php _e( '拦截 (次)', SBA_TEXT_DOMAIN ); ?></th><th><?php _e( '深度', SBA_TEXT_DOMAIN ); ?></th></tr></thead><tbody><?php for ( $i = 0; $i < 50; $i++ ): $d = date( 'Y-m-d', $end_ts - ( $i * 86400 ) ); $u = sba_get_uv( $d ); $p = sba_get_pv( $d ); $b = sba_get_blocked( $d ); ?><tr><td><b><?php echo $d; ?></b></td><td><?php echo $u; ?></td><td><?php echo $p; ?></td><td style="color:#d63638;"><?php echo $b; ?></td><td><code><?php echo ($u > 0) ? round( $p / $u, 1 ) : 0; ?></code></td></tr><?php endfor; ?></tbody></table></div></div>
         </div>
         <div class="sba-card"><h3><?php printf(__('👣 访客轨迹 (%s)', SBA_TEXT_DOMAIN), $latest); ?></h3><div class="sba-scroll-x"><table class="sba-table sba-track-table"><thead><tr><th class="col-time"><?php _e('时间', SBA_TEXT_DOMAIN); ?></th><th class="col-ip"><?php _e('IP', SBA_TEXT_DOMAIN); ?></th><th class="col-geo"><?php _e('归属地', SBA_TEXT_DOMAIN); ?></th><th class="col-url"><?php _e('访问路径', SBA_TEXT_DOMAIN); ?></th><th class="col-pv"><?php _e('PV', SBA_TEXT_DOMAIN); ?></th></tr></thead><tbody id="track-body"></tbody></table></div>
         <div style="margin-top:15px;display:flex;justify-content:space-between;"><div><?php _e('总记录:', SBA_TEXT_DOMAIN); ?> <b id="total-rows">0</b></div><div><button id="prev-page" class="button"><?php _e('◀ 上页', SBA_TEXT_DOMAIN); ?></button> <?php _e('第', SBA_TEXT_DOMAIN); ?> <b id="current-page">1</b> / <b id="total-pages">1</b> <?php _e('页', SBA_TEXT_DOMAIN); ?> <button id="next-page" class="button"><?php _e('下页 ▶', SBA_TEXT_DOMAIN); ?></button></div></div></div>
