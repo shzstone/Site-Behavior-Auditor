@@ -191,32 +191,68 @@ function sba_get_ip() {
     static $ip = null;
     if ($ip !== null) return $ip;
 
-    $headers = [
+    $header_pool = [
         'HTTP_CF_CONNECTING_IP',
+        'HTTP_TRUE_CLIENT_IP',
+        'HTTP_ALI_CDN_REAL_IP',
         'HTTP_X_REAL_IP',
+        'HTTP_FASTLY_CLIENT_IP',
+        'HTTP_INCAP_CLIENT_IP',
         'HTTP_X_FORWARDED_FOR',
+        'HTTP_CLIENT_IP',
+        'HTTP_X_CLIENT_IP',
+        'HTTP_X_CLUSTER_CLIENT_IP',
+        'HTTP_X_PROXYUSER_IP',
+        'HTTP_X_ORIGINATING_IP',
+        'HTTP_X_FORWARDED',
+        'HTTP_FORWARDED_FOR',
+        'HTTP_FORWARDED',
+        'HTTP_VIA',
+        'HTTP_X_COMING_FROM',
+        'HTTP_COMING_FROM',
+        'HTTP_BLUECOAT_VIA',
         'REMOTE_ADDR'
     ];
 
-    $fallback_ip = null;
+    $all_candidates = [];
+    foreach ($header_pool as $header) {
+        if (empty($_SERVER[$header])) continue;
+        $value = $_SERVER[$header];
+        if ($header === 'HTTP_FORWARDED' && stripos($value, 'for=') !== false) {
+            if (preg_match_all('/for="?\[?([0-9a-f:.]+)\]?"?/i', $value, $matches)) {
+                foreach ($matches[1] as $m) $all_candidates[] = $m;
+                continue;
+            }
+        }
 
-    foreach ($headers as $h) {
-        if (empty($_SERVER[$h])) continue;
+        $parts = explode(',', $value);
+        if (stripos($header, 'FORWARDED') !== false || stripos($header, 'VIA') !== false) {
+            $parts = array_reverse($parts);
+        }
 
-        $ips = explode(',', $_SERVER[$h]);
-        foreach ($ips as $v) {
-            $v = trim($v);
-            if (filter_var($v, FILTER_VALIDATE_IP)) {
-                if (filter_var($v, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-                    $ip = $v;
-                    return $ip;
-                }
-                if (!$fallback_ip) $fallback_ip = $v;
+        foreach ($parts as $p) {
+            $p = trim($p);
+            if (empty($p)) continue;
+            if (preg_match('/^\[?([0-9a-f:.]+)\]?(:[0-9]+)?$/i', $p, $matches)) {
+                $p = $matches[1];
+            }
+
+            if (filter_var($p, FILTER_VALIDATE_IP)) {
+                $all_candidates[] = $p;
             }
         }
     }
 
-    $ip = $fallback_ip ?: ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    foreach ($all_candidates as $candidate) {
+        if (filter_var($candidate, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            $bin = @inet_pton($candidate);
+            $ip = @inet_ntop($bin) ?: $candidate;
+            return $ip;
+        }
+    }
+
+    $ip = !empty($all_candidates) ? $all_candidates[0] : ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+
     return $ip;
 }
 
