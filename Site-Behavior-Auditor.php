@@ -191,25 +191,32 @@ function sba_get_ip() {
     static $ip = null;
     if ($ip !== null) return $ip;
 
-    $ip_source = sba_get_option('ip_source', 'REMOTE_ADDR');
-    $header_keys = [];
+    $headers = [
+        'HTTP_CF_CONNECTING_IP',
+        'HTTP_X_REAL_IP',
+        'HTTP_X_FORWARDED_FOR',
+        'REMOTE_ADDR'
+    ];
 
-    if ($ip_source === 'HTTP_CF_CONNECTING_IP') $header_keys = ['HTTP_CF_CONNECTING_IP', 'REMOTE_ADDR'];
-    elseif ($ip_source === 'HTTP_X_REAL_IP') $header_keys = ['HTTP_X_REAL_IP', 'REMOTE_ADDR'];
-    elseif ($ip_source === 'HTTP_X_FORWARDED_FOR') $header_keys = ['HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'];
-    else $header_keys = ['REMOTE_ADDR'];
+    $fallback_ip = null;
 
-    foreach ($header_keys as $key) {
-        if (!empty($_SERVER[$key])) {
-            $ips = explode(',', $_SERVER[$key]);
-            $temp = trim($ips[0]);
-            if (filter_var($temp, FILTER_VALIDATE_IP)) {
-                $ip = $temp;
-                return $ip;
+    foreach ($headers as $h) {
+        if (empty($_SERVER[$h])) continue;
+
+        $ips = explode(',', $_SERVER[$h]);
+        foreach ($ips as $v) {
+            $v = trim($v);
+            if (filter_var($v, FILTER_VALIDATE_IP)) {
+                if (filter_var($v, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                    $ip = $v;
+                    return $ip;
+                }
+                if (!$fallback_ip) $fallback_ip = $v;
             }
         }
     }
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
+    $ip = $fallback_ip ?: ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     return $ip;
 }
 
