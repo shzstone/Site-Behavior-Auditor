@@ -498,7 +498,7 @@ msgstr ""
 msgid "📈 30天访问趋势"
 msgstr ""
 
-msgid "📊 50天审计详表"
+msgid "📊 30天审计详表"
 msgstr ""
 
 msgid "日期"

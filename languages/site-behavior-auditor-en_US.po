@@ -501,8 +501,8 @@ msgstr "Today (%s) Blocked:"
 msgid "📈 30天访问趋势"
 msgstr "📈 30-Day Traffic Trend"
 
-msgid "📊 50天审计详表"
-msgstr "📊 50-Day Audit Table"
+msgid "📊 30天审计详表"
+msgstr "📊 30-Day Audit Table"
 
 msgid "日期"
 msgstr "Date"
