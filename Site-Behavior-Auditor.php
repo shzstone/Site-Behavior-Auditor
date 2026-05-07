@@ -1039,7 +1039,7 @@ add_action('wp_ajax_sba_load_tracks', 'sba_ajax_load_tracks');
 function sba_ajax_load_tracks() {
     global $wpdb;
     $p = max(1, (int)($_POST['page'] ?? 1));
-    $per = 50;
+    $per = 15;
     $off = ($p - 1) * $per;
     $searcher = SBA_IP_Searcher::get_instance();
     $latest = $wpdb->get_var("SELECT MAX(visit_date) FROM {$wpdb->prefix}dis_stats") ?: current_time('Y-m-d');
